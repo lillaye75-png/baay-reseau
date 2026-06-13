@@ -1,0 +1,62 @@
+import time
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+
+from app.core.config import settings
+from app.core.logging import logger
+from app.core.rate_limit import RateLimitMiddleware
+from app.api.v1.router import api_router
+from app.core.database import engine, Base
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+
+app = FastAPI(
+    title="Baay Réseau API",
+    description="SaaS ERP & POS for Boutique and Tech Retailers in Senegal",
+    version="1.0.0",
+)
+
+app.add_middleware(RateLimitMiddleware)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router, prefix="/api/v1")
+
+if os.path.exists(UPLOAD_DIR):
+    app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration = round((time.time() - start) * 1000)
+    logger.info(
+        f"{request.method} {request.url.path} → {response.status_code} ({duration}ms)"
+    )
+    return response
+
+
+@app.on_event("startup")
+async def on_startup():
+    logger.info("Baay Réseau API starting up...")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables ensured")
+    
+    from app.services.scheduled_tasks import start_scheduler
+    start_scheduler()
+    logger.info("Scheduler started")
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "baay-reseau"}

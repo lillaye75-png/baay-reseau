@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://baay:baay_secret@db:5432/baay_reseau
+      - REDIS_URL=redis://redis:6379
+      - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID}
+      - WAVE_API_KEY=${WAVE_API_KEY}
+      - ORANGE_MONEY_API_KEY=${ORANGE_MONEY_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./backend:/app
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: baay_reseau
+      POSTGRES_USER: baay
+      POSTGRES_PASSWORD: baay_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

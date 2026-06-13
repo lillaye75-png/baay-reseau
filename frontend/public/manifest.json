@@ -1,0 +1,26 @@
+{
+  "name": "Baay Réseau - ERP Boutique",
+  "short_name": "Baay Réseau",
+  "description": "SaaS ERP & POS for Boutique and Tech Retailers in Senegal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f4",
+  "theme_color": "#ea580c",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
