@@ -6,45 +6,64 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://baay:baay_secret@db:5432/baay_reseau
-      - REDIS_URL=redis://redis:6379
-      - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
-      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID}
-      - WAVE_API_KEY=${WAVE_API_KEY}
-      - ORANGE_MONEY_API_KEY=${ORANGE_MONEY_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://baay:baay_secret@db:5432/baay_reseau}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN:-}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID:-}
+      - WHATSAPP_VERIFY_TOKEN=${WHATSAPP_VERIFY_TOKEN:-baay-reseau-verify}
+      - WAVE_API_KEY=${WAVE_API_KEY:-}
+      - ORANGE_MONEY_API_KEY=${ORANGE_MONEY_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - AT_API_KEY=${AT_API_KEY:-}
+      - AT_USERNAME=${AT_USERNAME:-}
+      - AT_SENDER_ID=${AT_SENDER_ID:-BAAY}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","https://localhost:3000"]}
     depends_on:
-      - db
-      - redis
-    volumes:
-      - ./backend:/app
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: baay_reseau
       POSTGRES_USER: baay
-      POSTGRES_PASSWORD: baay_secret
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-baay_secret}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-EXEC", "pg_isready -U baay -d baay_reseau"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     depends_on:
       - backend
 
 volumes:
   postgres_data:
+  redis_data:
