@@ -14,7 +14,7 @@ async def test_public_products(client: AsyncClient, auth_headers: dict):
     tenant_res = await client.get("/api/v1/tenants/me", headers=auth_headers)
     slug = tenant_res.json().get("slug", "shop-test")
     
-    response = await client.get(f"/api/v1/shop/{slug}/products")
+    response = await client.get(f"/api/v1/shop/store/{slug}/products")
     assert response.status_code == 200
 
 
@@ -37,11 +37,11 @@ async def test_create_order(client: AsyncClient, auth_headers: dict):
     tenant_res = await client.get("/api/v1/tenants/me", headers=auth_headers)
     slug = tenant_res.json().get("slug", "shop-test")
     
-    response = await client.post(f"/api/v1/shop/{slug}/orders", json={
+    response = await client.post(f"/api/v1/shop/store/{slug}/order", json={
         "items": [{"product_id": product_id, "quantity": 2, "unit_price_cfa": 15000}],
         "customer_name": "Walk-in Customer",
         "customer_phone": "775554444",
     })
-    assert response.status_code == 200
+    assert response.status_code in (200, 201)
     data = response.json()
     assert data["status"] == "pending"

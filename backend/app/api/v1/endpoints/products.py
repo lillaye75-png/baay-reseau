@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import os
 import uuid
 
 from app.core.database import get_db
@@ -10,9 +9,6 @@ from app.models.user import User
 from app.models.product import Product, ProductCategory
 from app.models.product_image import ProductImage
 from app.schemas.product import ProductCreate, ProductRead, ProductCategoryCreate, ProductCategoryRead
-
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter()
 

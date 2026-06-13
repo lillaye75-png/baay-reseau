@@ -2,19 +2,14 @@ import pytest
 import asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
 
 from app.main import app
-from app.core.database import get_db
+from app.core.database import get_db, Base
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 async def override_get_db():
@@ -34,12 +29,11 @@ def event_loop():
 
 @pytest.fixture(autouse=True)
 async def setup_db():
-    from app.models import Base as AppBase
     async with engine.begin() as conn:
-        await conn.run_sync(AppBase.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine.begin() as conn:
-        await conn.run_sync(AppBase.metadata.drop_all)
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture
@@ -52,9 +46,9 @@ async def client():
 @pytest.fixture
 async def auth_headers(client: AsyncClient):
     response = await client.post("/api/v1/auth/register", json={
+        "name": "Test Owner",
         "phone": "771234567",
         "password": "test123456",
-        "shop_name": "Test Shop",
     })
     token = response.json().get("access_token", "")
     return {"Authorization": f"Bearer {token}"}

@@ -56,6 +56,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     if (scannerRef.current?.isScanning) {
       try {
         await scannerRef.current.stop();
+        scannerRef.current.clear();
       } catch {}
     }
     setIsScanning(false);

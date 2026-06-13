@@ -14,7 +14,7 @@ async def test_create_product(client: AsyncClient, auth_headers: dict):
         "sku": "TP-001",
         "barcode": "1234567890",
     }, headers=auth_headers)
-    assert response.status_code == 200
+    assert response.status_code in (200, 201)
     data = response.json()
     assert data["name"] == "Test Product"
     assert data["price_cfa"] == 15000

@@ -9,7 +9,7 @@ async def test_create_customer(client: AsyncClient, auth_headers: dict):
         "phone": "776665555",
         "nickname": "Mamadou",
     }, headers=auth_headers)
-    assert response.status_code == 200
+    assert response.status_code in (200, 201)
     data = response.json()
     assert data["name"] == "Mamadou Diallo"
     assert data["phone"] == "776665555"

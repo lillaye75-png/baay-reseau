@@ -8,16 +8,18 @@ import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import { formatCFA } from "@/lib/format";
 import api, { Product } from "@/lib/api";
-import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import { exportProducts } from "@/lib/export";
 import VariantManager from "@/components/products/VariantManager";
+import BarcodeScanner from "@/components/pos/BarcodeScanner";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
   const [form, setForm] = useState({
     name: "",
     price_cfa: 0,
@@ -190,24 +192,12 @@ export default function ProductsPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => {
-                        const scanner = new (window as any).Html5Qrcode("barcode-scanner-modal");
-                        scanner.start(
-                          { facingMode: "environment" },
-                          { fps: 10, qrbox: { width: 250, height: 250 } },
-                          (text: string) => {
-                            setForm({ ...form, barcode: text });
-                            scanner.stop();
-                          },
-                          () => {}
-                        );
-                      }}
+                      onClick={() => setShowScanner(true)}
                       className="flex items-center gap-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
                     >
                       <Camera className="h-4 w-4" />
                     </button>
                   </div>
-                  <div id="barcode-scanner-modal" className="hidden" />
                 </div>
                 <Input
                   label="Prix de vente (CFA)"
@@ -431,6 +421,16 @@ export default function ProductsPage() {
           </div>
         </Card>
       </div>
+
+      {showScanner && (
+        <BarcodeScanner
+          onScan={(code) => {
+            setShowScanner(false);
+            setForm({ ...form, barcode: code });
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </DashboardLayout>
   );
 }

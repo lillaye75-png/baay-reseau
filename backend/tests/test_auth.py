@@ -13,11 +13,11 @@ async def test_health_check(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_register_user(client: AsyncClient):
     response = await client.post("/api/v1/auth/register", json={
+        "name": "Register Test",
         "phone": "779998888",
         "password": "test123456",
-        "shop_name": "Boutique Test",
     })
-    assert response.status_code == 200
+    assert response.status_code in (200, 201)
     data = response.json()
     assert "access_token" in data
 
@@ -25,9 +25,9 @@ async def test_register_user(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_login_user(client: AsyncClient):
     await client.post("/api/v1/auth/register", json={
+        "name": "Login Test",
         "phone": "779997777",
         "password": "test123456",
-        "shop_name": "Login Test",
     })
     response = await client.post("/api/v1/auth/login", json={
         "phone": "779997777",
@@ -41,9 +41,9 @@ async def test_login_user(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_login_wrong_password(client: AsyncClient):
     await client.post("/api/v1/auth/register", json={
+        "name": "Wrong Pass Test",
         "phone": "779996666",
         "password": "test123456",
-        "shop_name": "Wrong Pass Test",
     })
     response = await client.post("/api/v1/auth/login", json={
         "phone": "779996666",

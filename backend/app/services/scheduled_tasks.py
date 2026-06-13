@@ -63,7 +63,7 @@ async def send_daily_summary():
                 continue
             
             sales_result = await db.execute(
-                select(func.count(Sale.id), func.sum(Sale.total_amount_cfa))
+                select(func.count(Sale.id), func.sum(Sale.total_cfa))
                 .where(
                     Sale.tenant_id == tenant.id,
                     Sale.created_at >= today,
@@ -153,16 +153,28 @@ async def check_credit_reminders():
 async def run_scheduled_tasks():
     """Main scheduler loop."""
     while True:
-        now = datetime.utcnow()
-        
-        if now.hour == 8 and now.minute == 0:
-            await send_daily_summary()
-        
-        if now.hour == 9 and now.minute == 0:
-            await check_low_stock()
-        
-        if now.hour == 10 and now.minute == 0:
-            await check_credit_reminders()
+        try:
+            now = datetime.utcnow()
+            
+            if now.hour == 8 and now.minute == 0:
+                try:
+                    await send_daily_summary()
+                except Exception as e:
+                    print(f"Error in daily summary: {e}")
+            
+            if now.hour == 9 and now.minute == 0:
+                try:
+                    await check_low_stock()
+                except Exception as e:
+                    print(f"Error in low stock check: {e}")
+            
+            if now.hour == 10 and now.minute == 0:
+                try:
+                    await check_credit_reminders()
+                except Exception as e:
+                    print(f"Error in credit reminders: {e}")
+        except Exception as e:
+            print(f"Scheduler error: {e}")
         
         await asyncio.sleep(60)
 
