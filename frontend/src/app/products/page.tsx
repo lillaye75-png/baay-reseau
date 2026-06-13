@@ -8,9 +8,10 @@ import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import { formatCFA } from "@/lib/format";
 import api, { Product } from "@/lib/api";
-import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera, Layers } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import { exportProducts } from "@/lib/export";
+import VariantManager from "@/components/products/VariantManager";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -260,6 +261,14 @@ export default function ProductsPage() {
                     </div>
                   </div>
                 </div>
+                {editingProduct && (
+                  <div className="col-span-2">
+                    <VariantManager
+                      productId={editingProduct.id}
+                      basePrice={form.price_cfa}
+                    />
+                  </div>
+                )}
                 <div className="col-span-2 flex justify-end gap-2">
                   <Button variant="secondary" type="button" onClick={resetForm}>
                     Annuler

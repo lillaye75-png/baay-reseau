@@ -44,3 +44,5 @@ class Product(Base):
     category = relationship("ProductCategory", back_populates="products")
     images = relationship("ProductImage", back_populates="product", cascade="all, delete-orphan", order_by="ProductImage.sort_order")
     reviews = relationship("ProductReview", back_populates="product", cascade="all, delete-orphan")
+    variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
+    variant_options = relationship("ProductVariantOption", back_populates="product", cascade="all, delete-orphan")

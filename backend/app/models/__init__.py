@@ -2,6 +2,7 @@ from app.models.tenant import Tenant
 from app.models.user import User
 from app.models.product import Product, ProductCategory
 from app.models.product_image import ProductImage
+from app.models.product_variant import ProductVariant, ProductVariantOption
 from app.models.review import ProductReview
 from app.models.customer import Customer
 from app.models.sale import Sale, SaleItem
@@ -15,6 +16,8 @@ __all__ = [
     "Product",
     "ProductCategory",
     "ProductImage",
+    "ProductVariant",
+    "ProductVariantOption",
     "Customer",
     "Sale",
     "SaleItem",

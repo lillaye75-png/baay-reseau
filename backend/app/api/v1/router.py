@@ -1,12 +1,13 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, tenants, products, customers, sales, dashboard, whatsapp, reports, storefront, shop, finance
+from app.api.v1.endpoints import auth, tenants, products, customers, sales, dashboard, whatsapp, reports, storefront, shop, finance, variants
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(tenants.router, prefix="/tenants", tags=["tenants"])
 api_router.include_router(products.router, prefix="/products", tags=["products"])
+api_router.include_router(variants.router, prefix="/products", tags=["variants"])
 api_router.include_router(customers.router, prefix="/customers", tags=["customers"])
 api_router.include_router(sales.router, prefix="/sales", tags=["sales"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])

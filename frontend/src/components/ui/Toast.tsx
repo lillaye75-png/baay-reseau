@@ -39,9 +39,9 @@ export default function ToastContainer() {
   };
 
   const bgColors = {
-    success: "bg-green-50 border-green-200",
-    error: "bg-red-50 border-red-200",
-    warning: "bg-yellow-50 border-yellow-200",
+    success: "bg-green-50 border-green-200 dark:bg-green-900 dark:border-green-700",
+    error: "bg-red-50 border-red-200 dark:bg-red-900 dark:border-red-700",
+    warning: "bg-yellow-50 border-yellow-200 dark:bg-yellow-900 dark:border-yellow-700",
   };
 
   if (toasts.length === 0) return null;
@@ -54,10 +54,10 @@ export default function ToastContainer() {
           className={`flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg ${bgColors[toast.type]} animate-slide-in`}
         >
           {icons[toast.type]}
-          <span className="text-sm font-medium text-gray-800">{toast.message}</span>
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{toast.message}</span>
           <button
             onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-            className="ml-2 text-gray-400 hover:text-gray-600"
+            className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
             <X className="h-4 w-4" />
           </button>
