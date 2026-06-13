@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
@@ -13,6 +14,11 @@ TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_com
 
 
 async def override_get_db():
+    async with TestSessionLocal() as session:
+        yield session
+
+
+async def override_async_session():
     async with TestSessionLocal() as session:
         yield session
 
@@ -34,6 +40,13 @@ async def setup_db():
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest.fixture(autouse=True)
+def patch_async_session():
+    with patch("app.core.database.async_session", TestSessionLocal), \
+         patch("app.api.deps.async_session", TestSessionLocal):
+        yield
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, tenants, products, customers, sales, dashboard, whatsapp, reports, storefront, shop, finance, variants
+from app.api.v1.endpoints import auth, tenants, products, customers, sales, dashboard, whatsapp, reports, storefront, shop, finance, variants, billing, loyalty, referral
 
 api_router = APIRouter()
 
@@ -16,3 +16,6 @@ api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(storefront.router, prefix="/storefront", tags=["storefront"])
 api_router.include_router(shop.router, prefix="/shop", tags=["shop"])
 api_router.include_router(finance.router, prefix="/finance", tags=["finance"])
+api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
+api_router.include_router(loyalty.router, prefix="/loyalty", tags=["loyalty"])
+api_router.include_router(referral.router, prefix="/referral", tags=["referral"])

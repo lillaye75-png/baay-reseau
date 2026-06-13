@@ -17,8 +17,10 @@ class Customer(Base):
     whatsapp_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
     nickname: Mapped[str | None] = mapped_column(String(100), nullable=True)
     total_credit_cfa: Mapped[int] = mapped_column(Integer, default=0)
+    loyalty_points: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     tenant = relationship("Tenant", back_populates="customers")
     credit_tabs = relationship("CreditTab", back_populates="customer")
+    loyalty_history = relationship("LoyaltyPoint", back_populates="customer", cascade="all, delete-orphan")

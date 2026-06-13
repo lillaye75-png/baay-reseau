@@ -21,6 +21,8 @@ import {
   Moon,
   Store,
   ShoppingBag,
+  Crown,
+  Gift,
 } from "lucide-react";
 
 const navigation = [
@@ -35,6 +37,8 @@ const navigation = [
   { name: "Crédit", href: "/credit", icon: CreditCard, i18nKey: "credit" },
   { name: "Boutique en ligne", href: "/storefront", icon: Store, i18nKey: "storefront" },
   { name: "WhatsApp Bot", href: "/whatsapp", icon: MessageSquare, i18nKey: "whatsapp" },
+  { name: "Abonnement", href: "/billing", icon: Crown, i18nKey: "billing" },
+  { name: "Parrainage", href: "/referral", icon: Gift, i18nKey: "referral" },
   { name: "Paramètres", href: "/settings", icon: Settings, i18nKey: "settings" },
 ];
 

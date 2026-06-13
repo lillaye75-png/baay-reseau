@@ -9,6 +9,7 @@ from app.core.logging import logger
 from app.core.rate_limit import RateLimitMiddleware
 from app.api.v1.router import api_router
 from app.core.database import engine, Base
+from app.core.sentry import init_sentry
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
 
@@ -17,6 +18,8 @@ app = FastAPI(
     description="SaaS ERP & POS for Boutique and Tech Retailers in Senegal",
     version="1.0.0",
 )
+
+init_sentry(app)
 
 app.add_middleware(RateLimitMiddleware)
 

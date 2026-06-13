@@ -2,6 +2,7 @@
 
 import { formatCFA, formatDateTime } from "@/lib/format";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import api, { Tenant } from "@/lib/api";
 import { generateESCPOS } from "@/lib/escpos";
@@ -27,6 +28,7 @@ interface ReceiptProps {
 
 export default function SaleReceipt({ saleId, items, total, paymentMethod, customerName, createdAt }: ReceiptProps) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [showBluetooth, setShowBluetooth] = useState(false);
   const [bluetoothPrinter, setBluetoothPrinter] = useState<any>(null);
@@ -36,9 +38,10 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
   }, []);
 
   const paymentLabels: Record<string, string> = {
-    cash: "Espèces",
+    cash: t("cash"),
     wave: "Wave",
     orange_money: "Orange Money",
+    credit: t("credit"),
     credit: "Crédit",
   };
 
@@ -84,34 +87,34 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
         <div className="text-center border-b border-dashed border-gray-300 pb-4 mb-4">
           <h1 className="text-lg font-bold">{tenant?.name || "Baay Réseau"}</h1>
           <p className="text-xs text-gray-500">{tenant?.phone || ""}</p>
-          <p className="text-xs text-gray-400 mt-1">— Ticket de caisse —</p>
+          <p className="text-xs text-gray-400 mt-1">— {t("receipt")} —</p>
         </div>
 
         <div className="space-y-1 text-xs text-gray-600 mb-3">
           <div className="flex justify-between">
-            <span>Date:</span>
+            <span>{t("date")}:</span>
             <span>{formatDateTime(createdAt)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Vente #:</span>
+            <span>{t("sale")} #:</span>
             <span>{saleId.slice(0, 8).toUpperCase()}</span>
           </div>
           {customerName && (
             <div className="flex justify-between">
-              <span>Client:</span>
+              <span>{t("client")}:</span>
               <span>{customerName}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span>Paiement:</span>
+            <span>{t("payment")}:</span>
             <span>{paymentLabels[paymentMethod] || paymentMethod}</span>
           </div>
         </div>
 
         <div className="border-t border-dashed border-gray-300 pt-3 mb-3">
           <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>Article</span>
-            <span>Total</span>
+            <span>{t("product")}</span>
+            <span>{t("total")}</span>
           </div>
           {items.map((item, i) => (
             <div key={i} className="flex justify-between py-1">
@@ -125,7 +128,7 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
 
         <div className="border-t border-gray-300 pt-3">
           <div className="flex justify-between font-bold text-base">
-            <span>TOTAL</span>
+            <span>{t("total").toUpperCase()}</span>
             <span>{formatCFA(total)}</span>
           </div>
         </div>

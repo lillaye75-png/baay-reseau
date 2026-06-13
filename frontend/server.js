@@ -1,4 +1,5 @@
-const { createServer } = require("https");
+const { createServer: createHTTPS } = require("https");
+const { createServer: createHTTP } = require("http");
 const { parse } = require("url");
 const next = require("next");
 const fs = require("fs");
@@ -11,15 +12,14 @@ const port = 3000;
 const certsDir = path.join(__dirname, "..", "certs");
 const uploadsDir = path.join(__dirname, "..", "backend", "uploads");
 
-let sslOptions;
+let sslOptions = null;
 try {
   sslOptions = {
     key: fs.readFileSync(path.join(certsDir, "key.pem")),
     cert: fs.readFileSync(path.join(certsDir, "cert.pem")),
   };
 } catch (e) {
-  console.error("SSL certs not found.");
-  process.exit(1);
+  console.warn("SSL certs not found — running on HTTP only.");
 }
 
 const MIME_TYPES = {
@@ -36,7 +36,7 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  createServer(sslOptions, async (req, res) => {
+  const server = (sslOptions ? createHTTPS : createHTTP)(sslOptions || {}, async (req, res) => {
     const parsedUrl = parse(req.url, true);
 
     if (parsedUrl.pathname.startsWith("/uploads/")) {
@@ -58,12 +58,15 @@ app.prepare().then(() => {
     } catch (err) {
       console.error("Error:", err.message);
       res.statusCode = 500;
-      res.end("Internal Server Error");
+      res.end("Internal Server Server");
     }
-  }).listen(port, hostname, (err) => {
+  });
+
+  server.listen(port, hostname, (err) => {
     if (err) throw err;
-    console.log(`> Baay Réseau running on https://localhost:${port}`);
-    console.log(`> Login: https://localhost:${port}/login`);
+    const protocol = sslOptions ? "https" : "http";
+    console.log(`> Baay Réseau running on ${protocol}://localhost:${port}`);
+    console.log(`> Login: ${protocol}://localhost:${port}/login`);
     console.log(`> API:   http://localhost:8000/docs`);
   });
 });

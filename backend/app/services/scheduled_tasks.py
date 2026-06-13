@@ -1,7 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session
 from app.models.tenant import Tenant
