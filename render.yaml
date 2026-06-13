@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: baay-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./baay_reseau.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WHATSAPP_API_TOKEN
+        value: dummy
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        value: dummy
+      - key: WHATSAPP_VERIFY_TOKEN
+        value: baay-reseau-verify
+      - key: WAVE_API_KEY
+        value: dummy
+      - key: ORANGE_MONEY_API_KEY
+        value: dummy
+      - key: OPENAI_API_KEY
+        value: dummy
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dxzpdbips
+      - key: CLOUDINARY_API_KEY
+        value: "172438666353219"
+      - key: CLOUDINARY_API_SECRET
+        value: VOCO4-nCzGd2PFLqh94tUjL14kk
+      - key: CORS_ORIGINS
+        value: '["*"]'
+
+  - type: web
+    name: baay-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: baay-backend
+          property: host
