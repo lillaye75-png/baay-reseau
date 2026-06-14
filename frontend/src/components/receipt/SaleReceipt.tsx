@@ -42,7 +42,6 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
     wave: "Wave",
     orange_money: "Orange Money",
     credit: t("credit"),
-    credit: "Crédit",
   };
 
   const handlePrint = () => {

@@ -1,9 +1,37 @@
 import os
-from typing import Optional
+import httpx
 
 AT_API_KEY = os.getenv("AT_API_KEY", "")
 AT_USERNAME = os.getenv("AT_USERNAME", "")
 AT_SENDER_ID = os.getenv("AT_SENDER_ID", "BAAY")
+AT_BASE_URL = "https://api.africastalking.com/version1/messaging"
+
+
+async def send_sms(phone: str, message: str) -> bool:
+    if not AT_API_KEY or not AT_USERNAME:
+        return False
+
+    headers = {
+        "apiKey": AT_API_KEY,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+    }
+    data = {
+        "username": AT_USERNAME,
+        "to": phone,
+        "message": message,
+    }
+    if AT_SENDER_ID:
+        data["from"] = AT_SENDER_ID
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(AT_BASE_URL, headers=headers, data=data, timeout=10)
+            result = resp.json()
+            recipients = result.get("SMSMessageData", {}).get("Recipients", [])
+            return any(r.get("status") == "Success" for r in recipients)
+    except Exception:
+        return False
 
 
 async def send_sms_receipt(
@@ -14,10 +42,6 @@ async def send_sms_receipt(
     total: int,
     payment_method: str,
 ) -> bool:
-    """Send receipt via SMS using Africa's Talking."""
-    if not AT_API_KEY or not AT_USERNAME:
-        return False
-
     items_text = "\n".join([
         f"  {item['name']} x{item['quantity']} = {item['total_cfa']:,} F"
         for item in items[:5]
@@ -44,32 +68,13 @@ async def send_sms_receipt(
         f"Mèrsi, dëgg na tànggi!"
     )
 
-    try:
-        import africastalking
-        africastalking.initialize(AT_USERNAME, AT_API_KEY)
-        sms = africastalking.SMS
-        result = sms.send(message, [phone], sender_id=AT_SENDER_ID)
-        return result.get("SMSMessageData", {}).get("Recipients", [{}])[0].get("status") == "Success"
-    except Exception:
-        return False
+    return await send_sms(phone, message)
 
 
 async def send_low_stock_sms(phone: str, product_name: str, current_stock: int) -> bool:
-    """Send low stock alert via SMS."""
-    if not AT_API_KEY or not AT_USERNAME:
-        return False
-
     message = (
         f"⚠️ *Alerte Stock*\n\n"
         f"{product_name}: {current_stock} restant(s)\n"
         f"Réapprovisionnez vite!"
     )
-
-    try:
-        import africastalking
-        africastalking.initialize(AT_USERNAME, AT_API_KEY)
-        sms = africastalking.SMS
-        result = sms.send(message, [phone], sender_id=AT_SENDER_ID)
-        return result.get("SMSMessageData", {}).get("Recipients", [{}])[0].get("status") == "Success"
-    except Exception:
-        return False
+    return await send_sms(phone, message)
