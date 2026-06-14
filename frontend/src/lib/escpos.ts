@@ -77,7 +77,7 @@ export async function printToThermal(data: Parameters<typeof generateESCPOS>[0])
     }
   }
 
-  const blob = new Blob([escpos.buffer], { type: "application/octet-stream" });
+  const blob = new Blob([new Uint8Array(escpos).slice(0)], { type: "application/octet-stream" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
