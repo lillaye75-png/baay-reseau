@@ -50,12 +50,3 @@ async def require_owner(user: User = Depends(get_current_user)) -> User:
             detail="Seul le propriétaire peut effectuer cette action"
         )
     return user
-
-
-async def require_owner(user: User = Depends(get_current_user)) -> User:
-    if user.role != "owner":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Seul le propriétaire peut effectuer cette action"
-        )
-    return user

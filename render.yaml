@@ -9,7 +9,9 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.4
       - key: DATABASE_URL
-        value: sqlite+aiosqlite:///./baay_reseau.db
+        fromDatabase:
+          name: baay-db
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: WHATSAPP_API_TOKEN
@@ -46,3 +48,8 @@ services:
         fromService:
           name: baay-backend
           property: host
+
+databases:
+  - name: baay-db
+    plan: free
+    databaseName: baay_reseau

@@ -18,4 +18,4 @@ class LoyaltyPoint(Base):
     reason: Mapped[str] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    customer = relationship("Customer", back_populates="loyalty_points")
+    customer = relationship("Customer", back_populates="loyalty_history")
