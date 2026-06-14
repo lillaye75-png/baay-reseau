@@ -1,5 +1,4 @@
 from pydantic_settings import BaseSettings
-from typing import List
 
 
 class Settings(BaseSettings):
@@ -20,24 +19,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
 
-    CORS_ORIGINS: str = "*"
-
     class Config:
         env_file = "../.env"
 
 
 settings = Settings()
-
-
-def get_cors_origins() -> list[str]:
-    raw = settings.CORS_ORIGINS
-    if raw == "*":
-        return ["*"]
-    import json
-    try:
-        parsed = json.loads(raw)
-        if isinstance(parsed, list):
-            return parsed
-    except (json.JSONDecodeError, TypeError):
-        pass
-    return [origin.strip() for origin in raw.split(",") if origin.strip()]

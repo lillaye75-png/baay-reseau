@@ -4,12 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.core.config import settings, get_cors_origins
+from app.core.config import settings
 from app.core.logging import logger
 from app.core.rate_limit import RateLimitMiddleware
 from app.api.v1.router import api_router
 from app.core.database import engine, Base
-from app.core.sentry import init_sentry
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
 
@@ -19,13 +18,17 @@ app = FastAPI(
     version="1.0.0",
 )
 
-init_sentry(app)
+try:
+    from app.core.sentry import init_sentry
+    init_sentry(app)
+except Exception:
+    pass
 
 app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_cors_origins(),
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,13 +54,19 @@ async def log_requests(request: Request, call_next):
 @app.on_event("startup")
 async def on_startup():
     logger.info("Baay Réseau API starting up...")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables ensured")
-    
-    from app.services.scheduled_tasks import start_scheduler
-    start_scheduler()
-    logger.info("Scheduler started")
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables ensured")
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+
+    try:
+        from app.services.scheduled_tasks import start_scheduler
+        start_scheduler()
+        logger.info("Scheduler started")
+    except Exception as e:
+        logger.error(f"Scheduler error: {e}")
 
 
 @app.get("/health")
