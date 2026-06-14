@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.core.config import settings
+from app.core.config import settings, get_cors_origins
 from app.core.logging import logger
 from app.core.rate_limit import RateLimitMiddleware
 from app.api.v1.router import api_router
@@ -25,7 +25,7 @@ app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
