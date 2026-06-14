@@ -63,7 +63,6 @@ const translations: Record<string, Record<Lang, string>> = {
   sale: { fr: "Vente", wo: "Jënd" },
   product: { fr: "Article", wo: "Produit bi" },
   client: { fr: "Client", wo: "Kiliyaan" },
-  credit: { fr: "Crédit", wo: "Njëg" },
   billing: { fr: "Abonnement", wo: "Abonnement" },
   loyalty: { fr: "Fidélité", wo: "Fidélité" },
   referral: { fr: "Parrainage", wo: "Parrainage" },
