@@ -198,7 +198,7 @@ export default function ProductsPage() {
     e.target.value = "";
   };
 
-  const categories = [...new Set(products.map(p => (p as any).category_name).filter(Boolean))];
+  const categories = Array.from(new Set(products.map(p => (p as any).category_name).filter(Boolean)));
   const [categoriesList, setCategoriesList] = useState<string[]>([]);
 
   useEffect(() => {
