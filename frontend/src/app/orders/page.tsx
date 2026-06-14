@@ -192,10 +192,10 @@ export default function OrdersPage() {
                         <span className="font-medium text-gray-900">{order.customer_name}</span>
                         <Badge variant={st.color as any}>{st.label}</Badge>
                         {order.status === "confirmed" && (
-                          <Bell className="h-4 w-4 text-green-500 animate-bounce" title="Commande confirmée" />
+                          <Bell className="h-4 w-4 text-green-500 animate-bounce" />
                         )}
                         {order.status === "pending" && (
-                          <Bell className="h-4 w-4 text-orange-500 animate-pulse" title="Nouvelle commande" />
+                          <Bell className="h-4 w-4 text-orange-500 animate-pulse" />
                         )}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">{formatDateTime(order.created_at)} · {order.items.length} article(s)</p>
