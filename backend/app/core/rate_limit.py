@@ -9,7 +9,7 @@ RATE_LIMITS = {
     "/api/v1/shop/store/": (30, 60),
 }
 
-DEFAULT_LIMIT = (60, 60)
+DEFAULT_LIMIT = (300, 60)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):

@@ -87,7 +87,7 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
       <div id="a4-invoice" className="bg-white max-w-[210mm] mx-auto" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
         <div className="flex justify-between border-b-2 border-gray-900 pb-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{tenant?.name || "Baay Réseau"}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{tenant?.name || "Naatal ERP Cloud"}</h1>
             <p className="text-sm text-gray-500">{tenant?.phone || ""}</p>
             {tenant?.email && <p className="text-sm text-gray-500">{tenant.email}</p>}
           </div>
@@ -146,8 +146,8 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
         </div>
 
         <div className="border-t border-gray-200 pt-4 mt-8 text-center text-xs text-gray-400">
-          <p>Mèrsi, dëgg na tànggi! — {tenant?.name || "Baay Réseau"}</p>
-          <p className="mt-1">Baay Réseau — ERP Boutique Sénégal</p>
+          <p>Mèrsi, dëgg na tànggi! — {tenant?.name || "Naatal ERP Cloud"}</p>
+          <p className="mt-1">Naatal ERP Cloud — ERP Boutique Sénégal</p>
         </div>
       </div>
 

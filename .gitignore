@@ -38,6 +38,12 @@ build*.log
 # Certs
 certs/*.pem
 
+# Vercel
+.vercel/
+
+# Backups
+*.bak
+
 # Test
 backend/test.db
 .pytest_cache/

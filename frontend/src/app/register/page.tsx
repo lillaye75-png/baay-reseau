@@ -48,7 +48,7 @@ export default function RegisterPage() {
               <Store className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Baay Réseau</h1>
+              <h1 className="text-3xl font-bold">Naatal ERP Cloud</h1>
               <p className="text-primary-200">ERP Boutique</p>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function RegisterPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white font-bold">
               BR
             </div>
-            <span className="text-xl font-bold text-gray-900">Baay Réseau</span>
+            <span className="text-xl font-bold text-gray-900">Naatal ERP Cloud</span>
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Créer un compte</h2>

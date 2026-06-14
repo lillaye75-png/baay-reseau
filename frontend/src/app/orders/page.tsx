@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { formatCFA, formatDateTime } from "@/lib/format";
 import api from "@/lib/api";
-import { Package, Clock, CheckCircle, Truck, X, Eye, Printer } from "lucide-react";
+import { Package, Clock, CheckCircle, Truck, X, Eye, Printer, Bell } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 
 interface OrderItem {
@@ -93,15 +93,20 @@ export default function OrdersPage() {
       </table>
       <div class="total">TOTAL: ${formatCFA(order.total_cfa)}</div>
       ${order.customer_notes ? `<div class="note"><strong>Notes:</strong> ${order.customer_notes}</div>` : ''}
-      <div class="footer">Baay Réseau — ERP Boutique | Bon de livraison pour le livreur</div>
+      <div class="footer">Naatal ERP Cloud — ERP Boutique | Bon de livraison pour le livreur</div>
       </body></html>`;
     const w = window.open('', '_blank');
     if (w) { w.document.write(html); w.document.close(); w.print(); }
   };
 
   const pendingCount = orders.filter((o) => o.status === "pending").length;
+  const confirmedCount = orders.filter((o) => o.status === "confirmed").length;
   const todayTotal = orders
-    .filter((o) => new Date(o.created_at).toDateString() === new Date().toDateString())
+    .filter((o) => {
+      const d = new Date(o.created_at);
+      const today = new Date();
+      return d.toDateString() === today.toDateString() && o.status !== "cancelled";
+    })
     .reduce((s, o) => s + o.total_cfa, 0);
 
   return (
@@ -186,6 +191,12 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900">{order.customer_name}</span>
                         <Badge variant={st.color as any}>{st.label}</Badge>
+                        {order.status === "confirmed" && (
+                          <Bell className="h-4 w-4 text-green-500 animate-bounce" title="Commande confirmée" />
+                        )}
+                        {order.status === "pending" && (
+                          <Bell className="h-4 w-4 text-orange-500 animate-pulse" title="Nouvelle commande" />
+                        )}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">{formatDateTime(order.created_at)} · {order.items.length} article(s)</p>
                     </div>

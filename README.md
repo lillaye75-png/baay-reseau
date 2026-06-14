@@ -1,4 +1,4 @@
-# Baay Réseau - SaaS ERP for Boutique & Tech Retailers
+# Naatal ERP Cloud - SaaS ERP for Boutique & Tech Retailers
 
 ## Tech Stack
 
@@ -35,6 +35,7 @@ cd frontend && npm install && npm run dev
 - Smart reorder alerts
 - Mobile-first responsive design
 - CFA currency support
+- Admin dashboard
 
 ## API Docs
 

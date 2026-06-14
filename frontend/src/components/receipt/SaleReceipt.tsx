@@ -56,7 +56,7 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
 
     try {
       const escpos = generateESCPOS({
-        shopName: tenant?.name || "Baay Réseau",
+        shopName: tenant?.name || "Naatal ERP Cloud",
         shopPhone: tenant?.phone || "",
         saleId,
         date: formatDateTime(createdAt),
@@ -84,7 +84,7 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
     <>
       <div id="receipt-content" className="bg-white p-6 max-w-sm mx-auto font-mono text-sm" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
         <div className="text-center border-b border-dashed border-gray-300 pb-4 mb-4">
-          <h1 className="text-lg font-bold">{tenant?.name || "Baay Réseau"}</h1>
+          <h1 className="text-lg font-bold">{tenant?.name || "Naatal ERP Cloud"}</h1>
           <p className="text-xs text-gray-500">{tenant?.phone || ""}</p>
           <p className="text-xs text-gray-400 mt-1">— {t("receipt")} —</p>
         </div>
@@ -134,7 +134,7 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
 
         <div className="text-center text-xs text-gray-400 mt-6 border-t border-dashed border-gray-300 pt-4">
           <p>Mèrsi, dëgg na tànggi!</p>
-          <p className="mt-1">Baay Réseau — ERP Boutique</p>
+          <p className="mt-1">Naatal ERP Cloud — ERP Boutique</p>
         </div>
       </div>
 

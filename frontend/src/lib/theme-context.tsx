@@ -2,35 +2,48 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
+export type Theme = "light" | "dark" | "solarized";
+
 interface ThemeContextType {
+  theme: Theme;
   dark: boolean;
   toggle: () => void;
+  setTheme: (t: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [dark, setDark] = useState(false);
+  const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-      setDark(true);
-      document.documentElement.classList.add("dark");
+    const saved = localStorage.getItem("theme") as Theme | null;
+    if (saved && ["light", "dark", "solarized"].includes(saved)) {
+      applyTheme(saved);
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      applyTheme("dark");
     }
   }, []);
 
-  const toggle = () => {
-    setDark((prev) => {
-      const next = !prev;
-      localStorage.setItem("theme", next ? "dark" : "light");
-      document.documentElement.classList.toggle("dark", next);
-      return next;
-    });
+  const applyTheme = (t: Theme) => {
+    setThemeState(t);
+    document.documentElement.classList.remove("dark", "solarized");
+    if (t === "dark") document.documentElement.classList.add("dark");
+    if (t === "solarized") document.documentElement.classList.add("dark", "solarized");
+    localStorage.setItem("theme", t);
   };
 
+  const toggle = () => {
+    const order: Theme[] = ["light", "dark", "solarized"];
+    const idx = order.indexOf(theme);
+    const next = order[(idx + 1) % order.length];
+    applyTheme(next);
+  };
+
+  const setTheme = (t: Theme) => applyTheme(t);
+
   return (
-    <ThemeContext.Provider value={{ dark, toggle }}>
+    <ThemeContext.Provider value={{ theme, dark: theme === "dark" || theme === "solarized", toggle, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

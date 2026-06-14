@@ -26,6 +26,13 @@ api.interceptors.response.use(
         window.location.href = "/login";
       }
     }
+    if (error.response?.status === 403 && error.response?.data?.detail?.includes("Licence expirée")) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login?expired=1";
+      }
+    }
     return Promise.reject(error);
   }
 );
@@ -86,6 +93,7 @@ export interface Customer {
 export interface SaleItem {
   id: string;
   product_id: string;
+  product_name: string;
   quantity: number;
   unit_price_cfa: number;
   total_cfa: number;

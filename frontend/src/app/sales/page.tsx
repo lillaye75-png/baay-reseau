@@ -130,7 +130,7 @@ export default function SalesPage() {
                         <td className="px-4 py-2 text-sm font-medium">
                           <div className="flex items-center gap-2">
                             <Package className="h-3 w-3 text-gray-400" />
-                            {item.product_id.slice(0, 8)}...
+                            {item.product_name || "Produit"}
                           </div>
                         </td>
                         <td className="px-4 py-2 text-sm text-right">{item.quantity}</td>

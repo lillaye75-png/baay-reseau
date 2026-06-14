@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.sale import Sale, SaleItem
+from app.models.product import Product
 from app.models.customer import Customer
 from app.models.credit_tab import CreditTab, CreditTabEntry
 from app.schemas.sale import SaleCreate
@@ -26,9 +27,14 @@ async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate) -> Sal
 
     for item_data in data.items:
         item_total = item_data.quantity * item_data.unit_price_cfa
+        product_result = await db.execute(
+            select(Product).where(Product.id == item_data.product_id)
+        )
+        product = product_result.scalar_one_or_none()
         sale_item = SaleItem(
             sale_id=sale.id,
             product_id=item_data.product_id,
+            product_name=product.name if product else "",
             quantity=item_data.quantity,
             unit_price_cfa=item_data.unit_price_cfa,
             total_cfa=item_total,
@@ -218,9 +224,14 @@ async def update_sale(db: AsyncSession, tenant_id: str, sale_id: str, data) -> S
 
     for item_data in data.items:
         item_total = item_data.quantity * item_data.unit_price_cfa
+        product_result = await db.execute(
+            select(Product).where(Product.id == item_data.product_id)
+        )
+        product = product_result.scalar_one_or_none()
         db.add(SaleItem(
             sale_id=sale.id,
             product_id=item_data.product_id,
+            product_name=product.name if product else "",
             quantity=item_data.quantity,
             unit_price_cfa=item_data.unit_price_cfa,
             total_cfa=item_total,

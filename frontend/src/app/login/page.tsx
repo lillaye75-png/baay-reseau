@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Smartphone, ArrowRight, Store } from "lucide-react";
+import { Smartphone, ArrowRight, Store, AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const expired = searchParams.get("expired") === "1";
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (expired) setError("Votre licence a expiré. Contactez l'administrateur.");
+  }, [expired]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +43,7 @@ export default function LoginPage() {
               <Store className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Baay Réseau</h1>
+              <h1 className="text-3xl font-bold">Naatal ERP Cloud</h1>
               <p className="text-primary-200">ERP Boutique</p>
             </div>
           </div>
@@ -75,7 +82,7 @@ export default function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white font-bold">
               BR
             </div>
-            <span className="text-xl font-bold text-gray-900">Baay Réseau</span>
+            <span className="text-xl font-bold text-gray-900">Naatal ERP Cloud</span>
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Bienvenue</h2>
@@ -83,7 +90,8 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              <div className={`rounded-lg p-3 text-sm flex items-center gap-2 ${expired ? "bg-orange-50 border border-orange-200 text-orange-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                 {error}
               </div>
             )}

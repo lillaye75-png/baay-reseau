@@ -23,6 +23,11 @@ async def list_products(user: User = Depends(get_current_user), db: AsyncSession
 
 @router.post("/", response_model=ProductRead, status_code=201)
 async def create_product(data: ProductCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    existing = await db.execute(
+        select(Product).where(Product.tenant_id == user.tenant_id, Product.name == data.name, Product.is_active == True)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Un produit avec ce nom existe déjà")
     product = Product(tenant_id=user.tenant_id, **data.model_dump())
     db.add(product)
     await db.flush()

@@ -4,52 +4,62 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.sale import Sale, SaleItem
 from app.models.product import Product
-from app.models.customer import Customer
+from app.models.supplier import Expense
 
 
-async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "daily") -> dict:
+async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "daily", start_date: str = None, end_date: str = None) -> dict:
     now = datetime.now(timezone.utc)
 
-    if period == "daily":
+    if start_date and end_date:
+        start = datetime.fromisoformat(start_date).replace(tzinfo=timezone.utc)
+        end = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        label = f"Du {start_date} au {end_date}"
+    elif period == "daily":
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now
         label = "Aujourd'hui"
     elif period == "weekly":
         start = now - timedelta(days=now.weekday())
         start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now
         label = "Cette semaine"
     elif period == "monthly":
         start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = now
         label = "Ce mois"
     else:
         start = now - timedelta(days=365)
+        end = now
         label = "Cette année"
+
+    date_filter = [Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end]
 
     result = await db.execute(
         select(
             func.count(Sale.id),
             func.coalesce(func.sum(Sale.total_cfa), 0),
-        ).where(Sale.tenant_id == tenant_id, Sale.created_at >= start)
+        ).where(*date_filter)
     )
     row = result.one()
 
     cash = await db.execute(
         select(func.coalesce(func.sum(Sale.total_cfa), 0)).where(
-            Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.payment_method == "cash"
+            *date_filter, Sale.payment_method == "cash"
         )
     )
     wave = await db.execute(
         select(func.coalesce(func.sum(Sale.total_cfa), 0)).where(
-            Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.payment_method == "wave"
+            *date_filter, Sale.payment_method == "wave"
         )
     )
     credit = await db.execute(
         select(func.coalesce(func.sum(Sale.total_cfa), 0)).where(
-            Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.is_credit == True
+            *date_filter, Sale.is_credit == True
         )
     )
     om = await db.execute(
         select(func.coalesce(func.sum(Sale.total_cfa), 0)).where(
-            Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.payment_method == "orange_money"
+            *date_filter, Sale.payment_method == "orange_money"
         )
     )
 
@@ -60,6 +70,30 @@ async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "dail
         ).where(Product.tenant_id == tenant_id, Product.is_active == True)
     )
     stock_row = stock_result.one()
+
+    expense_total = await db.execute(
+        select(func.coalesce(func.sum(Expense.amount_cfa), 0)).where(
+            Expense.tenant_id == tenant_id,
+            Expense.expense_date >= start,
+            Expense.expense_date <= end,
+        )
+    )
+
+    expense_val = int(expense_total.scalar())
+
+    # Net profit = sum of (unit_price - cost_price) * quantity for each sale item - expenses
+    margin_result = await db.execute(
+        select(
+            func.coalesce(
+                func.sum((SaleItem.unit_price_cfa - Product.cost_price_cfa) * SaleItem.quantity),
+                0,
+            )
+        )
+        .join(Sale, SaleItem.sale_id == Sale.id)
+        .join(Product, SaleItem.product_id == Product.id)
+        .where(Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end)
+    )
+    total_margin = int(margin_result.scalar())
 
     return {
         "period": period,
@@ -72,10 +106,21 @@ async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "dail
         "credit_cfa": int(credit.scalar()),
         "inventory_value_cfa": int(stock_row[1]),
         "total_products": stock_row[0],
+        "total_expenses_cfa": expense_val,
+        "total_margin_cfa": total_margin,
+        "profit_cfa": total_margin - expense_val,
     }
 
 
-async def get_top_products(db: AsyncSession, tenant_id: str, limit: int = 10) -> list[dict]:
+async def get_top_products(db: AsyncSession, tenant_id: str, limit: int = 10, start_date: str = None, end_date: str = None) -> list[dict]:
+    now = datetime.now(timezone.utc)
+    if start_date and end_date:
+        start = datetime.fromisoformat(start_date).replace(tzinfo=timezone.utc)
+        end = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+    else:
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = now
+
     result = await db.execute(
         select(
             SaleItem.product_id,
@@ -83,7 +128,7 @@ async def get_top_products(db: AsyncSession, tenant_id: str, limit: int = 10) ->
             func.sum(SaleItem.total_cfa).label("total_revenue"),
         )
         .join(Sale, SaleItem.sale_id == Sale.id)
-        .where(Sale.tenant_id == tenant_id)
+        .where(Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end)
         .group_by(SaleItem.product_id)
         .order_by(func.sum(SaleItem.quantity).desc())
         .limit(limit)

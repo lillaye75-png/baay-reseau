@@ -58,6 +58,8 @@ const translations: Record<string, Record<Lang, string>> = {
   loading: { fr: "Chargement...", wo: "Yeesi..." },
   scanBarcode: { fr: "Scanner un code-barres", wo: "Scan code-barres" },
   orders: { fr: "Commandes", wo: "Command yi" },
+  invoices: { fr: "Factures", wo: "Fatuur yi" },
+  expenses: { fr: "Dépenses", wo: "Jënd yi" },
   storefront: { fr: "Boutique en ligne", wo: "Boutique en ligne" },
   receipt: { fr: "Ticket de caisse", wo: "Ticket bi" },
   sale: { fr: "Vente", wo: "Jënd" },
@@ -66,6 +68,7 @@ const translations: Record<string, Record<Lang, string>> = {
   billing: { fr: "Abonnement", wo: "Abonnement" },
   loyalty: { fr: "Fidélité", wo: "Fidélité" },
   referral: { fr: "Parrainage", wo: "Parrainage" },
+  shop: { fr: "Boutique publique", wo: "Boutique wi" },
 };
 
 interface I18nContextType {

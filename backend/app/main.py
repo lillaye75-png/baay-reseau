@@ -15,7 +15,7 @@ from app.core.database import engine, Base
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
 
 app = FastAPI(
-    title="Baay Réseau API",
+    title="Naatal ERP Cloud API",
     description="SaaS ERP & POS for Boutique and Tech Retailers in Senegal",
     version="1.0.0",
 )
@@ -72,7 +72,7 @@ async def log_requests(request: Request, call_next):
 
 @app.on_event("startup")
 async def on_startup():
-    logger.info("Baay Réseau API starting up...")
+    logger.info("Naatal ERP Cloud API starting up...")
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -90,4 +90,4 @@ async def on_startup():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "service": "baay-reseau"}
+    return {"status": "ok", "service": "naatal-erp-cloud"}

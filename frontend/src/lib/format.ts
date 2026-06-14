@@ -24,6 +24,16 @@ export function formatDateTime(dateString: string): string {
   });
 }
 
+const API_URL = typeof window !== "undefined"
+  ? (process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:8000`)
+  : "http://localhost:8000";
+
+export function getImageUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 export function getPaymentMethodLabel(method: string): string {
   const labels: Record<string, string> = {
     cash: "Espèces",

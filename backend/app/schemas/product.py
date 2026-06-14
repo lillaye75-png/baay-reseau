@@ -42,6 +42,7 @@ class ProductRead(BaseModel):
     unit: str
     barcode: str | None
     image_url: str | None
+    is_online: bool
     is_active: bool
     category_id: str | None
     created_at: datetime

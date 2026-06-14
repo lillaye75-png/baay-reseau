@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
-import { formatCFA } from "@/lib/format";
+import { formatCFA, getImageUrl } from "@/lib/format";
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 
 function CartContent() {
@@ -38,7 +38,7 @@ function CartContent() {
               <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
                 {item.image_url ? (
                   <img
-                    src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${item.image_url}`}
+                    src={getImageUrl(item.image_url)}
                     alt={item.name}
                     className="h-16 w-16 rounded-lg object-cover"
                   />

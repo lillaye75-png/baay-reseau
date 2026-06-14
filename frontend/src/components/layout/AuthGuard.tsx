@@ -18,6 +18,17 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [token, loading, pathname, router]);
 
+  useEffect(() => {
+    if (!token) return;
+    const handle403 = (e: Event) => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      router.push("/login?expired=1");
+    };
+    window.addEventListener("license-expired", handle403);
+    return () => window.removeEventListener("license-expired", handle403);
+  }, [token, router]);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">

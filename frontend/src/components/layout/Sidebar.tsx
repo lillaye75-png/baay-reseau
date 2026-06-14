@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { useTheme } from "@/lib/theme-context";
 import { useI18n } from "@/lib/i18n";
+import { useState as useStateHook, useEffect } from "react";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -12,24 +13,27 @@ import {
   Users,
   MessageSquare,
   Settings,
-  LogOut,
   CreditCard,
   Receipt,
   Folder,
   BarChart3,
-  Sun,
-  Moon,
   Store,
   ShoppingBag,
   Crown,
   Gift,
+  FileText,
+  Bell,
+  Wallet,
 } from "lucide-react";
+import api from "@/lib/api";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard, i18nKey: "dashboard" },
   { name: "POS / Vente", href: "/pos", icon: ShoppingCart, i18nKey: "pos" },
   { name: "Ventes", href: "/sales", icon: Receipt, i18nKey: "sales" },
-  { name: "Commandes", href: "/orders", icon: ShoppingBag, i18nKey: "orders" },
+  { name: "Commandes", href: "/orders", icon: ShoppingBag, i18nKey: "orders", showBadge: true },
+  { name: "Factures", href: "/invoices", icon: FileText, i18nKey: "invoices" },
+  { name: "Dépenses", href: "/expenses", icon: Wallet, i18nKey: "expenses" },
   { name: "Rapports", href: "/reports", icon: BarChart3, i18nKey: "reports" },
   { name: "Produits", href: "/products", icon: Package, i18nKey: "products" },
   { name: "Catégories", href: "/categories", icon: Folder, i18nKey: "categories" },
@@ -44,72 +48,67 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
-  const { dark, toggle } = useTheme();
-  const { lang, setLang, t } = useI18n();
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPending = () => {
+      api.get("/storefront/orders")
+        .then((res) => {
+          const pending = res.data.filter((o: any) => o.status === "pending");
+          setPendingCount(pending.length);
+        })
+        .catch(() => {});
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gray-900 text-white">
-      <div className="flex items-center gap-3 px-6 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold shadow-lg">
+    <div className="flex h-full w-60 flex-col bg-gray-900 text-white">
+      <div className="flex items-center gap-3 px-5 py-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold shadow-lg">
           BR
         </div>
         <div>
-          <h1 className="text-sm font-semibold">Baay Réseau</h1>
-          <p className="text-xs text-gray-400">ERP Boutique</p>
+          <h1 className="text-sm font-semibold">Naatal ERP Cloud</h1>
+          <p className="text-[11px] text-gray-400">ERP Boutique</p>
         </div>
       </div>
 
       {user && (
         <div className="mx-3 mb-2 rounded-lg bg-gray-800/50 px-3 py-2">
-          <p className="text-xs text-gray-400">Connecté en tant que</p>
-          <p className="text-sm font-medium text-white truncate">{user.name}</p>
+          <p className="text-[11px] text-gray-400">{t("connected")}</p>
+          <p className="text-xs font-medium text-white truncate">{user.name}</p>
         </div>
       )}
 
-      <nav className="flex-1 space-y-1 px-3 py-2">
+      <nav className="flex flex-1 flex-col justify-evenly px-3 py-2">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              className={`relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-primary-600 text-white shadow-md shadow-primary-600/25"
                   : "text-gray-400 hover:bg-gray-800 hover:text-white"
               }`}
             >
-              <item.icon className="h-5 w-5" />
-              {t(item.i18nKey)}
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <span className="truncate">{t(item.i18nKey)}</span>
+              {item.showBadge && pendingCount > 0 && (
+                <span className="absolute right-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-lg animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
-
-      <div className="border-t border-gray-800 p-3 space-y-1">
-        <button
-          onClick={() => setLang(lang === "fr" ? "wo" : "fr")}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white w-full transition-colors"
-        >
-          <span className="text-lg">{lang === "fr" ? "🇸🇳" : "🇫🇷"}</span>
-          {lang === "fr" ? "Wolof" : "Français"}
-        </button>
-        <button
-          onClick={toggle}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white w-full transition-colors"
-        >
-          {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          {dark ? t("lightMode") : t("darkMode")}
-        </button>
-        <button
-          onClick={logout}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-red-500/10 hover:text-red-400 w-full transition-colors"
-        >
-          <LogOut className="h-5 w-5" />
-          Déconnexion
-        </button>
-      </div>
     </div>
   );
 }

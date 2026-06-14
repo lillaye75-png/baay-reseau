@@ -14,8 +14,8 @@ import {
   Download,
   Calendar,
   CreditCard,
-  ShoppingCart,
   Crown,
+  FileText,
 } from "lucide-react";
 import {
   BarChart,
@@ -39,6 +39,8 @@ interface ReportData {
   credit_cfa: number;
   inventory_value_cfa: number;
   total_products: number;
+  total_expenses_cfa: number;
+  profit_cfa: number;
 }
 
 interface TopProduct {
@@ -53,12 +55,22 @@ export default function ReportsPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [period, setPeriod] = useState("daily");
   const [loading, setLoading] = useState(true);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [isCustom, setIsCustom] = useState(false);
 
-  useEffect(() => {
+  const fetchReport = (p?: string, start?: string, end?: string) => {
     setLoading(true);
+    const params = new URLSearchParams();
+    if (start && end) {
+      params.set("start_date", start);
+      params.set("end_date", end);
+    } else {
+      params.set("period", p || period);
+    }
     Promise.all([
-      api.get(`/reports/sales?period=${period}`),
-      api.get("/reports/top-products"),
+      api.get(`/reports/sales?${params.toString()}`),
+      api.get(`/reports/top-products?${params.toString()}`),
     ])
       .then(([r, tp]) => {
         setReport(r.data);
@@ -66,7 +78,25 @@ export default function ReportsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [period]);
+  };
+
+  useEffect(() => {
+    if (!isCustom) fetchReport(period);
+  }, [period, isCustom]);
+
+  const handleCustomDate = () => {
+    if (!customStart || !customEnd) {
+      showToast("Sélectionnez les deux dates", "error");
+      return;
+    }
+    setIsCustom(true);
+    fetchReport(undefined, customStart, customEnd);
+  };
+
+  const handlePreset = (p: string) => {
+    setIsCustom(false);
+    setPeriod(p);
+  };
 
   const exportCSV = () => {
     if (!report) return;
@@ -74,6 +104,8 @@ export default function ReportsPage() {
       ["Rapport", report.label],
       ["Ventes", report.sales_count],
       ["Revenu total", report.total_revenue_cfa],
+      ["Dépenses", report.total_expenses_cfa],
+      ["Bénéfice net", report.profit_cfa],
       ["Espèces", report.cash_cfa],
       ["Wave", report.wave_cfa],
       ["Orange Money", report.orange_money_cfa],
@@ -89,10 +121,55 @@ export default function ReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `rapport-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `rapport-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("Rapport exporté !");
+    showToast("CSV exporté !");
+  };
+
+  const exportPDF = () => {
+    if (!report) return;
+    const el = document.getElementById("report-content");
+    if (!el) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html><head><title>Rapport ${report.label}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+        h1 { font-size: 22px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+        .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; }
+        .card h3 { margin: 0 0 6px; font-size: 12px; color: #666; text-transform: uppercase; }
+        .card p { margin: 0; font-size: 20px; font-weight: bold; }
+        .footer { margin-top: 30px; font-size: 11px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        @media print { body { padding: 10px; } }
+      </style></head><body>
+      <h1>Rapport - ${report.label}</h1>
+      <p style="color:#666">Généré le ${new Date().toLocaleDateString("fr-SN")}</p>
+      <div class="grid">
+        <div class="card"><h3>Ventes</h3><p>${report.sales_count}</p></div>
+        <div class="card"><h3>Revenu</h3><p>${formatCFA(report.total_revenue_cfa)}</p></div>
+        <div class="card"><h3>Dépenses</h3><p>${formatCFA(report.total_expenses_cfa)}</p></div>
+        <div class="card"><h3>Bénéfice net</h3><p>${formatCFA(report.profit_cfa)}</p></div>
+        <div class="card"><h3>Espèces</h3><p>${formatCFA(report.cash_cfa)}</p></div>
+        <div class="card"><h3>Wave</h3><p>${formatCFA(report.wave_cfa)}</p></div>
+        <div class="card"><h3>Orange Money</h3><p>${formatCFA(report.orange_money_cfa)}</p></div>
+        <div class="card"><h3>Crédit</h3><p>${formatCFA(report.credit_cfa)}</p></div>
+      </div>
+      ${topProducts.length > 0 ? `
+        <h2 style="font-size:16px;margin-top:20px">Top Produits</h2>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f3f4f6"><th style="padding:8px;text-align:left">Produit</th><th style="padding:8px;text-align:right">Qté</th><th style="padding:8px;text-align:right">Revenu</th></tr></thead>
+          <tbody>${topProducts.map(p => `<tr><td style="padding:8px;border-bottom:1px solid #eee">${p.product_name}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #eee">${p.total_qty}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #eee;font-weight:bold">${formatCFA(p.total_revenue)}</td></tr>`).join("")}</tbody>
+        </table>
+      ` : ""}
+      <div class="footer">Naatal ERP — Rapport automatique</div>
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+    showToast("PDF prêt !");
   };
 
   const periods = [
@@ -108,21 +185,27 @@ export default function ReportsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Rapports</h1>
-            <p className="text-sm text-gray-500">Analyse des ventes et du stock</p>
+            <p className="text-sm text-gray-500">Analyse des ventes, dépenses et bénéfices</p>
           </div>
-          <Button variant="secondary" onClick={exportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Exporter CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={exportCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+            <Button variant="secondary" onClick={exportPDF}>
+              <FileText className="h-4 w-4 mr-2" />
+              PDF
+            </Button>
+          </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {periods.map((p) => (
             <button
               key={p.value}
-              onClick={() => setPeriod(p.value)}
+              onClick={() => handlePreset(p.value)}
               className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                period === p.value
+                !isCustom && period === p.value
                   ? "bg-primary-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
@@ -131,6 +214,24 @@ export default function ReportsPage() {
               {p.label}
             </button>
           ))}
+          <div className="flex items-center gap-2 ml-2 border-l pl-2">
+            <input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+            <span className="text-gray-400">à</span>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+            <Button size="sm" onClick={handleCustomDate}>
+              Personnaliser
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -138,7 +239,7 @@ export default function ReportsPage() {
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
           </div>
         ) : report ? (
-          <>
+          <div id="report-content">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="hover:shadow-md transition-shadow">
                 <CardContent className="flex items-center gap-4">
@@ -164,23 +265,25 @@ export default function ReportsPage() {
               </Card>
               <Card className="hover:shadow-md transition-shadow">
                 <CardContent className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-400 to-red-600">
                     <CreditCard className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Crédit</p>
-                    <p className="text-2xl font-bold">{formatCFA(report.credit_cfa)}</p>
+                    <p className="text-sm text-gray-500">Dépenses</p>
+                    <p className="text-2xl font-bold">{formatCFA(report.total_expenses_cfa)}</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="hover:shadow-md transition-shadow">
                 <CardContent className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-400 to-blue-600">
-                    <Package className="h-6 w-6 text-white" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600">
+                    <BarChart3 className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Valeur stock</p>
-                    <p className="text-2xl font-bold">{formatCFA(report.inventory_value_cfa)}</p>
+                    <p className="text-sm text-gray-500">Bénéfice net</p>
+                    <p className={`text-2xl font-bold ${report.profit_cfa >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {formatCFA(report.profit_cfa)}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -250,7 +353,7 @@ export default function ReportsPage() {
                 </CardContent>
               </Card>
             </div>
-          </>
+          </div>
         ) : null}
       </div>
     </DashboardLayout>

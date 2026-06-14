@@ -1,4 +1,4 @@
-const CACHE_NAME = "baay-reseau-v3";
+const CACHE_NAME = "baay-reseau-v4";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -19,14 +19,6 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({ error: "Offline" }), {
-          headers: { "Content-Type": "application/json" },
-          status: 503,
-        });
-      })
-    );
     return;
   }
 
@@ -39,9 +31,23 @@ self.addEventListener("fetch", (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return response;
-        }).catch(() => cached);
+        }).catch(() => cached || new Response("Offline", { status: 503 }));
       })
     );
     return;
   }
+
+  event.respondWith(
+    fetch(event.request).then((response) => {
+      if (response.ok && url.origin === self.location.origin) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+      }
+      return response;
+    }).catch(() => {
+      return caches.match(event.request).then((cached) => {
+        return cached || new Response("Offline", { status: 503, headers: { "Content-Type": "text/html" } });
+      });
+    })
+  );
 });

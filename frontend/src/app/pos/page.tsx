@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { formatCFA } from "@/lib/format";
+import { formatCFA, getImageUrl } from "@/lib/format";
 import api, { Product, Customer } from "@/lib/api";
 import { ShoppingCart, Trash2, Plus, Minus, Search, Package, Receipt, X, ScanBarcode, Camera } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
@@ -211,7 +211,7 @@ export default function POSPage() {
                       {product.image_url && (
                         <div className="mb-2 flex justify-center">
                           <img
-                            src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${product.image_url}`}
+                            src={getImageUrl(product.image_url)}
                             alt={product.name}
                             className="h-16 w-16 rounded-lg object-cover"
                           />

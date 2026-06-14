@@ -113,8 +113,7 @@ async def update_po_status(po_id: str, data: dict, user: User = Depends(get_curr
 
 
 EXPENSE_CATEGORIES = [
-    "Loyer", "Électricité", "Eau", "Internet", "Salaires", "Transport",
-    "Fournitures", "Maintenance", "Marketing", "Autre",
+    "Courant", "Loyer", "Internet", "Transport", "Stock", "Salaire", "Autre",
 ]
 
 

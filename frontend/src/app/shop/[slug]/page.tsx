@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
-import { formatCFA } from "@/lib/format";
+import { formatCFA, getImageUrl } from "@/lib/format";
 import { ShoppingCart, Search, Package, Plus, Minus, Trash2, Store, Phone, MessageSquare } from "lucide-react";
 
 interface StoreInfo {
@@ -160,7 +160,7 @@ function StoreContent() {
                   <Link href={`/shop/${slug}/product/${product.id}`}>
                     {product.image_url ? (
                       <img
-                        src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${product.image_url}`}
+                        src={getImageUrl(product.image_url)}
                         alt={product.name}
                         className="w-full h-40 object-cover"
                       />
@@ -235,7 +235,7 @@ function StoreContent() {
               <MessageSquare className="h-4 w-4" /> WhatsApp
             </a>
           )}
-          <p className="text-xs text-gray-400 mt-3">Baay Réseau — Boutique en ligne</p>
+          <p className="text-xs text-gray-400 mt-3">Naatal ERP Cloud — Boutique en ligne</p>
         </div>
       </footer>
     </div>

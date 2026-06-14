@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
-import { formatCFA } from "@/lib/format";
+import { formatCFA, getImageUrl } from "@/lib/format";
 import api, { Product } from "@/lib/api";
-import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera, FileSpreadsheet } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import { exportProducts } from "@/lib/export";
 import VariantManager from "@/components/products/VariantManager";
@@ -29,6 +29,8 @@ export default function ProductsPage() {
     unit: "piece",
     sku: "",
     barcode: "",
+    image_url: "",
+    category_id: "",
   });
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
   const [adjustQty, setAdjustQty] = useState(0);
@@ -43,7 +45,7 @@ export default function ProductsPage() {
   };
 
   const resetForm = () => {
-    setForm({ name: "", price_cfa: 0, cost_price_cfa: 0, stock_quantity: 0, low_stock_threshold: 5, unit: "piece", sku: "", barcode: "" });
+    setForm({ name: "", price_cfa: 0, cost_price_cfa: 0, stock_quantity: 0, low_stock_threshold: 5, unit: "piece", sku: "", barcode: "", image_url: "", category_id: "" });
     setEditingProduct(null);
     setShowForm(false);
     setImageFile(null);
@@ -60,12 +62,21 @@ export default function ProductsPage() {
       unit: product.unit,
       sku: product.sku || "",
       barcode: product.barcode || "",
+      image_url: product.image_url || "",
+      category_id: product.category_id || "",
     });
     setShowForm(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingProduct) {
+      const duplicate = products.find(p => p.name.toLowerCase() === form.name.toLowerCase());
+      if (duplicate) {
+        showToast("Un produit avec ce nom existe déjà", "error");
+        return;
+      }
+    }
     let productId: string;
     if (editingProduct) {
       await api.put(`/products/${editingProduct.id}`, form);
@@ -137,6 +148,65 @@ export default function ProductsPage() {
     (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const downloadExcelTemplate = () => {
+    const header = "Nom,SKU,Code-barres,Prix de vente (CFA),Prix d'achat (CFA),Stock,Seuil stock bas,Unité,Catégorie,URL Image\n";
+    const existingRows = products.map(p =>
+      `"${p.name}","${p.sku || ""}","${p.barcode || ""}",${p.price_cfa},${p.cost_price_cfa},${p.stock_quantity},${p.low_stock_threshold},"${p.unit}","","${p.image_url || ""}"`
+    ).join("\n");
+    const blankRows = "\n\"Nom du produit\",\"SKU\",\"Code-barres\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"";
+    const csv = header + existingRows + blankRows;
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `template-produits-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("Template téléchargé !");
+  };
+
+  const importProducts = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.split("\n").filter((l) => l.trim() && !l.startsWith("Nom,"));
+    let imported = 0;
+    let errors = 0;
+    for (const line of lines) {
+      const parts = line.match(/(".*?"|[^,]+)/g);
+      if (!parts || parts.length < 5) continue;
+      const [name, sku, barcode, price, cost, stock, threshold, unit, category, image_url] = parts.map((p) => p.replace(/^"|"$/g, "").trim());
+      if (!name || name === "Nom du produit") continue;
+      try {
+        await api.post("/products/", {
+          name,
+          sku: sku || null,
+          barcode: barcode || null,
+          price_cfa: parseInt(price) || 0,
+          cost_price_cfa: parseInt(cost) || 0,
+          stock_quantity: parseInt(stock) || 0,
+          low_stock_threshold: parseInt(threshold) || 5,
+          unit: unit || "piece",
+          image_url: image_url || null,
+        });
+        imported++;
+      } catch { errors++; }
+    }
+    showToast(`${imported} produit(s) importé(s), ${errors} erreur(s)`);
+    loadProducts();
+    e.target.value = "";
+  };
+
+  const categories = [...new Set(products.map(p => (p as any).category_name).filter(Boolean))];
+  const [categoriesList, setCategoriesList] = useState<string[]>([]);
+
+  useEffect(() => {
+    api.get("/products/categories/").then((res) => {
+      setCategoriesList(res.data.map((c: any) => c.name));
+    }).catch(() => {});
+  }, []);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -153,6 +223,17 @@ export default function ProductsPage() {
             <Download className="h-4 w-4 mr-2" />
             Exporter
           </Button>
+          <Button variant="secondary" onClick={downloadExcelTemplate}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Template Excel
+          </Button>
+          <label className="cursor-pointer">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              <Package className="h-4 w-4" />
+              Importer CSV
+            </div>
+            <input type="file" accept=".csv" className="hidden" onChange={importProducts} />
+          </label>
         </div>
 
         {showForm && (
@@ -199,6 +280,37 @@ export default function ProductsPage() {
                     </button>
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={form.category_id}
+                      onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    >
+                      <option value="">Sans catégorie</option>
+                      {categoriesList.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const name = prompt("Nom de la nouvelle catégorie :");
+                        if (!name) return;
+                        try {
+                          const res = await api.post("/products/categories/", { name });
+                          setCategoriesList([...categoriesList, res.data.name]);
+                          setForm({ ...form, category_id: res.data.id });
+                          showToast("Catégorie créée");
+                        } catch { showToast("Erreur", "error"); }
+                      }}
+                      className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
                 <Input
                   label="Prix de vente (CFA)"
                   type="number"
@@ -233,7 +345,7 @@ export default function ProductsPage() {
                           <img src={URL.createObjectURL(imageFile)} alt="Preview" className="h-full w-full object-cover" />
                         ) : editingProduct?.image_url ? (
                           <img
-                            src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${editingProduct.image_url}`}
+                            src={getImageUrl(editingProduct.image_url)}
                             alt="Current" className="h-full w-full object-cover"
                           />
                         ) : (
@@ -242,12 +354,22 @@ export default function ProductsPage() {
                       </div>
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
                     </label>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600">Cliquez pour {editingProduct ? "changer" : "ajouter"} une image</p>
-                      <p className="text-xs text-gray-400">JPG, PNG — max 5 MB</p>
-                      {editingProduct && (
-                        <p className="text-xs text-primary-600 mt-1">Ajoutez plus d&apos;images depuis le tableau des produits (icône image)</p>
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        label="Ou entrer une URL d'image"
+                        value={form.image_url}
+                        onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                        placeholder="https://exemple.com/image.jpg"
+                      />
+                      {form.image_url && (
+                        <img
+                          src={form.image_url}
+                          alt="Preview URL"
+                          className="h-16 w-16 rounded-lg object-cover border"
+                          onError={(e) => (e.currentTarget.style.display = "none")}
+                        />
                       )}
+                      <p className="text-xs text-gray-400">JPG, PNG — max 5 MB ou URL directe</p>
                     </div>
                   </div>
                 </div>
@@ -346,7 +468,7 @@ export default function ProductsPage() {
                         <label className="cursor-pointer flex-shrink-0">
                           {product.image_url ? (
                             <img
-                              src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${product.image_url}`}
+                              src={getImageUrl(product.image_url)}
                               alt={product.name}
                               className="h-10 w-10 rounded-lg object-cover"
                             />

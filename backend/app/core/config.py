@@ -1,8 +1,9 @@
+from typing import List
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    APP_NAME: str = "Baay Réseau"
+    APP_NAME: str = "Naatal ERP Cloud"
     DATABASE_URL: str = "postgresql+asyncpg://baay:baay_secret@localhost:5432/baay_reseau"
     REDIS_URL: str = "redis://localhost:6379"
     SECRET_KEY: str = "change-me-in-production"
@@ -18,6 +19,12 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
+
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
+
+    CORS_ORIGINS: List[str] = ["*"]
 
     class Config:
         env_file = "../.env"

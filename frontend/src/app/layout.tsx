@@ -6,13 +6,13 @@ import ToastContainer from "@/components/ui/Toast";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Baay Réseau - ERP Boutique",
+  title: "Naatal ERP Cloud - ERP Boutique",
   description: "SaaS ERP & POS for Boutique and Tech Retailers in Senegal",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Baay Réseau",
+    title: "Naatal ERP Cloud",
   },
 };
 
