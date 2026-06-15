@@ -157,7 +157,7 @@ export default function LicencesPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={l.tier === "pro" ? "primary" : l.tier === "enterprise" ? "success" : "default"}>
+                      <Badge variant={l.tier === "pro" ? "warning" : l.tier === "enterprise" ? "success" : "default"}>
                         {l.tier}
                       </Badge>
                     </td>
