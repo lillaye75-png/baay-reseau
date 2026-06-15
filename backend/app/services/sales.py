@@ -28,9 +28,11 @@ async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate) -> Sal
     for item_data in data.items:
         item_total = item_data.quantity * item_data.unit_price_cfa
         product_result = await db.execute(
-            select(Product).where(Product.id == item_data.product_id)
+            select(Product).where(Product.id == item_data.product_id, Product.tenant_id == tenant_id)
         )
         product = product_result.scalar_one_or_none()
+        if not product:
+            raise ValueError(f"Product {item_data.product_id} not found or not owned by tenant")
         sale_item = SaleItem(
             sale_id=sale.id,
             product_id=item_data.product_id,
@@ -225,9 +227,11 @@ async def update_sale(db: AsyncSession, tenant_id: str, sale_id: str, data) -> S
     for item_data in data.items:
         item_total = item_data.quantity * item_data.unit_price_cfa
         product_result = await db.execute(
-            select(Product).where(Product.id == item_data.product_id)
+            select(Product).where(Product.id == item_data.product_id, Product.tenant_id == tenant_id)
         )
         product = product_result.scalar_one_or_none()
+        if not product:
+            raise ValueError(f"Product {item_data.product_id} not found or not owned by tenant")
         db.add(SaleItem(
             sale_id=sale.id,
             product_id=item_data.product_id,

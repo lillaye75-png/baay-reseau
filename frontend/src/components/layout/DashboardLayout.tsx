@@ -55,12 +55,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {sidebarOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div
-              className="fixed inset-0 bg-black/50"
-              onClick={() => setSidebarOpen(false)}
-            />
-            <div className="relative z-10 h-full">
+          <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setSidebarOpen(false)}>
+            <div className="fixed inset-0 bg-black/50" />
+            <div className="relative z-10 h-full" onClick={(e) => e.stopPropagation()}>
               <Sidebar />
               <button
                 onClick={() => setSidebarOpen(false)}

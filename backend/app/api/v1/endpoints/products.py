@@ -56,8 +56,10 @@ async def update_category(category_id: str, data: ProductCategoryCreate, user: U
     category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
+    ALLOWED_FIELDS = {"name", "name_wo", "description"}
     for field, value in data.model_dump().items():
-        setattr(category, field, value)
+        if field in ALLOWED_FIELDS:
+            setattr(category, field, value)
     await db.flush()
     return category
 
@@ -109,8 +111,10 @@ async def update_product(product_id: str, data: ProductCreate, user: User = Depe
     product = result.scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    ALLOWED_FIELDS = {"name", "sku", "description", "price_cfa", "cost_price_cfa", "stock_quantity", "unit", "barcode", "category_id", "image_url", "is_active", "is_online"}
     for field, value in data.model_dump().items():
-        setattr(product, field, value)
+        if field in ALLOWED_FIELDS:
+            setattr(product, field, value)
     await db.flush()
     return product
 

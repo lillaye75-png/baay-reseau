@@ -32,8 +32,10 @@ async def update_supplier(supplier_id: str, data: dict, user: User = Depends(get
     supplier = result.scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
+    ALLOWED_FIELDS = {"name", "phone", "email", "address", "notes"}
     for field, value in data.items():
-        setattr(supplier, field, value)
+        if field in ALLOWED_FIELDS:
+            setattr(supplier, field, value)
     await db.flush()
     return supplier
 

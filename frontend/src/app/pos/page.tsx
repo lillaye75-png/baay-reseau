@@ -30,6 +30,7 @@ export default function POSPage() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [lastSale, setLastSale] = useState<Record<string, unknown> | null>(null);
+  const [mobileView, setMobileView] = useState<"products" | "cart">("products");
 
   useEffect(() => {
     api.get("/products/").then((res) => setProducts(res.data));
@@ -76,6 +77,7 @@ export default function POSPage() {
       }
       return [...prev, { product, quantity: 1 }];
     });
+    setMobileView("cart");
   };
 
   const updateQuantity = (productId: string, delta: number) => {
@@ -143,8 +145,36 @@ export default function POSPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex h-[calc(100vh-3rem)] gap-6">
-        <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-3rem)] gap-4 lg:gap-6">
+        <div className="flex lg:hidden items-center gap-2 mb-2">
+          <button
+            onClick={() => setMobileView("products")}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition-all ${
+              mobileView === "products"
+                ? "bg-primary-600 text-white shadow-md"
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            Produits ({filteredProducts.length})
+          </button>
+          <button
+            onClick={() => setMobileView("cart")}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition-all relative ${
+              mobileView === "cart"
+                ? "bg-primary-600 text-white shadow-md"
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            Panier ({totalItems})
+            {totalItems > 0 && mobileView === "products" && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className={`flex-1 overflow-y-auto ${mobileView === "cart" ? "hidden lg:block" : ""}`}>
           <div className="mb-4 space-y-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -239,7 +269,7 @@ export default function POSPage() {
           )}
         </div>
 
-        <div className="w-96 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+        <div className={`w-full lg:w-96 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden ${mobileView === "products" ? "hidden lg:flex" : "flex"}`}>
           <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-5 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">

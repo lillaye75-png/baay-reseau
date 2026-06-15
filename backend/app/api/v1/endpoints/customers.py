@@ -59,8 +59,10 @@ async def update_customer(customer_id: str, data: CustomerCreate, user: User = D
     customer = result.scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+    ALLOWED_FIELDS = {"name", "phone", "email", "address", "notes"}
     for field, value in data.model_dump().items():
-        setattr(customer, field, value)
+        if field in ALLOWED_FIELDS:
+            setattr(customer, field, value)
     await db.flush()
     return customer
 

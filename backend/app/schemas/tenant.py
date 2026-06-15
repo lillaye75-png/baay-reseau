@@ -9,6 +9,13 @@ class TenantCreate(BaseModel):
     email: str | None = None
 
 
+class TenantUpdate(BaseModel):
+    name: str | None = None
+    slug: str | None = None
+    phone: str | None = None
+    email: str | None = None
+
+
 class TenantRead(BaseModel):
     id: str
     name: str

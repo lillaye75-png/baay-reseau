@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
-  const [empForm, setEmpForm] = useState({ name: "", phone: "", password: "" });
+  const [empForm, setEmpForm] = useState({ name: "", phone: "", password: "", role: "employee" });
 
   useEffect(() => {
     api.get("/tenants/me").then((res) => {
@@ -53,7 +53,27 @@ export default function SettingsPage() {
       await api.post("/auth/invite-employee", empForm);
       showToast("Employé ajouté !");
       setShowEmployeeForm(false);
-      setEmpForm({ name: "", phone: "", password: "" });
+      setEmpForm({ name: "", phone: "", password: "", role: "employee" });
+      api.get("/auth/employees").then((res) => setEmployees(res.data));
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    }
+  };
+
+  const handleToggleActive = async (id: string, name: string) => {
+    try {
+      const res = await api.put(`/auth/employees/${id}/toggle-active`);
+      showToast(`${name} ${res.data.is_active ? "activé" : "désactivé"}`);
+      api.get("/auth/employees").then((res) => setEmployees(res.data));
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    }
+  };
+
+  const handleUpdateRole = async (id: string, role: string) => {
+    try {
+      await api.put(`/auth/employees/${id}`, { role });
+      showToast("Rôle mis à jour");
       api.get("/auth/employees").then((res) => setEmployees(res.data));
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur", "error");
@@ -211,6 +231,17 @@ export default function SettingsPage() {
                   <Input label="Nom" value={empForm.name} onChange={(e) => setEmpForm({ ...empForm, name: e.target.value })} required />
                   <Input label="Téléphone" value={empForm.phone} onChange={(e) => setEmpForm({ ...empForm, phone: e.target.value })} required />
                   <Input label="Mot de passe" type="password" value={empForm.password} onChange={(e) => setEmpForm({ ...empForm, password: e.target.value })} required />
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Rôle</label>
+                    <select
+                      value={empForm.role}
+                      onChange={(e) => setEmpForm({ ...empForm, role: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="employee">Employé</option>
+                      <option value="manager">Manager</option>
+                    </select>
+                  </div>
                   <div className="flex items-end gap-2 col-span-2 justify-end">
                     <Button variant="secondary" type="button" onClick={() => setShowEmployeeForm(false)}>Annuler</Button>
                     <Button type="submit">Ajouter</Button>
@@ -231,9 +262,24 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <select
+                          value={emp.role}
+                          onChange={(e) => handleUpdateRole(emp.id, e.target.value)}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs"
+                        >
+                          <option value="employee">Employé</option>
+                          <option value="manager">Manager</option>
+                        </select>
                         <Badge variant={emp.is_active ? "success" : "danger"}>
                           {emp.is_active ? "Actif" : "Inactif"}
                         </Badge>
+                        <button
+                          onClick={() => handleToggleActive(emp.id, emp.name)}
+                          className={`rounded p-1 ${emp.is_active ? "text-orange-600 hover:text-orange-800" : "text-green-600 hover:text-green-800"}`}
+                          title={emp.is_active ? "Désactiver" : "Activer"}
+                        >
+                          {emp.is_active ? "⏸" : "▶"}
+                        </button>
                         <button onClick={() => handleRemoveEmployee(emp.id, emp.name)} className="text-red-600 hover:text-red-800 p-1">
                           <Trash2 className="h-4 w-4" />
                         </button>

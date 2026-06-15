@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.services.billing import PLANS, get_plan_features, create_stripe_customer, create_checkout_session, create_billing_portal, handle_stripe_webhook
@@ -47,7 +47,7 @@ async def get_current_subscription(
 @router.post("/checkout")
 async def create_checkout(
     plan: str,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
     if plan not in PLANS or plan == "free":
@@ -88,7 +88,7 @@ async def create_checkout(
 
 @router.post("/portal")
 async def billing_portal(
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))

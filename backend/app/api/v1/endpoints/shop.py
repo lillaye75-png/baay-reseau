@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.tenant import Tenant
 from app.models.product import Product, ProductCategory
-from app.models.product_image import ProductImage
 from app.models.review import ProductReview
 from app.models.order import Order, OrderItem, StorefrontSettings
 
@@ -58,6 +58,7 @@ async def get_store_products(slug: str, category: str = None, search: str = None
             Product.is_online == True,
             Product.stock_quantity > 0,
         )
+        .options(selectinload(Product.category), selectinload(Product.images))
     )
 
     if category:
@@ -76,15 +77,8 @@ async def get_store_products(slug: str, category: str = None, search: str = None
 
     items = []
     for p in products:
-        cat_name = None
-        if p.category_id:
-            cat_result = await db.execute(select(ProductCategory).where(ProductCategory.id == p.category_id, ProductCategory.tenant_id == tenant.id))
-            cat = cat_result.scalar_one_or_none()
-            cat_name = cat.name if cat else None
-        images_result = await db.execute(
-            select(ProductImage).where(ProductImage.product_id == p.id).order_by(ProductImage.sort_order)
-        )
-        images = [{"id": i.id, "url": i.url, "alt_text": i.alt_text, "is_primary": i.is_primary} for i in images_result.scalars().all()]
+        cat_name = p.category.name if p.category else None
+        images = [{"id": i.id, "url": i.url, "alt_text": i.alt_text, "is_primary": i.is_primary} for i in p.images]
         items.append({
             "id": p.id,
             "name": p.name,
@@ -113,22 +107,14 @@ async def get_store_product(slug: str, product_id: str, db: AsyncSession = Depen
             Product.tenant_id == tenant.id,
             Product.is_active == True,
             Product.is_online == True,
-        )
+        ).options(selectinload(Product.category), selectinload(Product.images))
     )
     product = result.scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    cat_name = None
-    if product.category_id:
-        cat_result = await db.execute(select(ProductCategory).where(ProductCategory.id == product.category_id, ProductCategory.tenant_id == tenant.id))
-        cat = cat_result.scalar_one_or_none()
-        cat_name = cat.name if cat else None
-
-    images_result = await db.execute(
-        select(ProductImage).where(ProductImage.product_id == product.id).order_by(ProductImage.sort_order)
-    )
-    images = [{"id": i.id, "url": i.url, "alt_text": i.alt_text, "is_primary": i.is_primary} for i in images_result.scalars().all()]
+    cat_name = product.category.name if product.category else None
+    images = [{"id": i.id, "url": i.url, "alt_text": i.alt_text, "is_primary": i.is_primary} for i in product.images]
 
     return {
         "id": product.id,
@@ -179,20 +165,22 @@ async def create_store_order(slug: str, data: dict, db: AsyncSession = Depends(g
     order_items = []
     for item_data in items_data:
         product_result = await db.execute(
-            select(Product).where(
+            select(Product)
+            .where(
                 Product.id == item_data["product_id"],
                 Product.tenant_id == tenant.id,
                 Product.is_active == True,
                 Product.is_online == True,
             )
+            .with_for_update()
         )
         product = product_result.scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=400, detail=f"Product {item_data['product_id']} not found")
-        if product.stock_quantity < item_data.get("quantity", 1):
+        qty = item_data.get("quantity", 1)
+        if product.stock_quantity < qty:
             raise HTTPException(status_code=400, detail=f"Insufficient stock for {product.name}")
 
-        qty = item_data.get("quantity", 1)
         item_total = product.price_cfa * qty
         total += item_total
 

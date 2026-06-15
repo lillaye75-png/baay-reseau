@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, func
 
 from app.core.database import async_session
@@ -51,7 +51,7 @@ async def check_low_stock():
 async def send_daily_summary():
     """Send daily sales summary to shop owners."""
     async with async_session() as db:
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + timedelta(days=1)
         
         tenants_result = await db.execute(select(Tenant))
@@ -153,7 +153,7 @@ async def run_scheduled_tasks():
     """Main scheduler loop."""
     while True:
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             if now.hour == 8 and now.minute == 0:
                 try:

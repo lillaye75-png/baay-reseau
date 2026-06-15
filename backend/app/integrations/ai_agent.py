@@ -2,7 +2,16 @@ import json
 from openai import AsyncOpenAI
 from app.core.config import settings
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        if not settings.OPENAI_API_KEY:
+            raise RuntimeError("OPENAI_API_KEY is not configured")
+        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+    return _client
 
 SYSTEM_PROMPT = """You are Naatal ERP Cloud, an AI assistant for Senegalese boutique and tech shop owners.
 
@@ -51,7 +60,7 @@ async def parse_whatsapp_message(message_text: str, tenant_context: dict = None)
     if tenant_context:
         context_note = f"\n\nShop context: {json.dumps(tenant_context)}"
 
-    response = await client.chat.completions.create(
+    response = await _get_client().chat.completions.create(
         model=settings.OPENAI_MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT + context_note},

@@ -6,9 +6,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 RATE_LIMITS = {
     "/api/v1/auth/login": (5, 60),
     "/api/v1/auth/register": (3, 300),
-    "/api/v1/shop/store/": (30, 60),
+    "/api/v1/shop/store/": (10, 60),
 }
 
+ORDER_RATE_LIMIT = (3, 60)
 DEFAULT_LIMIT = (300, 60)
 
 
@@ -27,7 +28,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 limit_key = pattern
                 break
 
-        max_requests, window = RATE_LIMITS.get(limit_key, DEFAULT_LIMIT) if limit_key else DEFAULT_LIMIT
+        if path.startswith("/api/v1/shop/store/") and path.endswith("/order"):
+            max_requests, window = ORDER_RATE_LIMIT
+            limit_key = "order"
+        else:
+            max_requests, window = RATE_LIMITS.get(limit_key, DEFAULT_LIMIT) if limit_key else DEFAULT_LIMIT
+
         key = f"{client_ip}:{limit_key or 'default'}"
 
         now = time.time()

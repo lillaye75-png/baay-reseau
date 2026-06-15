@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingCart, Package, Users, Settings } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Users, BarChart3, Settings } from "lucide-react";
 
 const items = [
   { name: "Accueil", href: "/", icon: LayoutDashboard },
   { name: "POS", href: "/pos", icon: ShoppingCart },
   { name: "Produits", href: "/products", icon: Package },
   { name: "Clients", href: "/customers", icon: Users },
+  { name: "Rapports", href: "/reports", icon: BarChart3 },
   { name: "Plus", href: "/settings", icon: Settings },
 ];
 
@@ -24,7 +25,7 @@ export default function MobileNav() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 text-[10px] font-medium transition-colors ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 text-[10px] font-medium transition-colors ${
                 isActive
                   ? "text-primary-600"
                   : "text-gray-400 hover:text-gray-600"

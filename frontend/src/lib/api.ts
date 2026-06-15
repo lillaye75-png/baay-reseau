@@ -21,9 +21,12 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
+        const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register";
+        if (!isLoginPage) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+        }
       }
     }
     if (error.response?.status === 403 && error.response?.data?.detail?.includes("Licence expirée")) {
