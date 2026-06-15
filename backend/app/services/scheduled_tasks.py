@@ -149,24 +149,37 @@ async def check_credit_reminders():
                 await send_whatsapp_message(tenant.phone, message)
 
 
+async def keep_alive():
+    """Ping self to prevent Render free tier from sleeping."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.get("https://baay-reseau-api.onrender.com/health")
+    except Exception:
+        pass
+
+
 async def run_scheduled_tasks():
     """Main scheduler loop."""
     while True:
         try:
             now = datetime.now(timezone.utc)
-            
+
+            if now.minute % 10 == 0:
+                await keep_alive()
+
             if now.hour == 8 and now.minute == 0:
                 try:
                     await send_daily_summary()
                 except Exception as e:
                     print(f"Error in daily summary: {e}")
-            
+
             if now.hour == 9 and now.minute == 0:
                 try:
                     await check_low_stock()
                 except Exception as e:
                     print(f"Error in low stock check: {e}")
-            
+
             if now.hour == 10 and now.minute == 0:
                 try:
                     await check_credit_reminders()
@@ -174,7 +187,7 @@ async def run_scheduled_tasks():
                     print(f"Error in credit reminders: {e}")
         except Exception as e:
             print(f"Scheduler error: {e}")
-        
+
         await asyncio.sleep(60)
 
 
