@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.supplier import Supplier, PurchaseOrder, PurchaseOrderItem, Expense
 from app.models.product import Product
@@ -41,7 +41,7 @@ async def update_supplier(supplier_id: str, data: dict, user: User = Depends(get
 
 
 @router.delete("/suppliers/{supplier_id}")
-async def delete_supplier(supplier_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_supplier(supplier_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Supplier).where(Supplier.id == supplier_id, Supplier.tenant_id == user.tenant_id))
     supplier = result.scalar_one_or_none()
     if not supplier:
@@ -148,7 +148,7 @@ async def create_expense(data: dict, user: User = Depends(get_current_user), db:
 
 
 @router.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_expense(expense_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Expense).where(Expense.id == expense_id, Expense.tenant_id == user.tenant_id))
     expense = result.scalar_one_or_none()
     if not expense:

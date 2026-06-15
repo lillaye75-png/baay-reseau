@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { Check, Crown, Zap, Building2, ExternalLink, Phone, MessageCircle } from "lucide-react";
+import Input from "@/components/ui/Input";
+import Badge from "@/components/ui/Badge";
+import { Check, Crown, Zap, Building2, ExternalLink, Phone, MessageCircle, Key } from "lucide-react";
 import api from "@/lib/api";
 import { showToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
 
 interface Plan {
   id: string;
@@ -30,9 +33,12 @@ const planColors: Record<string, string> = {
 
 export default function BillingPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [current, setCurrent] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [licenceKey, setLicenceKey] = useState("");
+  const [activating, setActivating] = useState(false);
 
   useEffect(() => {
     api.get("/billing/plans").then((res) => {
@@ -57,6 +63,21 @@ export default function BillingPage() {
       showToast("Erreur", "error");
     }
     setLoading(false);
+  };
+
+  const handleActivateLicence = async () => {
+    if (!licenceKey.trim()) return showToast("Entrez une clé de licence", "error");
+    setActivating(true);
+    try {
+      const res = await api.post("/licences/activate", { key: licenceKey.trim() });
+      showToast(`Licence ${res.data.tier} activée !`);
+      setLicenceKey("");
+      api.get("/billing/current").then((res) => setCurrent(res.data));
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Clé invalide", "error");
+    } finally {
+      setActivating(false);
+    }
   };
 
   const handlePortal = async () => {
@@ -139,6 +160,36 @@ export default function BillingPage() {
             );
           })}
         </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
+                <Key className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Activer une licence</h2>
+                <p className="text-sm text-gray-500">Vous avez une clé ? Activez-la ici pour passer au plan supérieur</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-gray-600">
+              Entrez votre clé de licence pour changer de plan. Vous pouvez activer une licence même si votre période d&apos;essai n&apos;est pas terminée.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={licenceKey}
+                onChange={(e) => setLicenceKey(e.target.value.toUpperCase())}
+                placeholder="BAY-P-XXXX-XXXX-XXXX"
+                className="font-mono"
+              />
+              <Button onClick={handleActivateLicence} disabled={activating}>
+                {activating ? "..." : "Activer"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

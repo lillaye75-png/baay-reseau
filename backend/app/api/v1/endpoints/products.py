@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
 from app.core.database import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.product import Product, ProductCategory
 from app.models.product_image import ProductImage
@@ -65,7 +65,7 @@ async def update_category(category_id: str, data: ProductCategoryCreate, user: U
 
 
 @router.delete("/categories/{category_id}")
-async def delete_category(category_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_category(category_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(ProductCategory).where(ProductCategory.id == category_id, ProductCategory.tenant_id == user.tenant_id)
     )
@@ -120,7 +120,7 @@ async def update_product(product_id: str, data: ProductCreate, user: User = Depe
 
 
 @router.delete("/{product_id}")
-async def delete_product(product_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_product(product_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Product).where(Product.id == product_id, Product.tenant_id == user.tenant_id)
     )
@@ -179,7 +179,7 @@ async def get_product_images(product_id: str, user: User = Depends(get_current_u
 
 
 @router.delete("/images/{image_id}")
-async def delete_product_image(image_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_product_image(image_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ProductImage).where(ProductImage.id == image_id))
     image = result.scalar_one_or_none()
     if not image:

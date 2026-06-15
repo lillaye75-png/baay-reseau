@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.customer import Customer
 from app.models.sale import Sale
@@ -68,7 +68,7 @@ async def update_customer(customer_id: str, data: CustomerCreate, user: User = D
 
 
 @router.delete("/{customer_id}")
-async def delete_customer(customer_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_customer(customer_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Customer).where(Customer.id == customer_id, Customer.tenant_id == user.tenant_id)
     )

@@ -46,7 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("user", JSON.stringify(userData));
     setToken(access_token);
     setUser(userData);
-    router.push("/");
+    if (localStorage.getItem("wizard_needed")) {
+      router.push("/wizard");
+    } else {
+      router.push("/");
+    }
   };
 
   const register = async (name: string, phone: string, password: string) => {
@@ -54,9 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { access_token, user: userData } = res.data;
     localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("wizard_needed", "1");
     setToken(access_token);
     setUser(userData);
-    router.push("/");
+    router.push("/wizard");
   };
 
   const logout = () => {
