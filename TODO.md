@@ -1,6 +1,6 @@
 # Naatal ERP Cloud — TODO Complet
 
-> Dernière mise à jour : 2026-06-14
+> Dernière mise à jour : 2026-06-15
 > Projet : E:\movie laye sow\project\SaaS ERP for Boutique\baay-reseau
 > Compte test : 📱 771234567 / 🔑 admin123 (owner, licence 60j)
 
@@ -22,6 +22,13 @@
 - [x] Rate limiting : 300 req/min (5 pour login)
 - [x] CORS : allow all origins
 - [x] Licence : date expiration, check dans auth, 403 si expirée
+
+### 12. Bug Fixes (2026-06-15)
+- [x] **Fix 500 auth errors** : `LoyaltyPoint.customer` avait `back_populates="loyalty_points"` au lieu de `"loyalty_history"` — cassait `configure_mappers()` de SQLAlchemy au premier appel DB
+- [x] **Fix postgres:// URL** : Render fournit des URLs `postgres://` mais le code ne gérait que `postgresql://` — ajout du support `postgres://` + gestion flexible de `sslmode`
+- [x] **Fix duplicate require_owner** : fonction définie 2× dans `deps.py`
+- [x] **Fix DB éphémère** : render.yaml passait de SQLite (perdu au restart) à PostgreSQL Render gratuit via `fromDatabase`
+- [x] Push GitHub commit `d159605`
 
 ### 2. Frontend (Next.js 14 + Tailwind)
 - [x] 24 pages : login, register, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, categories, settings, whatsapp, storefront, shop/*
@@ -98,19 +105,19 @@
 
 ### 11. Infrastructure
 - [x] Docker Compose
-- [x] SQLite (dev) / PostgreSQL (prod)
+- [x] SQLite (dev) / PostgreSQL Render gratuit (prod)
 - [x] Alembic migrations
 - [x] Seed script (20 produits, 5 clients, 1 admin)
 - [x] Backfill script (product_name dans sale_items)
+- [x] Render deploy : backend + frontend + PostgreSQL baay-db
 
 ---
 
 ## 🔲 CE QUI N'EST PAS ENCORE FAIT
 
 ### Priorité Haute
-- [ ] **Deploy Vercel** (frontend) + **Render** (backend)
-- [ ] **Intégrer Supabase** (auth + PostgreSQL) — remplacer SQLite
-- [ ] **Google OAuth** via Supabase
+- [x] **Deploy Vercel** (frontend) + **Render** (backend) — déployé, backend sur baay-reseau-api.onrender.com
+- [ ] **Intégrer Google OAuth** (via Supabase ou Render PostgreSQL)
 - [ ] **Real-time subscriptions** (Firestore/WebSocket pour dashboard live)
 - [ ] **Push notifications** (FCM pour mobile)
 - [ ] **Multi-device** : sync entre appareils
@@ -145,6 +152,11 @@
 - [ ] Hot-reload peut rater après changements Python
 - [ ] Import CSV : pas de validation avancée (format attendu exact)
 
+### Bugs corrigés (2026-06-15)
+- [x] 500 sur login/register → relationship `back_populates` cassé + DB éphémère SQLite
+- [x] 403 sur dashboard/sales → licence expirée pour les anciens comptes (créés avant fix DB)
+- [x] 503 sur /register → service Render free tier en sleep (à mitiguer avec keep-alive)
+
 ---
 
 ## 📁 Fichiers Backup
@@ -156,3 +168,5 @@
 - 8GB RAM machine — utiliser `NODE_OPTIONS=--max-old-space-size=4096` pour les builds
 - Le premier login nécessite internet (puis offline sur LAN)
 - Toutes les tables sont UUID + tenant_id pour l'isolation multi-tenant
+- **2026-06-15** : Le backend Render free tier se met en sleep après 15min d'inactivité — le 503 sur /register vient de là. Solution : upgrader ou ajouter un cron keep-alive
+- **2026-06-15** : Les comptes créés avant le fix DB PostgreSQL n'existent plus — les utilisateurs doivent se réinscrire
