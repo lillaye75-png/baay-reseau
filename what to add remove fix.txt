@@ -9,33 +9,74 @@ fix when creating employees account the shop owner can assigne the there permiss
 add in settings page add backup restore delete data only admin shop owner can do it
 fix also the sibebar like there are so much button so there's some button will be moved to another location example : shop online - whatsapp bot, categorie must be hiden cause users can create categorie while adding new product, facture must be moved in ventes cause theye almost have the same role well this is a proposion 
 fix why the sidebar on mobile experience use whem clicking on the hamburger and click on any button it will close the hamburger but even touching the side or anywhere on the entire screen it will not close the hamburger sidebar fix it
-fix while fielling you company information it will not save at the end an error message will be occured : 471-4e457cfa4a2586b7.js:6 
- PUT https://baay-reseau-api.onrender.com/api/v1/tenants/fdd194bb-f9ff-4cd2-a8e4-f977cb0408a7 422 (Unprocessable Content)
-(anonyme)	@	471-4e457cfa4a2586b7.js:6
-xhr	@	471-4e457cfa4a2586b7.js:6
-tg	@	471-4e457cfa4a2586b7.js:6
-Promise.then		
-_request	@	471-4e457cfa4a2586b7.js:6
-request	@	471-4e457cfa4a2586b7.js:6
-(anonyme)	@	471-4e457cfa4a2586b7.js:6
-(anonyme)	@	471-4e457cfa4a2586b7.js:6
-T	@	page-163b95787e88943a.js:31
-a_	@	fd9d1056-56347edfdb798bde.js:1
-aR	@	fd9d1056-56347edfdb798bde.js:1
-(anonyme)	@	fd9d1056-56347edfdb798bde.js:1
-sF	@	fd9d1056-56347edfdb798bde.js:1
-sM	@	fd9d1056-56347edfdb798bde.js:1
-(anonyme)	@	fd9d1056-56347edfdb798bde.js:1
-o4	@	fd9d1056-56347edfdb798bde.js:1
-iV	@	fd9d1056-56347edfdb798bde.js:1
-sU	@	fd9d1056-56347edfdb798bde.js:1
-uR	@	fd9d1056-56347edfdb798bde.js:1
-uM	@	fd9d1056-56347edfdb798bde.js:1
-
-﻿
+also i forget fix when on mobile experience use when goes to pos/sales it will only display cart but not product to selecting any product to fix you have to enable on your current navigator mode computer to have full mode view also for the downbar add add rapports fix it
 
  
-when creating new product at the end to save it here's an error message : Uncaught (in promise) AxiosError: Request failed with status code 500
+when creating new product at the end to save it here's an error message : 
+baay-reseau-api.onrender.com/api/v1/dashboard/summary:1  Failed to load resource: the server responded with a status of 403 ()
+baay-reseau-api.onrender.com/api/v1/sales/stats/weekly:1  Failed to load resource: the server responded with a status of 403 ()
+instrument.a92644615fa504da204f.js?dpl=dpl_7K4pWbS5wRozZy8SuQasvYqAxfYT?dpl=dpl_7K4pWbS5wRozZy8SuQasvYqAxfYT:2 [DEPRECATED] Default export is deprecated. Instead use `import { create } from 'zustand'`.
+f @ instrument.a92644615fa504da204f.js?dpl=dpl_7K4pWbS5wRozZy8SuQasvYqAxfYT?dpl=dpl_7K4pWbS5wRozZy8SuQasvYqAxfYT:2
+525.f4b6cf70bcb4c27ab588.js?dpl=dpl_7K4pWbS5wRozZy8SuQasvYqAxfYT:1 Uncaught InvalidNodeTypeError: Failed to execute 'selectNode' on 'Range': the given Node has no parent.
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+baay-reseau-api.onrender.com/api/v1/products/:1  Failed to load resource: the server responded with a status of 500 ()
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+products:1  Failed to load resource: the server responded with a status of 503 ()
+471-4e457cfa4a2586b7.js:6  POST https://baay-reseau-api.onrender.com/api/v1/products/ 500 (Internal Server Error)
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+G @ page-812bc99f995e5577.js:26
+a_ @ fd9d1056-56347edfdb798bde.js:1
+aR @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+sF @ fd9d1056-56347edfdb798bde.js:1
+sM @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+o4 @ fd9d1056-56347edfdb798bde.js:1
+iV @ fd9d1056-56347edfdb798bde.js:1
+sU @ fd9d1056-56347edfdb798bde.js:1
+uR @ fd9d1056-56347edfdb798bde.js:1
+uM @ fd9d1056-56347edfdb798bde.js:1
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
     at eJ (471-4e457cfa4a2586b7.js:6:43043)
     at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
 eJ @ 471-4e457cfa4a2586b7.js:6
@@ -61,7 +102,430 @@ iV @ fd9d1056-56347edfdb798bde.js:1
 sU @ fd9d1056-56347edfdb798bde.js:1
 uR @ fd9d1056-56347edfdb798bde.js:1
 uM @ fd9d1056-56347edfdb798bde.js:1
-also i forget fix when on mobile experience use when goes to pos/sales it will only display cart but not product to selecting any product to fix you have to enable on your current navigator mode computer to have full mode view also for the downbar add add rapports fix it
+471-4e457cfa4a2586b7.js:6  POST https://baay-reseau-api.onrender.com/api/v1/products/ 500 (Internal Server Error)
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+G @ page-812bc99f995e5577.js:26
+a_ @ fd9d1056-56347edfdb798bde.js:1
+aR @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+sF @ fd9d1056-56347edfdb798bde.js:1
+sM @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+o4 @ fd9d1056-56347edfdb798bde.js:1
+iV @ fd9d1056-56347edfdb798bde.js:1
+sU @ fd9d1056-56347edfdb798bde.js:1
+uR @ fd9d1056-56347edfdb798bde.js:1
+uM @ fd9d1056-56347edfdb798bde.js:1
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+eJ @ 471-4e457cfa4a2586b7.js:6
+g @ 471-4e457cfa4a2586b7.js:6
+XMLHttpRequest.send
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+G @ page-812bc99f995e5577.js:26
+a_ @ fd9d1056-56347edfdb798bde.js:1
+aR @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+sF @ fd9d1056-56347edfdb798bde.js:1
+sM @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+o4 @ fd9d1056-56347edfdb798bde.js:1
+iV @ fd9d1056-56347edfdb798bde.js:1
+sU @ fd9d1056-56347edfdb798bde.js:1
+uR @ fd9d1056-56347edfdb798bde.js:1
+uM @ fd9d1056-56347edfdb798bde.js:1
+471-4e457cfa4a2586b7.js:6  POST https://baay-reseau-api.onrender.com/api/v1/products/ 500 (Internal Server Error)
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+G @ page-812bc99f995e5577.js:26
+a_ @ fd9d1056-56347edfdb798bde.js:1
+aR @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+sF @ fd9d1056-56347edfdb798bde.js:1
+sM @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+o4 @ fd9d1056-56347edfdb798bde.js:1
+iV @ fd9d1056-56347edfdb798bde.js:1
+sU @ fd9d1056-56347edfdb798bde.js:1
+uR @ fd9d1056-56347edfdb798bde.js:1
+uM @ fd9d1056-56347edfdb798bde.js:1
+page-812bc99f995e5577.js:26 Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+eJ @ 471-4e457cfa4a2586b7.js:6
+g @ 471-4e457cfa4a2586b7.js:6
+XMLHttpRequest.send
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+G @ page-812bc99f995e5577.js:26
+a_ @ fd9d1056-56347edfdb798bde.js:1
+aR @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+sF @ fd9d1056-56347edfdb798bde.js:1
+sM @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+o4 @ fd9d1056-56347edfdb798bde.js:1
+iV @ fd9d1056-56347edfdb798bde.js:1
+sU @ fd9d1056-56347edfdb798bde.js:1
+uR @ fd9d1056-56347edfdb798bde.js:1
+uM @ fd9d1056-56347edfdb798bde.js:1
+471-4e457cfa4a2586b7.js:6  GET https://baay-reseau-api.onrender.com/api/v1/storefront/orders net::ERR_CONNECTION_CLOSED
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+tv.<computed> @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+e @ 356-5ad5060a980e765c.js:1
+setInterval
+(anonyme) @ 356-5ad5060a980e765c.js:1
+aW @ fd9d1056-56347edfdb798bde.js:1
+oe @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+id @ fd9d1056-56347edfdb798bde.js:1
+o @ fd9d1056-56347edfdb798bde.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+x @ 23-b8502ff4515f9b80.js:1
+t.unstable_scheduleCallback @ 23-b8502ff4515f9b80.js:1
+nS @ fd9d1056-56347edfdb798bde.js:1
+nw @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+x @ 23-b8502ff4515f9b80.js:1
+t.unstable_scheduleCallback @ 23-b8502ff4515f9b80.js:1
+nS @ fd9d1056-56347edfdb798bde.js:1
+nw @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+471-4e457cfa4a2586b7.js:6  GET https://baay-reseau-api.onrender.com/api/v1/products/ net::ERR_CONNECTION_CLOSED
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+tv.<computed> @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+d @ 356-5ad5060a980e765c.js:1
+setInterval
+(anonyme) @ 356-5ad5060a980e765c.js:1
+aW @ fd9d1056-56347edfdb798bde.js:1
+oe @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+or @ fd9d1056-56347edfdb798bde.js:1
+ol @ fd9d1056-56347edfdb798bde.js:1
+id @ fd9d1056-56347edfdb798bde.js:1
+o @ fd9d1056-56347edfdb798bde.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+T @ 23-b8502ff4515f9b80.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+x @ 23-b8502ff4515f9b80.js:1
+t.unstable_scheduleCallback @ 23-b8502ff4515f9b80.js:1
+nS @ fd9d1056-56347edfdb798bde.js:1
+nw @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+postMessage
+l @ 23-b8502ff4515f9b80.js:1
+x @ 23-b8502ff4515f9b80.js:1
+t.unstable_scheduleCallback @ 23-b8502ff4515f9b80.js:1
+nS @ fd9d1056-56347edfdb798bde.js:1
+nw @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
 
 
 
@@ -119,3 +583,45 @@ All fixes are live. Go test:
 4. Mobile bottom nav → Rapports
 5. Settings → Employee → role selector, activate/deactivate
 6. Order delivered → appears in reports
+
+Option 1: Render Dashboard (easiest)
+1. Go to https://dashboard.render.com
+2. Click your baay-db database
+3. Go to "Connect" tab → copy the External Database URL
+4. Go to "Data" tab → browse tables, run SQL queries directly
+Option 2: TablePlus (desktop app — like Firebase console)
+1. Download https://tableplus.com (free)
+2. Click "Create a new connection" → PostgreSQL
+3. Paste your Render database connection details:
+   - Host: dpg-... render hostname
+   - Port: 5432
+   - Database: baay_reseau
+   - User: baay
+   - Password: baay_secret
+4. Browse all tables, run queries, export data — just like Firebase console
+Option 3: Delete a specific user account via SQL
+Connect to the database and run:
+DELETE FROM users WHERE phone = '771234567';
+DELETE FROM users WHERE phone = '776621410';
+Your support contact info (now in Settings + Billing pages):
+- 📱 Phone: +221 77 662 14 10
+- 💬 WhatsApp: +221 70 837 21 27  
+- 📧 Email: layedevops@gmail.com
+
+You're in! Now you can manage your database like Firebase. Here's what you can do:
+To delete a user account:
+1. Click the users table
+2. Right-click the row you want to delete → Delete
+3. Or run SQL: DELETE FROM users WHERE phone = '771234567';
+To add a user account:
+1. Click users table → click the + button
+2. Fill in: id (UUID), tenant_id, name, phone, password_hash, role, is_active
+Key tables you'll see:
+- users — accounts
+- tenants — companies
+- products — inventory
+- customers — clients
+- sales — transactions
+- orders — online orders
+- expenses — costs
+You can double-click any cell to edit it, just like a spreadsheet. What do you want to do first?

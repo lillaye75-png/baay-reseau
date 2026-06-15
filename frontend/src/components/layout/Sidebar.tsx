@@ -18,6 +18,7 @@ import {
   ShoppingBag,
   Crown,
   Wallet,
+  Key,
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -35,11 +36,21 @@ const navigation = [
   { name: "Paramètres", href: "/settings", icon: Settings, i18nKey: "settings" },
 ];
 
+const superAdminNav = [
+  { name: "Licences", href: "/licences", icon: Key, i18nKey: "licences" },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { t } = useI18n();
   const [pendingCount, setPendingCount] = useState(0);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user?.phone && ["776621410", "708372127"].includes(user.phone)) {
+      setIsSuperAdmin(true);
+    }
 
   useEffect(() => {
     const fetchPending = () => {
@@ -94,6 +105,23 @@ export default function Sidebar() {
                   {pendingCount}
                 </span>
               )}
+            </Link>
+          );
+        })}
+        {isSuperAdmin && superAdminNav.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-yellow-600 text-white shadow-md shadow-yellow-600/25"
+                  : "text-yellow-400 hover:bg-gray-800 hover:text-yellow-300"
+              }`}
+            >
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <span className="truncate">{t(item.i18nKey) || item.name}</span>
             </Link>
           );
         })}

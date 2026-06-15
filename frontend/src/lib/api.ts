@@ -29,11 +29,9 @@ api.interceptors.response.use(
         }
       }
     }
-    if (error.response?.status === 403 && error.response?.data?.detail?.includes("Licence expirée")) {
+    if (error.response?.status === 403 && error.response?.data?.detail === "licence_expired") {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login?expired=1";
+        window.location.href = "/activate";
       }
     }
     return Promise.reject(error);

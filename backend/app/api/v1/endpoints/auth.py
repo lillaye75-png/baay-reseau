@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from datetime import datetime, timezone, timedelta
 
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token
@@ -18,7 +19,13 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Phone number already registered")
 
-    tenant = Tenant(name="My Shop", slug=f"shop-{data.phone}", phone=data.phone)
+    tenant = Tenant(
+        name="My Shop",
+        slug=f"shop-{data.phone}",
+        phone=data.phone,
+        subscription_plan="free",
+        license_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+    )
     db.add(tenant)
     await db.flush()
 

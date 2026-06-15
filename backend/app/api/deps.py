@@ -35,9 +35,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
         if expires < datetime.now(timezone.utc):
+            from app.models.licence import Licence
+            async with async_session() as db:
+                lic_result = await db.execute(
+                    select(Licence).where(Licence.assigned_to == user.tenant_id, Licence.is_active == True)
+                )
+                active_lic = lic_result.scalar_one_or_none()
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Licence expirée. Contactez l'administrateur."
+                detail="licence_expired"
             )
 
     return user
