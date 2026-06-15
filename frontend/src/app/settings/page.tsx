@@ -31,6 +31,7 @@ export default function SettingsPage() {
   const [savingApis, setSavingApis] = useState(false);
 
   const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
 
   useEffect(() => {
     api.get("/tenants/me").then((res) => {
@@ -124,14 +125,16 @@ export default function SettingsPage() {
   const handleBackup = async () => {
     setBackupLoading(true);
     try {
-      const res = await api.get("/settings/backup", { responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const res = await api.get("/settings/backup", { responseType: "json" });
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", `baay-backup-${new Date().toISOString().slice(0, 10)}.json`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
       showToast("Backup téléchargé !");
     } catch (err: any) {
       showToast("Erreur lors du backup", "error");
@@ -140,12 +143,36 @@ export default function SettingsPage() {
     }
   };
 
+  const handleRestore = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setRestoreLoading(true);
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const res = await api.post("/settings/restore", data);
+        showToast(`Restauré ! ${res.data.products || 0} produits, ${res.data.customers || 0} clients`);
+        window.location.reload();
+      } catch (err: any) {
+        showToast(err.response?.data?.detail || "Erreur lors de la restauration", "error");
+      } finally {
+        setRestoreLoading(false);
+      }
+    };
+    input.click();
+  };
+
   const handleDeleteAllData = async () => {
     if (confirm("⚠️ ATTENTION : Cette action est IRRÉVERSIBLE.\n\nSupprimer TOUS les produits, clients, ventes, commandes ?")) {
       if (confirm("Dernière chance : vraiment tout supprimer ?")) {
         try {
           await api.delete("/settings/data");
           showToast("Toutes les données ont été supprimées", "warning");
+          window.location.reload();
         } catch (err: any) {
           showToast(err.response?.data?.detail || "Erreur", "error");
         }
@@ -407,20 +434,62 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold">Données</h2>
-                    <p className="text-sm text-gray-500">Backup et gestion des données</p>
+                    <p className="text-sm text-gray-500">Backup, restauration et gestion</p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button variant="secondary" onClick={handleBackup} disabled={backupLoading} className="w-full justify-start">
                   <Download className="h-4 w-4 mr-2" />
-                  {backupLoading ? "Préparation..." : "Télécharger un backup"}
+                  {backupLoading ? "Préparation..." : "Télécharger un backup (JSON)"}
+                </Button>
+                <Button variant="secondary" onClick={handleRestore} disabled={restoreLoading} className="w-full justify-start">
+                  <Upload className="h-4 w-4 mr-2" />
+                  {restoreLoading ? "Restauration..." : "Restaurer un backup"}
                 </Button>
                 <Button variant="secondary" onClick={handleDeleteAllData} className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
                   <Trash2 className="h-4 w-4 mr-2" />
                   Supprimer toutes les données
                 </Button>
                 <p className="text-xs text-gray-400">⚠️ La suppression est irréversible. Faites un backup d&apos;abord.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100">
+                    <Store className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Boutique en ligne</h2>
+                    <p className="text-sm text-gray-500">Configurez votre boutique publique</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="rounded-lg bg-gray-50 p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Lien de votre boutique</span>
+                    <a
+                      href={`/shop/${shopSlug || "..."}`}
+                      target="_blank"
+                      className="text-sm font-medium text-primary-600 hover:underline"
+                    >
+                      Voir →
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Page d&apos;administration</span>
+                    <a
+                      href="/storefront"
+                      target="_blank"
+                      className="text-sm font-medium text-primary-600 hover:underline"
+                    >
+                      Configurer →
+                    </a>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </>
