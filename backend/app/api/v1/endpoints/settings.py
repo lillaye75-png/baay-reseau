@@ -83,38 +83,55 @@ async def restore_data(data: dict, user: User = Depends(require_owner), db: Asyn
 async def delete_all_data(user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     tid = user.tenant_id
 
-    customer_ids = [c.id for c in (await db.execute(select(Customer.id).where(Customer.tenant_id == tid))).scalars().all()]
-    sale_ids = [s.id for s in (await db.execute(select(Sale.id).where(Sale.tenant_id == tid))).scalars().all()]
-    order_ids = [o.id for o in (await db.execute(select(Order.id).where(Order.tenant_id == tid))).scalars().all()]
-    product_ids = [p.id for p in (await db.execute(select(Product.id).where(Product.tenant_id == tid))).scalars().all()]
-    po_ids = [p.id for p in (await db.execute(select(PurchaseOrder.id).where(PurchaseOrder.tenant_id == tid))).scalars().all()]
+    try:
+        from app.models.product import ProductVariant, ProductVariantOption
+        from app.models.review import ProductReview
 
-    if customer_ids:
-        tab_ids = [t.id for t in (await db.execute(select(CreditTab.id).where(CreditTab.customer_id.in_(customer_ids)))).scalars().all()]
-        if tab_ids:
-            await db.execute(sa_del(CreditTabEntry).where(CreditTabEntry.tab_id.in_(tab_ids)))
-            await db.execute(sa_del(CreditTab).where(CreditTab.id.in_(tab_ids)))
-        await db.execute(sa_del(Customer).where(Customer.id.in_(customer_ids)))
+        customer_ids = [c.id for c in (await db.execute(select(Customer.id).where(Customer.tenant_id == tid))).scalars().all()]
+        sale_ids = [s.id for s in (await db.execute(select(Sale.id).where(Sale.tenant_id == tid))).scalars().all()]
+        order_ids = [o.id for o in (await db.execute(select(Order.id).where(Order.tenant_id == tid))).scalars().all()]
+        product_ids = [p.id for p in (await db.execute(select(Product.id).where(Product.tenant_id == tid))).scalars().all()]
+        po_ids = [p.id for p in (await db.execute(select(PurchaseOrder.id).where(PurchaseOrder.tenant_id == tid))).scalars().all()]
 
-    if sale_ids:
-        await db.execute(sa_del(SaleItem).where(SaleItem.sale_id.in_(sale_ids)))
-        await db.execute(sa_del(Sale).where(Sale.id.in_(sale_ids)))
+        if customer_ids:
+            tab_ids = [t.id for t in (await db.execute(select(CreditTab.id).where(CreditTab.customer_id.in_(customer_ids)))).scalars().all()]
+            if tab_ids:
+                await db.execute(sa_del(CreditTabEntry).where(CreditTabEntry.tab_id.in_(tab_ids)))
+                await db.execute(sa_del(CreditTab).where(CreditTab.id.in_(tab_ids)))
+            await db.execute(sa_del(Customer).where(Customer.id.in_(customer_ids)))
 
-    if order_ids:
-        await db.execute(sa_del(OrderItem).where(OrderItem.order_id.in_(order_ids)))
-        await db.execute(sa_del(Order).where(Order.id.in_(order_ids)))
+        if sale_ids:
+            await db.execute(sa_del(SaleItem).where(SaleItem.sale_id.in_(sale_ids)))
+            await db.execute(sa_del(Sale).where(Sale.id.in_(sale_ids)))
 
-    if product_ids:
-        await db.execute(sa_del(ProductImage).where(ProductImage.product_id.in_(product_ids)))
-        await db.execute(sa_del(Product).where(Product.id.in_(product_ids)))
+        if order_ids:
+            await db.execute(sa_del(OrderItem).where(OrderItem.order_id.in_(order_ids)))
+            await db.execute(sa_del(Order).where(Order.id.in_(order_ids)))
 
-    if po_ids:
-        await db.execute(sa_del(PurchaseOrderItem).where(PurchaseOrderItem.purchase_order_id.in_(po_ids)))
-        await db.execute(sa_del(PurchaseOrder).where(PurchaseOrder.id.in_(po_ids)))
+        if product_ids:
+            await db.execute(sa_del(ProductImage).where(ProductImage.product_id.in_(product_ids)))
+            try:
+                await db.execute(sa_del(ProductReview).where(ProductReview.product_id.in_(product_ids)))
+            except Exception:
+                pass
+            try:
+                await db.execute(sa_del(ProductVariantOption).where(ProductVariantOption.product_id.in_(product_ids)))
+                await db.execute(sa_del(ProductVariant).where(ProductVariant.product_id.in_(product_ids)))
+            except Exception:
+                pass
+            await db.execute(sa_del(Product).where(Product.id.in_(product_ids)))
 
-    await db.execute(sa_del(ProductCategory).where(ProductCategory.tenant_id == tid))
-    await db.execute(sa_del(Supplier).where(Supplier.tenant_id == tid))
-    await db.execute(sa_del(Expense).where(Expense.tenant_id == tid))
+        if po_ids:
+            await db.execute(sa_del(PurchaseOrderItem).where(PurchaseOrderItem.purchase_order_id.in_(po_ids)))
+            await db.execute(sa_del(PurchaseOrder).where(PurchaseOrder.id.in_(po_ids)))
 
-    await db.flush()
+        await db.execute(sa_del(ProductCategory).where(ProductCategory.tenant_id == tid))
+        await db.execute(sa_del(Supplier).where(Supplier.tenant_id == tid))
+        await db.execute(sa_del(Expense).where(Expense.tenant_id == tid))
+
+        await db.flush()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
     return {"status": "deleted", "message": "Toutes les données ont été supprimées"}
