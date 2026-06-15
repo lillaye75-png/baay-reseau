@@ -72,6 +72,17 @@ async def log_requests(request: Request, call_next):
 @app.on_event("startup")
 async def on_startup():
     logger.info("Naatal ERP Cloud API starting up...")
+
+    try:
+        from alembic.config import Config
+        from alembic import command as alembic_command
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+        alembic_command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations applied")
+    except Exception as e:
+        logger.error(f"Migration error: {e}")
+
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
