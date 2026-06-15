@@ -81,57 +81,28 @@ async def restore_data(data: dict, user: User = Depends(require_owner), db: Asyn
 
 @router.delete("/data")
 async def delete_all_data(user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
     tid = user.tenant_id
+    p = {"tid": tid}
 
-    try:
-        from app.models.product import ProductVariant, ProductVariantOption
-        from app.models.review import ProductReview
+    await db.execute(text("DELETE FROM credit_tab_entries WHERE tab_id IN (SELECT ct.id FROM credit_tabs ct JOIN customers c ON ct.customer_id=c.id WHERE c.tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM credit_tabs WHERE customer_id IN (SELECT id FROM customers WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM loyalty_points WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM sales WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM orders WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM product_images WHERE product_id IN (SELECT id FROM products WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM product_reviews WHERE product_id IN (SELECT id FROM products WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM product_variants WHERE product_id IN (SELECT id FROM products WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM product_variant_options WHERE product_id IN (SELECT id FROM products WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM products WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM product_categories WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM customers WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM purchase_order_items WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE tenant_id=:tid)"), p)
+    await db.execute(text("DELETE FROM purchase_orders WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM suppliers WHERE tenant_id=:tid"), p)
+    await db.execute(text("DELETE FROM expenses WHERE tenant_id=:tid"), p)
 
-        customer_ids = [c.id for c in (await db.execute(select(Customer.id).where(Customer.tenant_id == tid))).scalars().all()]
-        sale_ids = [s.id for s in (await db.execute(select(Sale.id).where(Sale.tenant_id == tid))).scalars().all()]
-        order_ids = [o.id for o in (await db.execute(select(Order.id).where(Order.tenant_id == tid))).scalars().all()]
-        product_ids = [p.id for p in (await db.execute(select(Product.id).where(Product.tenant_id == tid))).scalars().all()]
-        po_ids = [p.id for p in (await db.execute(select(PurchaseOrder.id).where(PurchaseOrder.tenant_id == tid))).scalars().all()]
-
-        if customer_ids:
-            tab_ids = [t.id for t in (await db.execute(select(CreditTab.id).where(CreditTab.customer_id.in_(customer_ids)))).scalars().all()]
-            if tab_ids:
-                await db.execute(sa_del(CreditTabEntry).where(CreditTabEntry.tab_id.in_(tab_ids)))
-                await db.execute(sa_del(CreditTab).where(CreditTab.id.in_(tab_ids)))
-            await db.execute(sa_del(Customer).where(Customer.id.in_(customer_ids)))
-
-        if sale_ids:
-            await db.execute(sa_del(SaleItem).where(SaleItem.sale_id.in_(sale_ids)))
-            await db.execute(sa_del(Sale).where(Sale.id.in_(sale_ids)))
-
-        if order_ids:
-            await db.execute(sa_del(OrderItem).where(OrderItem.order_id.in_(order_ids)))
-            await db.execute(sa_del(Order).where(Order.id.in_(order_ids)))
-
-        if product_ids:
-            await db.execute(sa_del(ProductImage).where(ProductImage.product_id.in_(product_ids)))
-            try:
-                await db.execute(sa_del(ProductReview).where(ProductReview.product_id.in_(product_ids)))
-            except Exception:
-                pass
-            try:
-                await db.execute(sa_del(ProductVariantOption).where(ProductVariantOption.product_id.in_(product_ids)))
-                await db.execute(sa_del(ProductVariant).where(ProductVariant.product_id.in_(product_ids)))
-            except Exception:
-                pass
-            await db.execute(sa_del(Product).where(Product.id.in_(product_ids)))
-
-        if po_ids:
-            await db.execute(sa_del(PurchaseOrderItem).where(PurchaseOrderItem.purchase_order_id.in_(po_ids)))
-            await db.execute(sa_del(PurchaseOrder).where(PurchaseOrder.id.in_(po_ids)))
-
-        await db.execute(sa_del(ProductCategory).where(ProductCategory.tenant_id == tid))
-        await db.execute(sa_del(Supplier).where(Supplier.tenant_id == tid))
-        await db.execute(sa_del(Expense).where(Expense.tenant_id == tid))
-
-        await db.flush()
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
+    await db.flush()
     return {"status": "deleted", "message": "Toutes les données ont été supprimées"}
