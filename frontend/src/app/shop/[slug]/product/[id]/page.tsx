@@ -27,6 +27,8 @@ interface Product {
   category_name: string | null;
 }
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 function ProductContent() {
   const params = useParams();
   const router = useRouter();
