@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
-import { formatCFA } from "@/lib/format";
+import { formatCFA, getImageUrl } from "@/lib/format";
 import { ArrowLeft, ShoppingCart, Plus, Minus, Package } from "lucide-react";
 
 interface ProductImage {
@@ -26,8 +26,6 @@ interface Product {
   images: ProductImage[];
   category_name: string | null;
 }
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function ProductContent() {
   const params = useParams();
@@ -85,7 +83,7 @@ function ProductContent() {
           <div className="space-y-3">
             <div className="w-full h-64 sm:h-80 bg-gray-100 rounded-2xl overflow-hidden flex items-center justify-center">
               <img
-                src={`${API}${allImages[selectedImage]?.url || allImages[0].url}`}
+                src={getImageUrl(allImages[selectedImage]?.url || allImages[0].url)}
                 alt={allImages[selectedImage]?.alt_text || product.name}
                 className="w-full h-full object-contain"
               />
@@ -100,7 +98,7 @@ function ProductContent() {
                       selectedImage === i ? "border-primary-500" : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
-                    <img src={`${API}${img.url}`} alt={img.alt_text || ""} className="w-full h-full object-cover" />
+                    <img src={getImageUrl(img.url)} alt={img.alt_text || ""} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

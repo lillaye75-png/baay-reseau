@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 import json
 
@@ -27,8 +27,6 @@ async def backup_data(user: User = Depends(require_owner), db: AsyncSession = De
     categories = (await db.execute(select(ProductCategory).where(ProductCategory.tenant_id == tenant_id))).scalars().all()
     customers = (await db.execute(select(Customer).where(Customer.tenant_id == tenant_id))).scalars().all()
     sales = (await db.execute(select(Sale).where(Sale.tenant_id == tenant_id))).scalars().all()
-    sale_items = (await db.execute(select(SaleItem).join(Sale, SaleItem.sale_id == Sale.id).where(Sale.tenant_id == tenant_id))).scalars().all()
-    orders = (await db.execute(select(Order).where(Order.tenant_id == tenant_id))).scalars().all()
     suppliers = (await db.execute(select(Supplier).where(Supplier.tenant_id == tenant_id))).scalars().all()
     expenses = (await db.execute(select(Expense).where(Expense.tenant_id == tenant_id))).scalars().all()
 
@@ -36,11 +34,11 @@ async def backup_data(user: User = Depends(require_owner), db: AsyncSession = De
     data = {
         "exported_at": str(datetime.utcnow()),
         "tenant": {"name": user.tenant.name, "slug": user.tenant.slug, "phone": user.tenant.phone, "email": user.tenant.email},
-        "products": [{"name": p.name, "sku": p.sku, "description": p.description, "price_cfa": p.price_cfa, "cost_price_cfa": p.cost_price_cfa, "stock_quantity": p.stock_quantity, "low_stock_threshold": p.low_stock_threshold, "unit": p.unit, "barcode": p.barcode, "is_online": p.is_online} for p in products],
+        "products": [{"name": p.name, "sku": p.sku, "description": p.description, "price_cfa": p.price_cfa, "cost_price_cfa": p.cost_price_cfa, "stock_quantity": p.stock_quantity, "low_stock_threshold": p.low_stock_threshold, "unit": p.unit, "barcode": p.barcode, "is_online": p.is_online, "category_name": None} for p in products],
         "categories": [{"name": c.name, "name_wo": c.name_wo} for c in categories],
-        "customers": [{"name": c.name, "phone": c.phone, "email": getattr(c, 'email', None), "total_credit_cfa": c.total_credit_cfa, "notes": getattr(c, 'notes', None)} for c in customers],
-        "sales": [{"total_cfa": s.total_cfa, "payment_method": s.payment_method, "is_credit": s.is_credit, "created_at": str(s.created_at), "items": [{"product_name": si.product_name, "quantity": si.quantity, "unit_price_cfa": si.unit_price_cfa, "total_cfa": si.total_cfa} for si in sale_items if si.sale_id == s.id]} for s in sales],
-        "suppliers": [{"name": s.name, "phone": s.phone, "email": getattr(s, 'email', None), "address": getattr(s, 'address', None)} for s in suppliers],
+        "customers": [{"name": c.name, "phone": c.phone, "total_credit_cfa": c.total_credit_cfa} for c in customers],
+        "sales": [{"total_cfa": s.total_cfa, "payment_method": s.payment_method, "is_credit": s.is_credit, "created_at": str(s.created_at)} for s in sales],
+        "suppliers": [{"name": s.name, "phone": s.phone} for s in suppliers],
         "expenses": [{"category": e.category, "description": e.description, "amount_cfa": e.amount_cfa, "expense_date": str(e.expense_date)} for e in expenses],
     }
 
@@ -88,7 +86,6 @@ async def restore_data(data: dict, user: User = Depends(require_owner), db: Asyn
             name=c_data["name"],
             phone=c_data.get("phone"),
             total_credit_cfa=c_data.get("total_credit_cfa", 0),
-            notes=c_data.get("notes"),
         )
         db.add(customer)
 
@@ -97,8 +94,6 @@ async def restore_data(data: dict, user: User = Depends(require_owner), db: Asyn
             tenant_id=tenant_id,
             name=s_data["name"],
             phone=s_data.get("phone"),
-            email=s_data.get("email"),
-            address=s_data.get("address"),
         )
         db.add(supplier)
 
@@ -119,34 +114,35 @@ async def restore_data(data: dict, user: User = Depends(require_owner), db: Asyn
 
 @router.delete("/data")
 async def delete_all_data(user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
-    from sqlalchemy import delete as sa_del
-
     tenant_id = user.tenant_id
 
-    await db.execute(sa_del(CreditTabEntry).where(CreditTabEntry.tab_id.in_(
-        select(CreditTab.id).where(CreditTab.tenant_id == tenant_id)
-    )))
-    await db.execute(sa_del(CreditTab).where(CreditTab.tenant_id == tenant_id))
-    await db.execute(sa_del(SaleItem).where(SaleItem.sale_id.in_(
-        select(Sale.id).where(Sale.tenant_id == tenant_id)
-    )))
-    await db.execute(sa_del(Sale).where(Sale.tenant_id == tenant_id))
-    await db.execute(sa_del(OrderItem).where(OrderItem.order_id.in_(
-        select(Order.id).where(Order.tenant_id == tenant_id)
-    )))
-    await db.execute(sa_del(Order).where(Order.tenant_id == tenant_id))
-    await db.execute(sa_del(ProductImage).where(ProductImage.product_id.in_(
-        select(Product.id).where(Product.tenant_id == tenant_id)
-    )))
-    await db.execute(sa_del(Product).where(Product.tenant_id == tenant_id))
-    await db.execute(sa_del(ProductCategory).where(ProductCategory.tenant_id == tenant_id))
-    await db.execute(sa_del(Customer).where(Customer.tenant_id == tenant_id))
-    await db.execute(sa_del(PurchaseOrderItem).where(PurchaseOrderItem.purchase_order_id.in_(
-        select(PurchaseOrder.id).where(PurchaseOrder.tenant_id == tenant_id)
-    )))
-    await db.execute(sa_del(PurchaseOrder).where(PurchaseOrder.tenant_id == tenant_id))
-    await db.execute(sa_del(Supplier).where(Supplier.tenant_id == tenant_id))
-    await db.execute(sa_del(Expense).where(Expense.tenant_id == tenant_id))
+    customer_ids = [c.id for c in (await db.execute(select(Customer.id).where(Customer.tenant_id == tenant_id))).scalars().all()]
+    tab_ids = [t.id for t in (await db.execute(select(CreditTab.id).where(CreditTab.customer_id.in_(customer_ids)))).scalars().all()] if customer_ids else []
+    sale_ids = [s.id for s in (await db.execute(select(Sale.id).where(Sale.tenant_id == tenant_id))).scalars().all()]
+    order_ids = [o.id for o in (await db.execute(select(Order.id).where(Order.tenant_id == tenant_id))).scalars().all()]
+    product_ids = [p.id for p in (await db.execute(select(Product.id).where(Product.tenant_id == tenant_id))).scalars().all()]
+    po_ids = [po.id for po in (await db.execute(select(PurchaseOrder.id).where(PurchaseOrder.tenant_id == tenant_id))).scalars().all()]
+
+    if tab_ids:
+        await db.execute(text(f"DELETE FROM credit_tab_entries WHERE tab_id IN ({','.join(repr(t) for t in tab_ids)})"))
+        await db.execute(text(f"DELETE FROM credit_tabs WHERE id IN ({','.join(repr(t) for t in tab_ids)})"))
+    if sale_ids:
+        await db.execute(text(f"DELETE FROM sale_items WHERE sale_id IN ({','.join(repr(s) for s in sale_ids)})"))
+        await db.execute(text(f"DELETE FROM sales WHERE id IN ({','.join(repr(s) for s in sale_ids)})"))
+    if order_ids:
+        await db.execute(text(f"DELETE FROM order_items WHERE order_id IN ({','.join(repr(o) for o in order_ids)})"))
+        await db.execute(text(f"DELETE FROM orders WHERE id IN ({','.join(repr(o) for o in order_ids)})"))
+    if product_ids:
+        await db.execute(text(f"DELETE FROM product_images WHERE product_id IN ({','.join(repr(p) for p in product_ids)})"))
+        await db.execute(text(f"DELETE FROM products WHERE id IN ({','.join(repr(p) for p in product_ids)})"))
+    if po_ids:
+        await db.execute(text(f"DELETE FROM purchase_order_items WHERE purchase_order_id IN ({','.join(repr(po) for po in po_ids)})"))
+        await db.execute(text(f"DELETE FROM purchase_orders WHERE id IN ({','.join(repr(po) for po in po_ids)})"))
+
+    await db.execute(text(f"DELETE FROM product_categories WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM customers WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM suppliers WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM expenses WHERE tenant_id = '{tenant_id}'"))
 
     await db.flush()
     return {"status": "deleted", "message": "Toutes les données ont été supprimées"}

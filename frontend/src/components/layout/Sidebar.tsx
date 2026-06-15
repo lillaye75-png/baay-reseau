@@ -31,7 +31,6 @@ const navigation = [
   { name: "Produits", href: "/products", icon: Package, i18nKey: "products" },
   { name: "Clients", href: "/customers", icon: Users, i18nKey: "clients" },
   { name: "Crédit", href: "/credit", icon: CreditCard, i18nKey: "credit" },
-  { name: "Boutique en ligne", href: "/storefront", icon: Store, i18nKey: "storefront" },
   { name: "Abonnement", href: "/billing", icon: Crown, i18nKey: "billing" },
   { name: "Paramètres", href: "/settings", icon: Settings, i18nKey: "settings" },
 ];
