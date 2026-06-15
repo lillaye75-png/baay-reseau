@@ -16,6 +16,13 @@ class TenantUpdate(BaseModel):
     email: str | None = None
 
 
+class TenantIntegrations(BaseModel):
+    whatsapp_api_token: str | None = None
+    whatsapp_phone_number_id: str | None = None
+    wave_api_key: str | None = None
+    orange_money_api_key: str | None = None
+
+
 class TenantRead(BaseModel):
     id: str
     name: str

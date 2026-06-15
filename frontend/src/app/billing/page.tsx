@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { Check, Crown, Zap, Building2, ExternalLink } from "lucide-react";
+import { Check, Crown, Zap, Building2, ExternalLink, Phone, MessageCircle } from "lucide-react";
 import api from "@/lib/api";
 import { showToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n";
@@ -139,6 +139,49 @@ export default function BillingPage() {
             );
           })}
         </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                <Phone className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Paiement par Mobile Money</h2>
+                <p className="text-sm text-gray-500">Payez votre abonnement par Wave ou Orange Money</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-gray-50 p-4 space-y-3">
+              <p className="text-sm text-gray-700 font-medium">Pour payer votre licence, contactez-nous :</p>
+              <div className="space-y-2">
+                <a href="tel:+221776621410" className="flex items-center gap-3 rounded-lg bg-white p-3 border border-gray-200 hover:border-primary-300 transition-colors">
+                  <Phone className="h-4 w-4 text-primary-600" />
+                  <div>
+                    <p className="text-sm font-medium">+221 77 662 14 10</p>
+                    <p className="text-xs text-gray-500">Appel ou SMS</p>
+                  </div>
+                </a>
+                <a href="https://wa.me/221708372127" target="_blank" className="flex items-center gap-3 rounded-lg bg-white p-3 border border-gray-200 hover:border-green-300 transition-colors">
+                  <MessageCircle className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium">+221 70 837 21 27</p>
+                    <p className="text-xs text-gray-500">WhatsApp</p>
+                  </div>
+                </a>
+                <a href="mailto:layedevops@gmail.com" className="flex items-center gap-3 rounded-lg bg-white p-3 border border-gray-200 hover:border-primary-300 transition-colors">
+                  <span className="text-sm">📧</span>
+                  <div>
+                    <p className="text-sm font-medium">layedevops@gmail.com</p>
+                    <p className="text-xs text-gray-500">Email</p>
+                  </div>
+                </a>
+              </div>
+              <p className="text-xs text-gray-400">Envoyez la preuve de paiement par WhatsApp ou SMS. Votre licence sera activée dans les plus brefs délais.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

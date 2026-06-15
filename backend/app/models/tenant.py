@@ -27,6 +27,10 @@ class Tenant(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     license_days: Mapped[int] = mapped_column(Integer, default=30)
     license_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    whatsapp_api_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    whatsapp_phone_number_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    wave_api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    orange_money_api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

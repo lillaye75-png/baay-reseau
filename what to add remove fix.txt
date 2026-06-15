@@ -1,0 +1,121 @@
+hey i'm back so while doing my full test here's what i found as problem which need to be fixed :
+why admin as the shop owner plus the employees account they got almost the same permission 
+fix when admin add employees account the employees account will not able to change the company information
+fix why after an odder is delivred it will not get up to date for the account even on rapport, total sales, today's sale fix it
+for the online shop can add the url could be custom by the shop owner like https://baay-reseau.vercel.app/shop/ so the shop owner will add the his company name or custom name example : https://baay-reseau.vercel.app/shop/sht
+can you fix for the whatsapp bot api even the paiement api shop owner will set it manuelly on the settings page
+let's setup the billing while adding licence server to manager every users but also me as the owner of the application i must add my api paiement for when customer buy licence they can use mobile money to paye or call me here's my id : num phone +221776621410 +221708372127 email lillaye75@gmail.com layedevops@gmail.com even for the support call
+fix when creating employees account the shop owner can assigne the there permission, role also can delete/active/inactive account of employees 
+add in settings page add backup restore delete data only admin shop owner can do it
+fix also the sibebar like there are so much button so there's some button will be moved to another location example : shop online - whatsapp bot, categorie must be hiden cause users can create categorie while adding new product, facture must be moved in ventes cause theye almost have the same role well this is a proposion 
+fix why the sidebar on mobile experience use whem clicking on the hamburger and click on any button it will close the hamburger but even touching the side or anywhere on the entire screen it will not close the hamburger sidebar fix it
+fix while fielling you company information it will not save at the end an error message will be occured : 471-4e457cfa4a2586b7.js:6 
+ PUT https://baay-reseau-api.onrender.com/api/v1/tenants/fdd194bb-f9ff-4cd2-a8e4-f977cb0408a7 422 (Unprocessable Content)
+(anonyme)	@	471-4e457cfa4a2586b7.js:6
+xhr	@	471-4e457cfa4a2586b7.js:6
+tg	@	471-4e457cfa4a2586b7.js:6
+Promise.then		
+_request	@	471-4e457cfa4a2586b7.js:6
+request	@	471-4e457cfa4a2586b7.js:6
+(anonyme)	@	471-4e457cfa4a2586b7.js:6
+(anonyme)	@	471-4e457cfa4a2586b7.js:6
+T	@	page-163b95787e88943a.js:31
+a_	@	fd9d1056-56347edfdb798bde.js:1
+aR	@	fd9d1056-56347edfdb798bde.js:1
+(anonyme)	@	fd9d1056-56347edfdb798bde.js:1
+sF	@	fd9d1056-56347edfdb798bde.js:1
+sM	@	fd9d1056-56347edfdb798bde.js:1
+(anonyme)	@	fd9d1056-56347edfdb798bde.js:1
+o4	@	fd9d1056-56347edfdb798bde.js:1
+iV	@	fd9d1056-56347edfdb798bde.js:1
+sU	@	fd9d1056-56347edfdb798bde.js:1
+uR	@	fd9d1056-56347edfdb798bde.js:1
+uM	@	fd9d1056-56347edfdb798bde.js:1
+
+﻿
+
+ 
+when creating new product at the end to save it here's an error message : Uncaught (in promise) AxiosError: Request failed with status code 500
+    at eJ (471-4e457cfa4a2586b7.js:6:43043)
+    at XMLHttpRequest.g (471-4e457cfa4a2586b7.js:6:48164)
+eJ @ 471-4e457cfa4a2586b7.js:6
+g @ 471-4e457cfa4a2586b7.js:6
+XMLHttpRequest.send
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+xhr @ 471-4e457cfa4a2586b7.js:6
+tg @ 471-4e457cfa4a2586b7.js:6
+Promise.then
+_request @ 471-4e457cfa4a2586b7.js:6
+request @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+(anonyme) @ 471-4e457cfa4a2586b7.js:6
+G @ page-812bc99f995e5577.js:26
+a_ @ fd9d1056-56347edfdb798bde.js:1
+aR @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+sF @ fd9d1056-56347edfdb798bde.js:1
+sM @ fd9d1056-56347edfdb798bde.js:1
+(anonyme) @ fd9d1056-56347edfdb798bde.js:1
+o4 @ fd9d1056-56347edfdb798bde.js:1
+iV @ fd9d1056-56347edfdb798bde.js:1
+sU @ fd9d1056-56347edfdb798bde.js:1
+uR @ fd9d1056-56347edfdb798bde.js:1
+uM @ fd9d1056-56347edfdb798bde.js:1
+also i forget fix when on mobile experience use when goes to pos/sales it will only display cart but not product to selecting any product to fix you have to enable on your current navigator mode computer to have full mode view also for the downbar add add rapports fix it
+
+
+
+what to add next
+add when new account create will complete the wizard also auto full guides wizard
+on report it must show online shop nombre of total plus total price
+on mobile experience use fix when on pos i want on pos use will add all his desire item the click on cart to comfirm but the current codebase is when selecting an product it will open the cart everytime on every product selected
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Bugs Fixed (all working now):
+- ✅ 422 on tenant update
+- ✅ 500 on product creation
+- ✅ Admin vs employee permissions (employees can't change company info)
+- ✅ Order delivered → now shows in reports/sales
+- ✅ Mobile sidebar closes on outside click
+- ✅ POS mobile view (products + cart tab toggle)
+- ✅ MobileNav Rapports link added
+- ✅ Login auto-refresh fixed
+- ✅ Employee role assignment (employee/manager)
+- ✅ Employee activate/deactivate toggle
+- ✅ Inactive accounts blocked at login
+Still on your original list (features, not bugs):
+1. Custom shop URL (/shop/sht instead of slug)
+2. WhatsApp bot + payment API manual config in settings
+3. Billing/license server + mobile money payment
+4. Backup/restore/delete data in settings
+5. Sidebar reorganization (hide categories, move facture to ventes, etc.)
+
+Done. Both deployed:
+- Backend: https://baay-reseau-api.onrender.com ✅
+- Frontend: https://baay-reseau.vercel.app ✅ (just redeployed)
+All fixes are live. Go test:
+1. Settings → save company info (was 422)
+2. Create product (was 500)
+3. POS on mobile → Produits/Panier tabs
+4. Mobile bottom nav → Rapports
+5. Settings → Employee → role selector, activate/deactivate
+6. Order delivered → appears in reports

@@ -47,3 +47,4 @@ certs/*.pem
 # Test
 backend/test.db
 .pytest_cache/
+.vercel
