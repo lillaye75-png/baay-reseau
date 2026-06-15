@@ -74,21 +74,23 @@ async def on_startup():
     logger.info("Naatal ERP Cloud API starting up...")
 
     try:
-        from alembic.config import Config
-        from alembic import command as alembic_command
-        alembic_cfg = Config("alembic.ini")
-        alembic_cfg.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-        alembic_command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations applied")
-    except Exception as e:
-        logger.error(f"Migration error: {e}")
-
-    try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables ensured")
     except Exception as e:
         logger.error(f"Database error: {e}")
+
+    try:
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            for col in ["whatsapp_api_token", "whatsapp_phone_number_id", "wave_api_key", "orange_money_api_key"]:
+                try:
+                    await conn.execute(text(f"ALTER TABLE tenants ADD COLUMN IF NOT EXISTS {col} VARCHAR(500)"))
+                except Exception:
+                    pass
+        logger.info("Tenant integrations columns ensured")
+    except Exception as e:
+        logger.error(f"Column migration error: {e}")
 
     try:
         from app.services.scheduled_tasks import start_scheduler
