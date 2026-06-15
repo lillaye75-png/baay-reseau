@@ -51,6 +51,7 @@ export default function Sidebar() {
     if (user?.phone && ["776621410", "708372127"].includes(user.phone)) {
       setIsSuperAdmin(true);
     }
+  }, [user]);
 
   useEffect(() => {
     const fetchPending = () => {
