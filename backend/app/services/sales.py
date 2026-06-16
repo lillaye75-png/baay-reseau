@@ -272,18 +272,11 @@ async def delete_sale(db: AsyncSession, tenant_id: str, sale_id: str) -> dict:
 async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
     total = data.quantity * data.unit_price_cfa
 
-    qs_result = await db.execute(
-        select(Product).where(Product.tenant_id == tenant_id, Product.name == "Vente Rapide", Product.is_active == False)
+    products_result = await db.execute(
+        select(Product).where(Product.tenant_id == tenant_id, Product.is_active == True).limit(1)
     )
-    qs_product = qs_result.scalar_one_or_none()
-    if not qs_product:
-        qs_product = Product(
-            tenant_id=tenant_id, name="Vente Rapide",
-            price_cfa=0, cost_price_cfa=0, stock_quantity=999999, unit="piece",
-            is_active=False, is_online=False,
-        )
-        db.add(qs_product)
-        await db.flush()
+    ref_product = products_result.scalar_one_or_none()
+    ref_id = ref_product.id if ref_product else None
 
     sale = Sale(
         tenant_id=tenant_id,
@@ -298,7 +291,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
 
     sale_item = SaleItem(
         sale_id=sale.id,
-        product_id=qs_product.id,
+        product_id=ref_id,
         product_name=data.product_name,
         quantity=data.quantity,
         unit_price_cfa=data.unit_price_cfa,
