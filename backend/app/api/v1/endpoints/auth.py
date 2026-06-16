@@ -10,6 +10,8 @@ from app.models.tenant import Tenant
 from app.schemas.user import UserCreate, UserLogin, UserRead, Token, EmployeeUpdate
 from app.api.deps import require_owner
 
+SUPER_ADMIN_PHONES = ["776621410", "708372127"]
+
 router = APIRouter()
 
 
@@ -53,10 +55,11 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Compte désactivé. Contactez l'administrateur.")
 
-    tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
-    tenant = tenant_result.scalar_one_or_none()
-    if tenant and not tenant.is_active:
-        raise HTTPException(status_code=403, detail="Compte désactivé. Contactez l'administrateur.")
+    if user.phone not in SUPER_ADMIN_PHONES:
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+        tenant = tenant_result.scalar_one_or_none()
+        if tenant and not tenant.is_active:
+            raise HTTPException(status_code=403, detail="Compte désactivé. Contactez l'administrateur.")
 
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
     return Token(access_token=token, user=UserRead.model_validate(user))
