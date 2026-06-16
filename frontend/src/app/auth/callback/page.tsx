@@ -24,7 +24,7 @@ export default function AuthCallbackPage() {
         localStorage.setItem("user", JSON.stringify(userData));
 
         api.get("/tenants/me").then((tenantRes) => {
-          const needsWizard = !tenantRes.data.wizard_completed && (!tenantRes.data.name || tenantRes.data.name === "My Shop");
+          const needsWizard = !tenantRes.data.wizard_completed;
           window.location.href = needsWizard ? "/wizard" : "/";
         }).catch(() => {
           window.location.href = "/";
