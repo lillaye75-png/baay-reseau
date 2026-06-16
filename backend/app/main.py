@@ -114,6 +114,10 @@ async def on_startup():
             except Exception:
                 pass
             try:
+                await conn.execute(text("ALTER TABLE tenants ALTER COLUMN phone TYPE VARCHAR(255)"))
+            except Exception:
+                pass
+            try:
                 await conn.execute(text("""
                     CREATE TABLE IF NOT EXISTS push_subscriptions (
                         id VARCHAR(36) PRIMARY KEY,

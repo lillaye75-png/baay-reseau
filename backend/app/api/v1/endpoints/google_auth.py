@@ -41,7 +41,7 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
     email = google_data.get("email", "")
     name = google_data.get("name", "")
     google_id = google_data.get("sub", "")
-    phone_google = f"google:{google_id}"
+    phone_google = f"google:{google_id[:15]}"
     slug = f"shop-{google_id[:8]}"
 
     if not email:
@@ -105,12 +105,12 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
                 db.add(user)
                 await db.flush()
         if not user:
-            raise HTTPException(status_code=500, detail=f"Erreur création compte: {str(e.orig)}")
+            raise HTTPException(status_code=500, detail="Erreur création compte Google")
         access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         return Token(access_token=access_token, refresh_token=refresh, user=UserRead.model_validate(user))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur Google: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur création compte Google")
 
     access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
     refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
