@@ -10,6 +10,8 @@ from app.models.user import User
 
 security = HTTPBearer()
 
+SUPER_ADMIN_PHONES = ["776621410", "708372127"]
+
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
     token = credentials.credentials
@@ -29,6 +31,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+
+    if user.phone in SUPER_ADMIN_PHONES:
+        return user
 
     if not user.tenant or not user.tenant.is_active:
         raise HTTPException(
