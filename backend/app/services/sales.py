@@ -275,6 +275,17 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
     from sqlalchemy import text
     import uuid
 
+    qs_product_id = "00000000-0000-0000-0000-000000000001"
+    try:
+        await db.execute(text(
+            "INSERT INTO products (id, tenant_id, name, price_cfa, cost_price_cfa, stock_quantity, low_stock_threshold, unit, is_active, is_online, created_at, updated_at) "
+            "VALUES (:id, :tenant_id, 'Vente Rapide', 0, 0, 999999, 0, 'piece', false, false, NOW(), NOW()) "
+            "ON CONFLICT (id) DO NOTHING"
+        ), {"id": qs_product_id, "tenant_id": tenant_id})
+        await db.flush()
+    except Exception:
+        pass
+
     sale_id = str(uuid.uuid4())
     await db.execute(text(
         "INSERT INTO sales (id, tenant_id, customer_id, total_cfa, payment_method, payment_reference, is_credit, created_at) "
