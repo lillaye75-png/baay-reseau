@@ -2,6 +2,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, timedelta
 
 from app.core.config import settings
@@ -40,26 +41,22 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
     email = google_data.get("email", "")
     name = google_data.get("name", "")
     google_id = google_data.get("sub", "")
+    phone_google = f"google:{google_id}"
+    slug = f"shop-{google_id[:8]}"
 
     if not email:
         raise HTTPException(status_code=401, detail="Email non trouvé dans le token Google")
 
-    try:
-        result = await db.execute(select(User).where(User.email == email))
-        user = result.scalar_one_or_none()
-    except Exception:
-        raise HTTPException(status_code=500, detail="Erreur base de données")
-
-    if user:
-        access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
-        refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
-        return Token(access_token=access_token, refresh_token=refresh, user=UserRead.model_validate(user))
-
-    result = await db.execute(select(User).where(User.phone == f"google:{google_id}"))
+    result = await db.execute(
+        select(User).where((User.email == email) | (User.phone == phone_google))
+    )
     user = result.scalar_one_or_none()
 
     if user:
-        user.email = email
+        if not user.email:
+            user.email = email
+        if user.name != name:
+            user.name = name
         await db.flush()
         access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
@@ -68,8 +65,8 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
     try:
         tenant = Tenant(
             name=f"{name}'s Shop",
-            slug=f"shop-{google_id[:8]}",
-            phone=f"google:{google_id}",
+            slug=slug,
+            phone=phone_google,
             email=email,
             subscription_plan="free",
             license_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
@@ -80,13 +77,38 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
         user = User(
             tenant_id=tenant.id,
             name=name,
-            phone=f"google:{google_id}",
+            phone=phone_google,
             email=email,
             password_hash=hash_password(google_id),
             role="owner",
         )
         db.add(user)
         await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        result = await db.execute(
+            select(User).where((User.email == email) | (User.phone == phone_google))
+        )
+        user = result.scalar_one_or_none()
+        if not user:
+            result = await db.execute(select(Tenant).where(Tenant.slug == slug))
+            tenant = result.scalar_one_or_none()
+            if tenant:
+                user = User(
+                    tenant_id=tenant.id,
+                    name=name,
+                    phone=phone_google,
+                    email=email,
+                    password_hash=hash_password(google_id),
+                    role="owner",
+                )
+                db.add(user)
+                await db.flush()
+        if not user:
+            raise HTTPException(status_code=500, detail="Erreur création compte Google")
+        access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
+        refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
+        return Token(access_token=access_token, refresh_token=refresh, user=UserRead.model_validate(user))
     except Exception:
         raise HTTPException(status_code=500, detail="Erreur création compte Google")
 
