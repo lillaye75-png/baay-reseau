@@ -146,12 +146,18 @@ async def toggle_licence(licence_id: str, user: User = Depends(get_current_user)
 
     licence.is_active = not licence.is_active
 
-    if not licence.is_active and licence.assigned_to:
+    now = datetime.now(timezone.utc)
+
+    if licence.assigned_to:
         tenant_result = await db.execute(select(Tenant).where(Tenant.id == licence.assigned_to))
         tenant = tenant_result.scalar_one_or_none()
         if tenant:
-            tenant.license_expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)
-            tenant.is_active = False
+            if licence.is_active:
+                tenant.is_active = True
+                tenant.license_expires_at = now + timedelta(days=licence.duration_days)
+            else:
+                tenant.is_active = False
+                tenant.license_expires_at = now - timedelta(seconds=10)
 
     await db.flush()
     return {"is_active": licence.is_active}
