@@ -9,10 +9,12 @@ import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import api, { Tenant } from "@/lib/api";
 import { Store, User, Shield, Smartphone, Users, UserPlus, Trash2, MessageSquare, CreditCard, Phone, Download, Upload, AlertTriangle, Save } from "lucide-react";
+import { useTheme, COLOR_PRESETS } from "@/lib/theme-context";
 import { showToast } from "@/components/ui/Toast";
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { primaryColor, setPrimaryColor } = useTheme();
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [shopName, setShopName] = useState("");
   const [shopPhone, setShopPhone] = useState("");
@@ -442,20 +444,19 @@ export default function SettingsPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">Couleur principale</label>
                   <div className="flex gap-2 flex-wrap">
-                    {["#ea580c","#2563eb","#16a34a","#9333ea","#dc2626","#0d9488","#db2777"].map((c) => (
+                    {Object.entries(COLOR_PRESETS).map(([name, colors]) => (
                       <button
-                        key={c}
-                        onClick={() => {
-                          localStorage.setItem("primary_color", c);
-                          window.location.reload();
-                        }}
+                        key={name}
+                        onClick={() => setPrimaryColor(colors.light)}
                         className={`h-10 w-10 rounded-full border-2 transition-all ${
-                          localStorage.getItem("primary_color") === c ? "border-gray-900 scale-110" : "border-gray-200 hover:scale-105"
+                          primaryColor === colors.light ? "border-gray-900 scale-110 ring-2 ring-gray-300" : "border-gray-200 hover:scale-105"
                         }`}
-                        style={{ backgroundColor: c }}
+                        style={{ backgroundColor: colors.light }}
+                        title={name}
                       />
                     ))}
                   </div>
+                  <p className="text-xs text-gray-400 mt-2">La couleur s&apos;applique instantanément</p>
                 </div>
               </CardContent>
             </Card>

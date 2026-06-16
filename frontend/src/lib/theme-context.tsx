@@ -25,7 +25,7 @@ const COLOR_PRESETS: Record<string, { light: string; dark: string }> = {
   pink: { light: "#db2777", dark: "#ec4899" },
 };
 
-function hexToHSL(hex: string): string {
+function hexToHSL(hex: string): { h: number; s: number; l: number } {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -39,18 +39,26 @@ function hexToHSL(hex: string): string {
     else if (max === g) h = ((b - r) / d + 2) / 6;
     else h = ((r - g) / d + 4) / 6;
   }
-  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
 function applyPrimaryColor(color: string) {
-  const hsl = hexToHSL(color);
-  const [h, s, l] = hsl.split(" ");
-  document.documentElement.style.setProperty("--primary-50", `${h} ${s} ${Math.min(97, parseInt(l) + 45)}%`);
-  document.documentElement.style.setProperty("--primary-100", `${h} ${s} ${Math.min(95, parseInt(l) + 35)}%`);
-  document.documentElement.style.setProperty("--primary-200", `${h} ${s} ${Math.min(90, parseInt(l) + 25)}%`);
-  document.documentElement.style.setProperty("--primary-500", `${h} ${s} ${l}`);
-  document.documentElement.style.setProperty("--primary-600", `${h} ${s} ${Math.max(20, parseInt(l) - 8)}%`);
-  document.documentElement.style.setProperty("--primary-700", `${h} ${s} ${Math.max(15, parseInt(l) - 15)}%`);
+  const { h, s, l } = hexToHSL(color);
+  const shades: Record<string, number> = {
+    "50": Math.min(97, l + 45),
+    "100": Math.min(95, l + 35),
+    "200": Math.min(90, l + 25),
+    "300": Math.min(82, l + 15),
+    "400": Math.min(70, l + 5),
+    "500": l,
+    "600": Math.max(20, l - 8),
+    "700": Math.max(15, l - 15),
+    "800": Math.max(10, l - 22),
+    "900": Math.max(5, l - 30),
+  };
+  Object.entries(shades).forEach(([shade, lightness]) => {
+    document.documentElement.style.setProperty(`--primary-${shade}`, `${h} ${s}% ${lightness}%`);
+  });
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
