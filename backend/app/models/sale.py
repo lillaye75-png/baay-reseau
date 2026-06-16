@@ -36,4 +36,4 @@ class SaleItem(Base):
     total_cfa: Mapped[int] = mapped_column(Integer)
 
     sale = relationship("Sale", back_populates="items")
-    product = relationship("Product", foreign_keys=[product_id], primaryjoin="SaleItem.product_id == Product.id", viewonly=True)
+    product = relationship("Product", viewonly=True)
