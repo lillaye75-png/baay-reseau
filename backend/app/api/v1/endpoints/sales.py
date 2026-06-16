@@ -28,6 +28,24 @@ async def weekly_stats(user: User = Depends(get_current_user), db: AsyncSession 
     return await get_weekly_revenue(db, user.tenant_id)
 
 
+@router.get("/export-csv")
+async def export_sales_csv(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    sales = await get_sales(db, user.tenant_id, limit=10000)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["date", "total_cfa", "payment_method", "is_credit", "items_count"])
+    for s in sales:
+        writer.writerow([str(s.created_at), s.total_cfa, s.payment_method, s.is_credit, len(s.items)])
+
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode("utf-8-sig")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=ventes-{__import__('datetime').date.today()}.csv"},
+    )
+
+
 @router.get("/{sale_id}", response_model=SaleRead)
 async def get_sale(sale_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from app.models.customer import Customer
@@ -106,21 +124,3 @@ async def delete_sale(sale_id: str, user: User = Depends(require_owner), db: Asy
         return await delete_sale_svc(db, user.tenant_id, sale_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get("/export-csv")
-async def export_sales_csv(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    sales = await get_sales(db, user.tenant_id, limit=10000)
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["date", "total_cfa", "payment_method", "is_credit", "items_count"])
-    for s in sales:
-        writer.writerow([str(s.created_at), s.total_cfa, s.payment_method, s.is_credit, len(s.items)])
-
-    output.seek(0)
-    return StreamingResponse(
-        io.BytesIO(output.getvalue().encode("utf-8-sig")),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=ventes-{__import__('datetime').date.today()}.csv"},
-    )

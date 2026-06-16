@@ -285,12 +285,12 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
 
     sale_item = SaleItem(
         sale_id=sale.id,
-        product_id=None,
         product_name=data.product_name,
         quantity=data.quantity,
         unit_price_cfa=data.unit_price_cfa,
         total_cfa=total,
     )
+    sale_item.product_id = None
     db.add(sale_item)
 
     if data.is_credit and data.customer_id:
