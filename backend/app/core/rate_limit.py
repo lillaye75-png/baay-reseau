@@ -12,6 +12,12 @@ RATE_LIMITS = {
 ORDER_RATE_LIMIT = (3, 60)
 DEFAULT_LIMIT = (300, 60)
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "*",
+    "Access-Control-Allow-Headers": "*",
+}
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
@@ -21,6 +27,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host if request.client else "unknown"
         path = request.url.path
+
+        if request.method == "OPTIONS":
+            return await call_next(request)
 
         limit_key = None
         for pattern, limits in RATE_LIMITS.items():
@@ -44,6 +53,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 content='{"detail":"Too many requests. Please try again later."}',
                 status_code=429,
                 media_type="application/json",
+                headers=CORS_HEADERS,
             )
 
         self.requests[key].append(now)

@@ -58,6 +58,19 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erreur interne du serveur"},
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("Origin", "*"),
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
+
+
 @app.on_event("startup")
 async def on_startup():
     logger.info("Naatal ERP Cloud API starting up...")
