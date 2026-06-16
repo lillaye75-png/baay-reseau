@@ -82,22 +82,6 @@ async def on_startup():
                 await conn.execute(text("ALTER TABLE sale_items ALTER COLUMN product_id DROP NOT NULL"))
             except Exception:
                 pass
-            for fk_name in ["sale_items_product_id_fkey", "fk_sale_items_product_id", "sale_items_ibfk_1"]:
-                try:
-                    await conn.execute(text(f"ALTER TABLE sale_items DROP CONSTRAINT IF EXISTS {fk_name}"))
-                except Exception:
-                    pass
-            try:
-                constraints = await conn.execute(text(
-                    "SELECT conname FROM pg_constraint WHERE conrelid = 'sale_items'::regclass AND contype = 'f'"
-                ))
-                for row in constraints:
-                    try:
-                        await conn.execute(text(f"ALTER TABLE sale_items DROP CONSTRAINT IF EXISTS {row[0]}"))
-                    except Exception:
-                        pass
-            except Exception:
-                pass
             try:
                 await conn.execute(text("ALTER TABLE product_categories ADD COLUMN IF NOT EXISTS parent_id VARCHAR(36)"))
             except Exception:
