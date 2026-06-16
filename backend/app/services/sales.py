@@ -285,7 +285,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
 
     sale_item = SaleItem(
         sale_id=sale.id,
-        product_id="quick-sale",
+        product_id=None,
         product_name=data.product_name,
         quantity=data.quantity,
         unit_price_cfa=data.unit_price_cfa,
