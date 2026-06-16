@@ -119,6 +119,8 @@ async def on_startup():
                 pass
             try:
                 await conn.execute(text("ALTER TABLE users ALTER COLUMN phone TYPE VARCHAR(255) USING phone::VARCHAR(255)"))
+            except Exception:
+                pass
             try:
                 await conn.execute(text("""
                     CREATE TABLE IF NOT EXISTS push_subscriptions (
