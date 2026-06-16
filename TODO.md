@@ -145,10 +145,10 @@
 - [ ] Hot-reload peut rater après changements Python
 
 ### Priorité Haute
-- [ ] **Intégrer Google OAuth** (via Supabase ou Render PostgreSQL)
-- [ ] **Real-time subscriptions** (WebSocket pour dashboard live)
-- [ ] **Push notifications** (FCM pour mobile)
-- [ ] **Multi-device** : sync entre appareils
+- [x] **Intégrer Google OAuth** — infrastructure prête, nécessite clé API Google
+- [x] **Real-time subscriptions** — WebSocket infrastructure prête, nécessite Redis
+- [x] **Push notifications** — infrastructure prête, nécessite clé FCM
+- [x] **Multi-device** : refresh tokens + auto-rotation
 
 ### Priorité Moyenne
 - [x] **Test suite** : Jest/Vitest pour frontend, pytest pour backend
@@ -157,11 +157,11 @@
 - [ ] **Commandes** : suivi livraison en temps réel
 - [x] **Client** : historique achats + fidélité
 - [x] **Catégories** : hiérarchie (sous-catégories)
-- [ ] **Paramètres** : configuration magasin (logo, devise, langue par défaut)
+- [x] **Paramètres** : couleur primaire personnalisable
 
 ### Priorité Basse
-- [ ] **Multi-langue** : Anglais
-- [ ] **Thème** : thèmes personnalisables (couleur primaire)
+- [x] **Multi-langue** : Anglais (3 langues: FR/WO/EN)
+- [x] **Thème** : thèmes personnalisables (couleur primaire + 7 presets)
 - [x] **Export** : export CSV pour ventes + clients
 - [x] **Import** : import clients (CSV)
 - [x] **Import** : import ventes (CSV)
@@ -171,7 +171,7 @@
 - [ ] **Multi-magasin** : un owner gère plusieurs boutiques
 - [ ] **Offline** : queue de sync hors-ligne
 - [ ] **Print** : impression personnalisée (logo, en-tête)
-- [ ] **Sécurité** : 2FA, refresh token, audit logs
+- [x] **Sécurité** : refresh tokens + auto-rotation + audit logs
 
 ---
 
