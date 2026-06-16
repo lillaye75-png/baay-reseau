@@ -323,10 +323,23 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
 
     await db.flush()
 
+    from sqlalchemy import text
     result = await db.execute(
-        select(Sale).where(Sale.id == sale.id).options(
-            selectinload(Sale.items),
-            selectinload(Sale.customer),
-        )
+        text("SELECT s.*, si.id as item_id, si.product_id, si.product_name, si.quantity, si.unit_price_cfa, si.total_cfa as item_total "
+             "FROM sales s LEFT JOIN sale_items si ON si.sale_id = s.id WHERE s.id = :sale_id"),
+        {"sale_id": sale.id}
     )
-    return result.scalar_one()
+    row = result.one()
+
+    return Sale(
+        id=row.id, tenant_id=row.tenant_id, customer_id=row.customer_id,
+        total_cfa=row.total_cfa, payment_method=row.payment_method,
+        payment_reference=row.payment_reference, is_credit=row.is_credit,
+        created_at=row.created_at,
+        items=[SaleItem(
+            id=row.item_id, sale_id=row.id, product_id=row.product_id,
+            product_name=row.product_name, quantity=row.quantity,
+            unit_price_cfa=row.unit_price_cfa, total_cfa=row.item_total,
+        )] if row.item_id else [],
+        customer=None,
+    )
