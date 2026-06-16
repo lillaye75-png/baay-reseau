@@ -40,6 +40,9 @@ app.add_middleware(
 
 app.include_router(api_router, prefix="/api/v1")
 
+from app.api.v1.endpoints.websocket import router as ws_router
+app.include_router(ws_router, tags=["websocket"])
+
 if os.path.exists(UPLOAD_DIR):
     app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 

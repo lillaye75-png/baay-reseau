@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, tenants, products, customers, sales, dashboard, whatsapp, reports, storefront, shop, finance, variants, billing, loyalty, referral, settings, licences, audit
+from app.api.v1.endpoints import auth, tenants, products, customers, sales, dashboard, whatsapp, reports, storefront, shop, finance, variants, billing, loyalty, referral, settings, licences, audit, google_auth, notifications
 
 api_router = APIRouter()
 
@@ -22,3 +22,5 @@ api_router.include_router(referral.router, prefix="/referral", tags=["referral"]
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(licences.router, prefix="/licences", tags=["licences"])
 api_router.include_router(audit.router, prefix="/audit", tags=["audit"])
+api_router.include_router(google_auth.router, prefix="/auth", tags=["google"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])

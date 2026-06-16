@@ -26,6 +26,10 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: List[str] = ["*"]
 
+    GOOGLE_CLIENT_ID: str = ""
+    FCM_SERVER_KEY: str = ""
+    FCM_PROJECT_ID: str = ""
+
     class Config:
         env_file = "../.env"
 
