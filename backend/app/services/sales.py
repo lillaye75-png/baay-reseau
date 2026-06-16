@@ -283,16 +283,27 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
     db.add(sale)
     await db.flush()
 
-    from sqlalchemy import text
     import uuid
-    item_id = str(uuid.uuid4())
-    await db.execute(text(
-        "INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, unit_price_cfa, total_cfa) "
-        "VALUES (:id, :sale_id, NULL, :product_name, :quantity, :unit_price_cfa, :total_cfa)"
-    ), {
-        "id": item_id, "sale_id": sale.id, "product_name": data.product_name,
-        "quantity": data.quantity, "unit_price_cfa": data.unit_price_cfa, "total_cfa": total,
-    })
+    qs_product_id = "00000000-0000-0000-0000-000000000001"
+
+    existing = await db.execute(select(Product).where(Product.id == qs_product_id))
+    if not existing.scalar_one_or_none():
+        dummy = Product(
+            id=qs_product_id, tenant_id=tenant_id, name="Vente Rapide",
+            price_cfa=0, stock_quantity=999999, unit="piece", is_active=False, is_online=False,
+        )
+        db.add(dummy)
+        await db.flush()
+
+    sale_item = SaleItem(
+        sale_id=sale.id,
+        product_id=qs_product_id,
+        product_name=data.product_name,
+        quantity=data.quantity,
+        unit_price_cfa=data.unit_price_cfa,
+        total_cfa=total,
+    )
+    db.add(sale_item)
 
     if data.is_credit and data.customer_id:
         result = await db.execute(
@@ -311,7 +322,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
         entry = CreditTabEntry(
             tab_id=tab.id,
             amount_cfa=total,
-            description=f"Vente rapide",
+            description="Vente rapide",
             sale_id=sale.id,
         )
         db.add(entry)
