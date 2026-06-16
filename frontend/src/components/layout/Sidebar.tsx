@@ -20,6 +20,7 @@ import {
   Wallet,
   Key,
   Zap,
+  Activity,
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -35,6 +36,7 @@ const navigation = [
   { name: "Clients", href: "/customers", icon: Users, i18nKey: "clients" },
   { name: "Crédit", href: "/credit", icon: CreditCard, i18nKey: "credit" },
   { name: "Abonnement", href: "/billing", icon: Crown, i18nKey: "billing" },
+  { name: "Journal", href: "/audit", icon: Activity, i18nKey: "audit_log" },
   { name: "Paramètres", href: "/settings", icon: Settings, i18nKey: "settings" },
 ];
 

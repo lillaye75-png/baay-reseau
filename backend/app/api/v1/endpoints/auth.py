@@ -4,7 +4,7 @@ from sqlalchemy import select
 from datetime import datetime, timezone, timedelta
 
 from app.core.database import get_db
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_refresh_token
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.schemas.user import UserCreate, UserLogin, UserRead, Token, EmployeeUpdate
@@ -62,7 +62,26 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=403, detail="Compte désactivé. Contactez l'administrateur.")
 
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
-    return Token(access_token=token, user=UserRead.model_validate(user))
+    refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
+    return Token(access_token=token, refresh_token=refresh, user=UserRead.model_validate(user))
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(data: dict, db: AsyncSession = Depends(get_db)):
+    refresh = data.get("refresh_token", "")
+    payload = decode_refresh_token(refresh)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user_id = payload.get("sub")
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
+    new_refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
+    return Token(access_token=token, refresh_token=new_refresh, user=UserRead.model_validate(user))
 
 
 @router.post("/invite-employee", response_model=UserRead, status_code=status.HTTP_201_CREATED)

@@ -90,6 +90,22 @@ async def on_startup():
                 await conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points INTEGER DEFAULT 0"))
             except Exception:
                 pass
+            try:
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS audit_logs (
+                        id VARCHAR(36) PRIMARY KEY,
+                        tenant_id VARCHAR(36) NOT NULL,
+                        user_id VARCHAR(36) NOT NULL,
+                        user_name VARCHAR(255) DEFAULT '',
+                        action VARCHAR(100) NOT NULL,
+                        entity_type VARCHAR(50) NOT NULL,
+                        entity_id VARCHAR(36),
+                        details TEXT,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    )
+                """))
+            except Exception:
+                pass
         logger.info("Tenant columns ensured")
     except Exception as e:
         logger.error(f"Column migration error: {e}")

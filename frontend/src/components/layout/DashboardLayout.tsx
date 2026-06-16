@@ -123,12 +123,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
 
               <button
-                onClick={() => setLang(lang === "fr" ? "wo" : "fr")}
+                onClick={() => {
+                  const langs: ("fr" | "wo" | "en")[] = ["fr", "wo", "en"];
+                  const next = langs[(langs.indexOf(lang) + 1) % langs.length];
+                  setLang(next);
+                }}
                 className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                title={lang === "fr" ? "Wolof" : "Français"}
+                title={lang === "fr" ? "Wolof" : lang === "wo" ? "English" : "Français"}
               >
                 <Globe className="h-4 w-4" />
-                {lang === "fr" ? "WO" : "FR"}
+                {lang === "fr" ? "WO" : lang === "wo" ? "EN" : "FR"}
               </button>
 
               <NotificationsDropdown />

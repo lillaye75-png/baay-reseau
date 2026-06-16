@@ -41,8 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (phone: string, password: string) => {
     const res = await api.post("/auth/login", { phone, password });
-    const { access_token, user: userData } = res.data;
+    const { access_token, refresh_token, user: userData } = res.data;
     localStorage.setItem("token", access_token);
+    localStorage.setItem("refresh_token", refresh_token);
     localStorage.setItem("user", JSON.stringify(userData));
     setToken(access_token);
     setUser(userData);
@@ -62,8 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (name: string, phone: string, password: string) => {
     const res = await api.post("/auth/register", { name, phone, password });
-    const { access_token, user: userData } = res.data;
+    const { access_token, refresh_token, user: userData } = res.data;
     localStorage.setItem("token", access_token);
+    localStorage.setItem("refresh_token", refresh_token);
     localStorage.setItem("user", JSON.stringify(userData));
     setToken(access_token);
     setUser(userData);
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     localStorage.removeItem("wizard_needed");
     setToken(null);

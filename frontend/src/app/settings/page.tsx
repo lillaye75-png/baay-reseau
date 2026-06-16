@@ -429,6 +429,40 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+                    <Save className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Apparence</h2>
+                    <p className="text-sm text-gray-500">Couleur et thème</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">Couleur principale</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {["#ea580c","#2563eb","#16a34a","#9333ea","#dc2626","#0d9488","#db2777"].map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          localStorage.setItem("primary_color", c);
+                          window.location.reload();
+                        }}
+                        className={`h-10 w-10 rounded-full border-2 transition-all ${
+                          localStorage.getItem("primary_color") === c ? "border-gray-900 scale-110" : "border-gray-200 hover:scale-105"
+                        }`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
                     <AlertTriangle className="h-5 w-5 text-orange-600" />
                   </div>

@@ -18,20 +18,43 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== "undefined") {
-        const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register" || window.location.pathname === "/activate";
-        if (!isLoginPage) {
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (refreshToken) {
+        try {
+          const res = await axios.post(`${API_URL}/api/v1/auth/refresh`, { refresh_token: refreshToken });
+          const { access_token, refresh_token, user: userData } = res.data;
+          localStorage.setItem("token", access_token);
+          localStorage.setItem("refresh_token", refresh_token);
+          localStorage.setItem("user", JSON.stringify(userData));
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          return api(originalRequest);
+        } catch {
           localStorage.removeItem("token");
+          localStorage.removeItem("refresh_token");
           localStorage.removeItem("user");
-          window.location.href = "/login";
+          if (typeof window !== "undefined") {
+            const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register";
+            if (!isLoginPage) window.location.href = "/login";
+          }
+        }
+      } else {
+        if (typeof window !== "undefined") {
+          const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register";
+          if (!isLoginPage) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location.href = "/login";
+          }
         }
       }
     }
     if (error.response?.status === 403) {
       const detail = error.response?.data?.detail;
-      if (detail === "licence_expired" || detail === "Compte désactivé. Contactez l'administrateur.") {
+      if (detail === "licence_expired" || detail?.includes("désactivé")) {
         if (typeof window !== "undefined") {
           const isActivatePage = window.location.pathname === "/activate";
           const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register";
