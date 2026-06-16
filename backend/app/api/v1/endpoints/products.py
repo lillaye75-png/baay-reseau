@@ -32,7 +32,10 @@ async def create_product(data: ProductCreate, user: User = Depends(get_current_u
     product = Product(tenant_id=user.tenant_id, **data.model_dump())
     db.add(product)
     await db.flush()
-    await log_action(db, user.tenant_id, user.id, user.name, "create", "product", product.id, product.name)
+    try:
+        await log_action(db, user.tenant_id, user.id, user.name, "create", "product", product.id, product.name)
+    except Exception:
+        pass
     return product
 
 

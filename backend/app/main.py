@@ -60,6 +60,9 @@ async def log_requests(request: Request, call_next):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    from fastapi import HTTPException
+    if isinstance(exc, HTTPException):
+        raise exc
     logger.error(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
