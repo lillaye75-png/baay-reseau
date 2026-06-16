@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi.responses import JSONResponse
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone, timedelta
 import secrets
@@ -10,6 +11,7 @@ from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.models.licence import Licence, TIER_FEATURES, SUPER_ADMIN_PHONES
+from app.core.security import hash_password
 
 router = APIRouter()
 
@@ -200,3 +202,130 @@ async def assign_licence(licence_id: str, data: dict, user: User = Depends(get_c
     licence.assigned_to = tenant_id if tenant_id else None
     await db.flush()
     return {"assigned_to": licence.assigned_to}
+
+
+@router.delete("/wipe-all")
+async def wipe_all_data(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    tables = [
+        "sale_items", "sales", "order_items", "orders",
+        "product_images", "product_variants", "product_variant_options",
+        "product_reviews", "loyalty_points", "credit_tab_entries",
+        "credit_tabs", "products", "product_categories",
+        "customers", "purchase_order_items", "purchase_orders",
+        "suppliers", "expenses", "storefront_settings",
+        "licences",
+    ]
+    for table in tables:
+        try:
+            await db.execute(text(f"DELETE FROM {table}"))
+        except Exception:
+            pass
+
+    await db.execute(text("DELETE FROM users WHERE phone NOT IN ('776621410','708372127')"))
+    await db.execute(text("DELETE FROM tenants WHERE id NOT IN (SELECT tenant_id FROM users WHERE phone IN ('776621410','708372127'))"))
+
+    await db.flush()
+    return {"status": "wiped", "message": "Toutes les données ont été supprimées"}
+
+
+@router.get("/users")
+async def list_all_users(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    result = await db.execute(
+        select(User).order_by(User.created_at.desc())
+    )
+    users = list(result.scalars().all())
+
+    user_list = []
+    for u in users:
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == u.tenant_id))
+        tenant = tenant_result.scalar_one_or_none()
+        user_list.append({
+            "id": u.id,
+            "name": u.name,
+            "phone": u.phone,
+            "role": u.role,
+            "is_active": u.is_active,
+            "tenant_id": u.tenant_id,
+            "tenant_name": tenant.name if tenant else None,
+            "tenant_active": tenant.is_active if tenant else None,
+            "created_at": u.created_at.isoformat(),
+        })
+    return user_list
+
+
+@router.post("/users", status_code=201)
+async def create_user_admin(data: dict, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    phone = data.get("phone", "").strip()
+    name = data.get("name", "").strip()
+    password = data.get("password", "admin123")
+
+    if not phone or not name:
+        raise HTTPException(status_code=400, detail="phone et name requis")
+
+    existing = await db.execute(select(User).where(User.phone == phone))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Ce numéro existe déjà")
+
+    tenant = Tenant(
+        name=data.get("shop_name", name + " Shop"),
+        slug=f"shop-{phone}",
+        phone=phone,
+        subscription_plan="free",
+        license_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+    )
+    db.add(tenant)
+    await db.flush()
+
+    new_user = User(
+        tenant_id=tenant.id,
+        name=name,
+        phone=phone,
+        password_hash=hash_password(password),
+        role="owner",
+    )
+    db.add(new_user)
+    await db.flush()
+
+    return {"id": new_user.id, "name": name, "phone": phone, "tenant_id": tenant.id}
+
+
+@router.put("/users/{user_id}/toggle-active")
+async def toggle_user_active(user_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+    target.is_active = not target.is_active
+    await db.flush()
+    return {"is_active": target.is_active, "name": target.name}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user_admin(user_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+    if target.phone in SUPER_ADMIN_PHONES:
+        raise HTTPException(status_code=400, detail="Impossible de supprimer un super admin")
+
+    target.is_active = False
+    await db.flush()
+    return {"status": "deactivated", "name": target.name}
