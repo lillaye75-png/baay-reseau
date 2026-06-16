@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, text
+from sqlalchemy import select, text, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone, timedelta
 import secrets
@@ -221,6 +221,118 @@ async def delete_user_admin(user_id: str, user: User = Depends(get_current_user)
     target.is_active = False
     await db.flush()
     return {"status": "deactivated", "name": target.name}
+
+
+@router.get("/tenants")
+async def list_all_tenants(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    result = await db.execute(select(Tenant).order_by(Tenant.created_at.desc()))
+    tenants = list(result.scalars().all())
+
+    tenant_list = []
+    for t in tenants:
+        users_result = await db.execute(select(func.count(User.id)).where(User.tenant_id == t.id))
+        user_count = users_result.scalar()
+        tenant_list.append({
+            "id": t.id,
+            "name": t.name,
+            "slug": t.slug,
+            "phone": t.phone,
+            "subscription_plan": t.subscription_plan,
+            "is_active": t.is_active,
+            "wizard_completed": t.wizard_completed,
+            "license_expires_at": t.license_expires_at.isoformat() if t.license_expires_at else None,
+            "user_count": user_count,
+            "created_at": t.created_at.isoformat(),
+        })
+    return tenant_list
+
+
+@router.delete("/tenants/{tenant_id}")
+async def delete_tenant_admin(tenant_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+
+    users_result = await db.execute(select(User).where(User.tenant_id == tenant_id))
+    for u in users_result.scalars().all():
+        if u.phone not in SUPER_ADMIN_PHONES:
+            await db.delete(u)
+
+    await db.execute(text(f"DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE tenant_id = '{tenant_id}')"))
+    await db.execute(text(f"DELETE FROM sales WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE tenant_id = '{tenant_id}')"))
+    await db.execute(text(f"DELETE FROM orders WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM product_images WHERE product_id IN (SELECT id FROM products WHERE tenant_id = '{tenant_id}')"))
+    await db.execute(text(f"DELETE FROM product_variants WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM product_variant_options WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM products WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM product_categories WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM customers WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM expenses WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM suppliers WHERE tenant_id = '{tenant_id}'"))
+    await db.execute(text(f"DELETE FROM licences WHERE assigned_to = '{tenant_id}'"))
+
+    await db.delete(tenant)
+    await db.flush()
+    return {"status": "deleted", "name": tenant.name}
+
+
+@router.post("/users/{user_id}/reset-password")
+async def reset_user_password(user_id: str, data: dict, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+    new_password = data.get("password", "admin123")
+    target.password_hash = hash_password(new_password)
+    await db.flush()
+    return {"status": "reset", "name": target.name, "new_password": new_password}
+
+
+@router.get("/stats")
+async def get_admin_stats(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not is_super_admin(user):
+        raise HTTPException(status_code=403, detail="Super admin uniquement")
+
+    from app.models.product import Product
+    from app.models.sale import Sale
+    from app.models.customer import Customer
+    from app.models.order import Order
+
+    users_count = (await db.execute(select(func.count(User.id)))).scalar()
+    tenants_count = (await db.execute(select(func.count(Tenant.id)))).scalar()
+    active_tenants = (await db.execute(select(func.count(Tenant.id)).where(Tenant.is_active == True))).scalar()
+    products_count = (await db.execute(select(func.count(Product.id)))).scalar()
+    sales_count = (await db.execute(select(func.count(Sale.id)))).scalar()
+    total_revenue = (await db.execute(select(func.coalesce(func.sum(Sale.total_cfa), 0)))).scalar()
+    customers_count = (await db.execute(select(func.count(Customer.id)))).scalar()
+    orders_count = (await db.execute(select(func.count(Order.id)))).scalar()
+    licences_count = (await db.execute(select(func.count(Licence.id)))).scalar()
+    active_licences = (await db.execute(select(func.count(Licence.id)).where(Licence.is_active == True))).scalar()
+
+    return {
+        "users": users_count,
+        "tenants": tenants_count,
+        "active_tenants": active_tenants,
+        "products": products_count,
+        "sales": sales_count,
+        "total_revenue_cfa": int(total_revenue),
+        "customers": customers_count,
+        "orders": orders_count,
+        "licences": licences_count,
+        "active_licences": active_licences,
+    }
 
 
 @router.get("/all")
