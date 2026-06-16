@@ -88,6 +88,7 @@ async def activate_licence(data: dict, user: User = Depends(require_owner), db: 
     if tenant:
         tenant.subscription_plan = licence.tier
         tenant.license_expires_at = licence.expires_at
+        tenant.is_active = True
 
     await db.flush()
     return {"status": "activated", "tier": licence.tier, "expires_at": licence.expires_at.isoformat()}
@@ -149,7 +150,8 @@ async def toggle_licence(licence_id: str, user: User = Depends(get_current_user)
         tenant_result = await db.execute(select(Tenant).where(Tenant.id == licence.assigned_to))
         tenant = tenant_result.scalar_one_or_none()
         if tenant:
-            tenant.license_expires_at = datetime.now(timezone.utc)
+            tenant.license_expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)
+            tenant.is_active = False
 
     await db.flush()
     return {"is_active": licence.is_active}
@@ -169,7 +171,8 @@ async def delete_licence(licence_id: str, user: User = Depends(get_current_user)
         tenant_result = await db.execute(select(Tenant).where(Tenant.id == licence.assigned_to))
         tenant = tenant_result.scalar_one_or_none()
         if tenant:
-            tenant.license_expires_at = datetime.now(timezone.utc)
+            tenant.license_expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)
+            tenant.is_active = False
             tenant.subscription_plan = "free"
 
     await db.delete(licence)
