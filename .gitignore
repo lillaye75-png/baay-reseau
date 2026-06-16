@@ -16,6 +16,7 @@ node_modules/
 out/
 .env
 .env.local
+.env.*.local
 
 # IDE
 .vscode/
@@ -43,6 +44,9 @@ certs/*.pem
 
 # Backups
 *.bak
+
+# Firebase
+firebase-service-account.json
 
 # Test
 backend/test.db

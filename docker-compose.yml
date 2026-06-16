@@ -25,6 +25,9 @@ services:
       - AT_API_KEY=${AT_API_KEY:-}
       - AT_USERNAME=${AT_USERNAME:-}
       - AT_SENDER_ID=${AT_SENDER_ID:-BAAY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - FCM_SERVER_KEY=${FCM_SERVER_KEY:-}
+      - FCM_PROJECT_ID=${FCM_PROJECT_ID:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","https://localhost:3000"]}
     depends_on:
       db:
@@ -61,6 +64,8 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
     depends_on:
       - backend
 

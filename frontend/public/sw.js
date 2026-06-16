@@ -1,4 +1,4 @@
-const CACHE_NAME = "baay-reseau-v4";
+const CACHE_NAME = "baay-reseau-v5";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -11,6 +11,44 @@ self.addEventListener("activate", (event) => {
     )
   );
   self.clients.claim();
+});
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    data = { title: "Naatal ERP", body: event.data.text() };
+  }
+
+  const title = data.title || "Naatal ERP";
+  const options = {
+    body: data.body || "",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    vibrate: [200, 100, 200],
+    data: data.data || {},
+    actions: data.actions || [],
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
 });
 
 self.addEventListener("fetch", (event) => {

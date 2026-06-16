@@ -26,6 +26,7 @@ class UserRead(BaseModel):
     tenant_id: str
     name: str
     phone: str
+    email: str | None = None
     role: str
     is_active: bool
     created_at: datetime

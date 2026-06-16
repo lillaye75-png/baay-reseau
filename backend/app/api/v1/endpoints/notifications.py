@@ -1,75 +1,89 @@
-import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.api.deps import get_current_user, require_owner
 from app.models.user import User
+from app.models.push_subscription import PushSubscription
+from app.services.fcm import send_push_v1
 
 router = APIRouter()
 
-fcm_subscriptions: dict[str, list[str]] = {}
-
 
 @router.post("/subscribe")
-async def subscribe_push(data: dict, user: User = Depends(get_current_user)):
-    token = data.get("token", "")
-    if not token:
-        raise HTTPException(status_code=400, detail="FCM token requis")
+async def subscribe_push(data: dict, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    endpoint = data.get("endpoint", "")
+    p256dh = data.get("keys", {}).get("p256dh", "")
+    auth = data.get("keys", {}).get("auth", "")
 
-    tenant_id = user.tenant_id
-    if tenant_id not in fcm_subscriptions:
-        fcm_subscriptions[tenant_id] = []
-    if token not in fcm_subscriptions[tenant_id]:
-        fcm_subscriptions[tenant_id].append(token)
+    if not endpoint or not p256dh or not auth:
+        raise HTTPException(status_code=400, detail="Données de subscription invalides")
 
-    return {"status": "subscribed", "tenant_id": tenant_id}
+    result = await db.execute(
+        select(PushSubscription).where(
+            PushSubscription.endpoint == endpoint,
+            PushSubscription.user_id == user.id,
+        )
+    )
+    if result.scalar_one_or_none():
+        return {"status": "already_subscribed"}
+
+    sub = PushSubscription(
+        tenant_id=user.tenant_id,
+        user_id=user.id,
+        endpoint=endpoint,
+        p256dh=p256dh,
+        auth=auth,
+    )
+    db.add(sub)
+    await db.flush()
+    return {"status": "subscribed"}
 
 
 @router.post("/unsubscribe")
-async def unsubscribe_push(data: dict, user: User = Depends(get_current_user)):
-    token = data.get("token", "")
-    tenant_id = user.tenant_id
-    if tenant_id in fcm_subscriptions and token in fcm_subscriptions[tenant_id]:
-        fcm_subscriptions[tenant_id].remove(token)
+async def unsubscribe_push(data: dict, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    endpoint = data.get("endpoint", "")
+    if endpoint:
+        await db.execute(
+            delete(PushSubscription).where(
+                PushSubscription.endpoint == endpoint,
+                PushSubscription.user_id == user.id,
+            )
+        )
+        await db.flush()
     return {"status": "unsubscribed"}
 
 
 @router.post("/send")
 async def send_push(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
-    if not settings.FCM_SERVER_KEY:
-        raise HTTPException(status_code=501, detail="FCM non configuré")
-
     title = data.get("title", "Naatal ERP")
     body = data.get("body", "")
     target = data.get("target", "all")
 
-    tokens = fcm_subscriptions.get(user.tenant_id, [])
-    if not tokens:
+    result = await db.execute(
+        select(PushSubscription).where(PushSubscription.tenant_id == user.tenant_id)
+    )
+    subscriptions = list(result.scalars().all())
+
+    if not subscriptions:
         return {"sent": 0, "message": "Aucun appareil abonné"}
 
     sent = 0
-    async with httpx.AsyncClient() as client:
-        for token in tokens:
-            try:
-                resp = await client.post(
-                    "https://fcm.googleapis.com/fcm/send",
-                    headers={
-                        "Authorization": f"key={settings.FCM_SERVER_KEY}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "to": token,
-                        "notification": {"title": title, "body": body},
-                        "data": {"tenant_id": user.tenant_id, "target": target},
-                    },
-                    timeout=10,
-                )
-                if resp.status_code == 200:
-                    sent += 1
-            except Exception:
-                pass
+    for sub in subscriptions:
+        try:
+            ok = await send_push_v1(
+                token=sub.endpoint,
+                title=title,
+                body=body,
+                data={"tenant_id": user.tenant_id, "target": target},
+            )
+            if ok:
+                sent += 1
+            else:
+                await db.execute(delete(PushSubscription).where(PushSubscription.id == sub.id))
+        except Exception:
+            await db.execute(delete(PushSubscription).where(PushSubscription.id == sub.id))
 
-    return {"sent": sent, "total": len(tokens)}
+    await db.flush()
+    return {"sent": sent, "total": len(subscriptions)}

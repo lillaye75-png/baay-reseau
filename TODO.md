@@ -145,9 +145,9 @@
 - [ ] Hot-reload peut rater après changements Python
 
 ### Priorité Haute
-- [x] **Intégrer Google OAuth** — infrastructure prête, nécessite clé API Google
+- [x] **Intégrer Google OAuth** — userinfo endpoint, email sur User, callback wizard check
 - [x] **Real-time subscriptions** — WebSocket infrastructure prête, nécessite Redis
-- [x] **Push notifications** — infrastructure prête, nécessite clé FCM
+- [x] **Push notifications** — FCM v1 API via service account OAuth2, SW push handler, subscriptions en DB
 - [x] **Multi-device** : refresh tokens + auto-rotation
 
 ### Priorité Moyenne

@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState("");
-  const { user } = useAuth();
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -24,7 +22,13 @@ export default function AuthCallbackPage() {
         localStorage.setItem("token", access_token);
         localStorage.setItem("refresh_token", refresh_token);
         localStorage.setItem("user", JSON.stringify(userData));
-        window.location.href = "/";
+
+        api.get("/tenants/me").then((tenantRes) => {
+          const needsWizard = !tenantRes.data.wizard_completed && (!tenantRes.data.name || tenantRes.data.name === "My Shop");
+          window.location.href = needsWizard ? "/wizard" : "/";
+        }).catch(() => {
+          window.location.href = "/";
+        });
       })
       .catch((err) => {
         setError(err.response?.data?.detail || "Erreur lors de la connexion Google");

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, DateTime, Boolean, ForeignKey
+from sqlalchemy import String, DateTime, Boolean, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -14,6 +14,7 @@ class User(Base):
     tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"))
     name: Mapped[str] = mapped_column(String(255))
     phone: Mapped[str] = mapped_column(String(20), unique=True)
+    email: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(50), default="owner")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
