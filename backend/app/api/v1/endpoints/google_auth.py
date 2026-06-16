@@ -84,7 +84,7 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
         )
         db.add(user)
         await db.flush()
-    except IntegrityError:
+    except IntegrityError as e:
         await db.rollback()
         result = await db.execute(
             select(User).where((User.email == email) | (User.phone == phone_google))
@@ -105,12 +105,12 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
                 db.add(user)
                 await db.flush()
         if not user:
-            raise HTTPException(status_code=500, detail="Erreur création compte Google")
+            raise HTTPException(status_code=500, detail=f"Erreur création compte: {str(e.orig)}")
         access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         return Token(access_token=access_token, refresh_token=refresh, user=UserRead.model_validate(user))
-    except Exception:
-        raise HTTPException(status_code=500, detail="Erreur création compte Google")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur Google: {type(e).__name__}: {str(e)}")
 
     access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
     refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
