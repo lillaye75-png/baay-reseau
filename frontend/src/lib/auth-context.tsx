@@ -47,12 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(access_token);
     setUser(userData);
 
-    const tenantRes = await api.get("/tenants/me");
-    const needsWizard = !tenantRes.data.name || tenantRes.data.name === "My Shop";
-    if (needsWizard) {
-      router.push("/wizard");
-    } else {
-      localStorage.removeItem("wizard_needed");
+    try {
+      const tenantRes = await api.get("/tenants/me");
+      const needsWizard = !tenantRes.data.wizard_completed && (!tenantRes.data.name || tenantRes.data.name === "My Shop");
+      if (needsWizard) {
+        router.push("/wizard");
+      } else {
+        router.push("/");
+      }
+    } catch {
       router.push("/");
     }
   };

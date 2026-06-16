@@ -14,6 +14,7 @@ class TenantUpdate(BaseModel):
     slug: str | None = None
     phone: str | None = None
     email: str | None = None
+    wizard_completed: bool | None = None
 
 
 class TenantIntegrations(BaseModel):
@@ -30,6 +31,7 @@ class TenantRead(BaseModel):
     phone: str
     email: str | None
     subscription_plan: str
+    wizard_completed: bool
     is_active: bool
     created_at: datetime
 

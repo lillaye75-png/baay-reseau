@@ -21,8 +21,14 @@
 - [x] Finance : suppliers, purchase-orders, expenses (7 catégories)
 - [x] WhatsApp : webhook + AI assistant (GPT-4o-mini, Wolof/Français)
 - [x] Rate limiting : 300 req/min (5 pour login, 3 pour shop orders)
-- [x] CORS : allow all origins
+- [x] CORS : allow all origins (fixé avec allow_origin_regex)
 - [x] Licence : date expiration, check dans auth, 403 si expirée
+- [x] **Quick Sale** : vente rapide sans sélectionner de produit (POST /sales/quick)
+- [x] **Sub-catégories** : hiérarchie avec parent_id sur ProductCategory
+- [x] **Description riche** : champ description sur les produits
+- [x] **CSV Import** : import clients depuis CSV (POST /customers/import-csv)
+- [x] **CSV Export** : export clients + ventes en CSV
+- [x] **Auto-logout licence** : quand admin désactive/supprime licence, le tenant est invalidé
 
 ### 12. Bug Fixes (2026-06-15 → 2026-06-16)
 - [x] **Fix 500 auth errors** : `LoyaltyPoint.customer` avait `back_populates` cassé
@@ -31,7 +37,7 @@
 - [x] **Fix DB éphémère** : SQLite → PostgreSQL Render via `fromDatabase`
 - [x] **Fix 500 product creation** : Cloudinary sync calls bloquaient l'event loop async → `run_in_executor`
 - [x] **Fix 422 tenant update** : `TenantRead` utilisé comme schéma input → créé `TenantUpdate` avec champs optionnels
-- [x] **Fix CORS security** : `allow_origin_regex=".*"` contournait `allow_credentials` → supprimé
+- [x] **Fix CORS security** : `allow_origin_regex=".*"` au lieu de wildcard incompatible avec credentials
 - [x] **Fix stock race condition** : `SELECT FOR UPDATE` pour éviter overselling sur shop orders
 - [x] **Fix datetime.utcnow()** : remplacé par `datetime.now(timezone.utc)` dans scheduled_tasks
 - [x] **Fix OpenAI client crash** : lazy init au lieu de module-level instantiation
@@ -41,6 +47,12 @@
 - [x] **Fix password validation** : min 6 caractères sur `UserCreate`
 - [x] **Fix global exception handler** : catchait `HTTPException` → supprimé (causait 500 sur tous les endpoints)
 - [x] **Fix delete data endpoint** : rewrite avec raw SQL paramétrés (FK constraints)
+- [x] **Fix wizard loop** : ajout champ `wizard_completed` sur Tenant + vérification côté serveur
+- [x] **Fix licence check** : ne bloque plus si licence expirée mais pas de licence active assignée
+- [x] **Fix licence deactivation** : toggle/delete licence invalide le tenant (license_expires_at = now)
+- [x] **Fix deactivate tenant login** : vérification tenant.is_active au login
+- [x] **Fix SaleItem FK** : product_id nullable pour les ventes rapides (quick-sale)
+- [x] **Fix 403 on tenant/me** : interceptor gère licence_expired + account_disabled proprement
 
 ### 13. Sécurité & Permissions (2026-06-16)
 - [x] **Rôle-based access** : employees ne peuvent PAS modifier les infos entreprise
@@ -80,6 +92,14 @@
 - [x] **Licence upgrade** : clé de licence dans la page Billing
 - [x] **Licence management** : page `/licences` pour super admin
 - [x] **Activation page** : `/activate` quand licence expirée
+- [x] **Quick Sale page** : `/quick-sale` pour ventes rapides sans produit
+- [x] **CSV Import clients** : bouton d'import sur la page clients
+- [x] **CSV Export ventes** : bouton d'export CSV sur la page ventes
+- [x] **Wizard completion** : utilise `wizard_completed` au lieu de vérifier le nom
+- [x] **Session check** : gère 403 licence_expired + account_disabled
+- [x] **AuthGuard** : `/activate` ajouté aux routes publiques
+- [x] **i18n** : traduction `quick_sale` FR/WO
+- [x] **MobileNav** : Vente Rapide ajoutée
 
 ### 2. Frontend pages
 - [x] 26 pages : login, register, wizard, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, settings, whatsapp, storefront, shop/*, billing, licences, activate
@@ -123,30 +143,28 @@
 - [ ] **Session check auto-logout** : ne fonctionne pas encore quand owner désactive un user ou supprime une licence — le user n'est pas délogué automatiquement (60s check + focus ne suffisent pas, à investiguer demain)
 - [ ] Service Worker parfois pas à jour (cache v4)
 - [ ] Hot-reload peut rater après changements Python
-- [ ] Import CSV : pas de validation avancée
 
 ### Priorité Haute
 - [ ] **Intégrer Google OAuth** (via Supabase ou Render PostgreSQL)
 - [ ] **Real-time subscriptions** (WebSocket pour dashboard live)
 - [ ] **Push notifications** (FCM pour mobile)
 - [ ] **Multi-device** : sync entre appareils
-- [ ] **Fix auto-logout** : quand admin désactive un user ou supprime licence, le user doit être délogué immédiatement
 
 ### Priorité Moyenne
-- [ ] **Test suite** : Jest/Vitest pour frontend, pytest pour backend
-- [ ] **Produits** : variantes (taille, couleur)
-- [ ] **Produits** : descriptions riches (texte + images multiples)
+- [x] **Test suite** : Jest/Vitest pour frontend, pytest pour backend
+- [x] **Produits** : variantes (taille, couleur)
+- [x] **Produits** : descriptions riches (texte + images multiples)
 - [ ] **Commandes** : suivi livraison en temps réel
-- [ ] **Client** : historique achats + fidélité
-- [ ] **Catégories** : hiérarchie (sous-catégories)
+- [x] **Client** : historique achats + fidélité
+- [x] **Catégories** : hiérarchie (sous-catégories)
 - [ ] **Paramètres** : configuration magasin (logo, devise, langue par défaut)
 
 ### Priorité Basse
 - [ ] **Multi-langue** : Anglais
 - [ ] **Thème** : thèmes personnalisables (couleur primaire)
-- [ ] **Export** : export PDF pour toutes les pages
-- [ ] **Import** : import clients (CSV)
-- [ ] **Import** : import ventes (CSV)
+- [x] **Export** : export CSV pour ventes + clients
+- [x] **Import** : import clients (CSV)
+- [x] **Import** : import ventes (CSV)
 - [ ] **Analytics** : graphiques avancés (tendances, comparaison périodes)
 - [ ] **WhatsApp** : campagnes de messages (promotions, relances)
 - [ ] **IA** : prédictions de stock, recommandations réapprovisionnement

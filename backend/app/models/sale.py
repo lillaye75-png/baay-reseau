@@ -29,11 +29,11 @@ class SaleItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     sale_id: Mapped[str] = mapped_column(String(36), ForeignKey("sales.id"))
-    product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id"))
+    product_id: Mapped[str] = mapped_column(String(36), nullable=True)
     product_name: Mapped[str] = mapped_column(String(255), default="")
     quantity: Mapped[int] = mapped_column(Integer)
     unit_price_cfa: Mapped[int] = mapped_column(Integer)
     total_cfa: Mapped[int] = mapped_column(Integer)
 
     sale = relationship("Sale", back_populates="items")
-    product = relationship("Product")
+    product = relationship("Product", foreign_keys=[product_id], primaryjoin="SaleItem.product_id == Product.id", viewonly=True)

@@ -5,12 +5,14 @@ from datetime import datetime
 class ProductCategoryCreate(BaseModel):
     name: str
     name_wo: str | None = None
+    parent_id: str | None = None
 
 
 class ProductCategoryRead(BaseModel):
     id: str
     name: str
     name_wo: str | None
+    parent_id: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -35,6 +37,7 @@ class ProductRead(BaseModel):
     tenant_id: str
     name: str
     sku: str | None
+    description: str | None = None
     price_cfa: int
     cost_price_cfa: int
     stock_quantity: int

@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
-const publicPaths = ["/login", "/register"];
+const publicPaths = ["/login", "/register", "/activate"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -17,17 +17,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       router.push("/login");
     }
   }, [token, loading, pathname, router]);
-
-  useEffect(() => {
-    if (!token) return;
-    const handle403 = (e: Event) => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      router.push("/login?expired=1");
-    };
-    window.addEventListener("license-expired", handle403);
-    return () => window.removeEventListener("license-expired", handle403);
-  }, [token, router]);
 
   if (loading) {
     return (

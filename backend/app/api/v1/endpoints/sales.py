@@ -1,15 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+import csv
+import io
 
 from app.core.database import get_db
 from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.sale import Sale, SaleItem
 from app.models.product import Product
-from app.schemas.sale import SaleCreate, SaleRead
-from app.services.sales import create_sale, get_sales, get_daily_revenue, get_weekly_revenue
+from app.schemas.sale import SaleCreate, SaleRead, QuickSaleCreate
+from app.services.sales import create_sale, get_sales, get_daily_revenue, get_weekly_revenue, create_quick_sale
 from app.integrations.payments import create_wave_checkout, create_orange_money_link, get_qr_svg
 
 router = APIRouter()
@@ -44,6 +47,11 @@ async def get_sale(sale_id: str, user: User = Depends(get_current_user), db: Asy
 @router.post("/", response_model=SaleRead, status_code=201)
 async def create_new_sale(data: SaleCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return await create_sale(db, user.tenant_id, data)
+
+
+@router.post("/quick", response_model=SaleRead, status_code=201)
+async def create_quick_sale_endpoint(data: QuickSaleCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return await create_quick_sale(db, user.tenant_id, data)
 
 
 @router.post("/{product_id}/adjust-stock")
@@ -98,3 +106,21 @@ async def delete_sale(sale_id: str, user: User = Depends(require_owner), db: Asy
         return await delete_sale_svc(db, user.tenant_id, sale_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/export-csv")
+async def export_sales_csv(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    sales = await get_sales(db, user.tenant_id, limit=10000)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["date", "total_cfa", "payment_method", "is_credit", "items_count"])
+    for s in sales:
+        writer.writerow([str(s.created_at), s.total_cfa, s.payment_method, s.is_credit, len(s.items)])
+
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode("utf-8-sig")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=ventes-{__import__('datetime').date.today()}.csv"},
+    )

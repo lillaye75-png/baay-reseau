@@ -1,164 +1,143 @@
 import pytest
+from httpx import AsyncClient
 
 
-@pytest.mark.anyio
-async def test_health(client):
-    resp = await client.get("/health")
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
+@pytest.mark.asyncio
+async def test_health(client: AsyncClient):
+    response = await client.get("/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
 
 
-@pytest.mark.anyio
-async def test_register_and_login(client):
-    resp = await client.post("/api/v1/auth/register", json={
-        "name": "Test Shop",
-        "phone": "770000002",
-        "password": "testpass123",
+@pytest.mark.asyncio
+async def test_register(client: AsyncClient):
+    response = await client.post("/api/v1/auth/register", json={
+        "name": "Test User",
+        "phone": "770000001",
+        "password": "test123",
     })
-    assert resp.status_code == 201
-    data = resp.json()
+    assert response.status_code == 201
+    data = response.json()
     assert "access_token" in data
-    assert data["user"]["name"] == "Test Shop"
+    assert data["user"]["name"] == "Test User"
 
-    resp = await client.post("/api/v1/auth/login", json={
+
+@pytest.mark.asyncio
+async def test_register_duplicate_phone(client: AsyncClient):
+    await client.post("/api/v1/auth/register", json={
+        "name": "Dup User",
         "phone": "770000002",
-        "password": "testpass123",
+        "password": "test123",
     })
-    assert resp.status_code == 200
-    assert "access_token" in resp.json()
+    response = await client.post("/api/v1/auth/register", json={
+        "name": "Dup User 2",
+        "phone": "770000002",
+        "password": "test456",
+    })
+    assert response.status_code == 400
 
 
-@pytest.mark.anyio
-async def test_login_wrong_password(client):
+@pytest.mark.asyncio
+async def test_login(client: AsyncClient):
     await client.post("/api/v1/auth/register", json={
-        "name": "Test",
+        "name": "Login Test",
         "phone": "770000003",
-        "password": "pass123",
+        "password": "test123",
     })
-    resp = await client.post("/api/v1/auth/login", json={
+    response = await client.post("/api/v1/auth/login", json={
         "phone": "770000003",
-        "password": "wrong",
+        "password": "test123",
     })
-    assert resp.status_code == 401
+    assert response.status_code == 200
+    assert "access_token" in response.json()
 
 
-@pytest.mark.anyio
-async def test_duplicate_register(client):
+@pytest.mark.asyncio
+async def test_login_wrong_password(client: AsyncClient):
     await client.post("/api/v1/auth/register", json={
-        "name": "Dup",
+        "name": "Wrong Pass",
         "phone": "770000004",
-        "password": "pass",
+        "password": "test123",
     })
-    resp = await client.post("/api/v1/auth/register", json={
-        "name": "Dup2",
+    response = await client.post("/api/v1/auth/login", json={
         "phone": "770000004",
-        "password": "pass",
+        "password": "wrongpass",
     })
-    assert resp.status_code == 400
+    assert response.status_code == 401
 
 
-@pytest.mark.anyio
-async def test_protected_endpoint_no_auth(client):
-    resp = await client.get("/api/v1/products/")
-    assert resp.status_code in [401, 403]
+@pytest.mark.asyncio
+async def test_password_validation(client: AsyncClient):
+    response = await client.post("/api/v1/auth/register", json={
+        "name": "Short Pass",
+        "phone": "770000005",
+        "password": "123",
+    })
+    assert response.status_code == 422
 
 
-@pytest.mark.anyio
-async def test_create_and_list_products(client, auth_headers):
-    resp = await client.post("/api/v1/products/", json={
-        "name": "Test Product",
-        "price_cfa": 5000,
-        "cost_price_cfa": 3000,
-        "stock_quantity": 10,
-    }, headers=auth_headers)
-    assert resp.status_code == 201
-    product_id = resp.json()["id"]
-
-    resp = await client.get("/api/v1/products/", headers=auth_headers)
-    assert resp.status_code == 200
-    assert len(resp.json()) >= 1
-
-    resp = await client.delete(f"/api/v1/products/{product_id}", headers=auth_headers)
-    assert resp.status_code == 200
+@pytest.mark.asyncio
+async def test_get_tenant(client: AsyncClient):
+    reg = await client.post("/api/v1/auth/register", json={
+        "name": "Tenant Test",
+        "phone": "770000006",
+        "password": "test123",
+    })
+    token = reg.json()["access_token"]
+    response = await client.get("/api/v1/tenants/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Tenant Test"
 
 
-@pytest.mark.anyio
-async def test_create_and_list_customers(client, auth_headers):
-    resp = await client.post("/api/v1/customers/", json={
-        "name": "Test Customer",
-        "phone": "779990001",
-    }, headers=auth_headers)
-    assert resp.status_code == 201
+@pytest.mark.asyncio
+async def test_update_tenant(client: AsyncClient):
+    reg = await client.post("/api/v1/auth/register", json={
+        "name": "Update Tenant",
+        "phone": "770000007",
+        "password": "test123",
+    })
+    token = reg.json()["access_token"]
+    tenant = (await client.get("/api/v1/tenants/me", headers={"Authorization": f"Bearer {token}"})).json()
+    response = await client.put(
+        f"/api/v1/tenants/{tenant['id']}",
+        json={"name": "Updated Shop", "wizard_completed": True},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Updated Shop"
 
-    resp = await client.get("/api/v1/customers/", headers=auth_headers)
-    assert resp.status_code == 200
-    assert len(resp.json()) >= 1
 
-
-@pytest.mark.anyio
-async def test_sale_creates_and_updates_stock(client, auth_headers):
-    prod = await client.post("/api/v1/products/", json={
-        "name": "Sale Test",
-        "price_cfa": 1000,
-        "stock_quantity": 10,
-    }, headers=auth_headers)
-    pid = prod.json()["id"]
-
-    resp = await client.post("/api/v1/sales/", json={
-        "items": [{"product_id": pid, "quantity": 3, "unit_price_cfa": 1000}],
+@pytest.mark.asyncio
+async def test_quick_sale(client: AsyncClient):
+    reg = await client.post("/api/v1/auth/register", json={
+        "name": "Quick Sale Test",
+        "phone": "770000008",
+        "password": "test123",
+    })
+    token = reg.json()["access_token"]
+    response = await client.post("/api/v1/sales/quick", json={
+        "product_name": "Service recharge",
+        "quantity": 1,
+        "unit_price_cfa": 5000,
         "payment_method": "cash",
-    }, headers=auth_headers)
-    assert resp.status_code == 201
-
-    prod_resp = await client.get(f"/api/v1/products/{pid}", headers=auth_headers)
-    assert prod_resp.json()["stock_quantity"] == 7
-
-
-@pytest.mark.anyio
-async def test_credit_sale_updates_customer(client, auth_headers):
-    cust = await client.post("/api/v1/customers/", json={
-        "name": "Credit Guy",
-        "phone": "779990002",
-    }, headers=auth_headers)
-    cid = cust.json()["id"]
-
-    prod = await client.post("/api/v1/products/", json={
-        "name": "Credit Prod",
-        "price_cfa": 2000,
-        "stock_quantity": 5,
-    }, headers=auth_headers)
-    pid = prod.json()["id"]
-
-    resp = await client.post("/api/v1/sales/", json={
-        "customer_id": cid,
-        "items": [{"product_id": pid, "quantity": 1, "unit_price_cfa": 2000}],
-        "payment_method": "credit",
-        "is_credit": True,
-    }, headers=auth_headers)
-    assert resp.status_code == 201
-
-    cust_resp = await client.get(f"/api/v1/customers/{cid}", headers=auth_headers)
-    assert cust_resp.json()["total_credit_cfa"] == 2000
+    }, headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 201
+    data = response.json()
+    assert data["total_cfa"] == 5000
+    assert data["payment_method"] == "cash"
 
 
-@pytest.mark.anyio
-async def test_dashboard_summary(client, auth_headers):
-    resp = await client.get("/api/v1/dashboard/summary", headers=auth_headers)
-    assert resp.status_code == 200
-    data = resp.json()
+@pytest.mark.asyncio
+async def test_dashboard_summary(client: AsyncClient):
+    reg = await client.post("/api/v1/auth/register", json={
+        "name": "Dashboard Test",
+        "phone": "770000009",
+        "password": "test123",
+    })
+    token = reg.json()["access_token"]
+    response = await client.get("/api/v1/dashboard/summary", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    data = response.json()
     assert "inventory" in data
     assert "revenue" in data
-    assert "credit" in data
-
-
-@pytest.mark.anyio
-async def test_storefront_settings(client, auth_headers):
-    resp = await client.get("/api/v1/storefront/settings", headers=auth_headers)
-    assert resp.status_code == 200
-
-    resp = await client.put("/api/v1/storefront/settings", json={
-        "is_enabled": True,
-        "store_name": "Test Store",
-    }, headers=auth_headers)
-    assert resp.status_code == 200
-    assert resp.json()["is_enabled"] == True

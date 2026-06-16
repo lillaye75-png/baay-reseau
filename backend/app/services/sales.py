@@ -267,3 +267,65 @@ async def delete_sale(db: AsyncSession, tenant_id: str, sale_id: str) -> dict:
     await db.delete(sale)
     await db.flush()
     return {"status": "deleted", "stock_restored": True}
+
+
+async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
+    total = data.quantity * data.unit_price_cfa
+
+    sale = Sale(
+        tenant_id=tenant_id,
+        customer_id=data.customer_id,
+        total_cfa=total,
+        payment_method=data.payment_method,
+        payment_reference=data.payment_reference,
+        is_credit=data.is_credit,
+    )
+    db.add(sale)
+    await db.flush()
+
+    sale_item = SaleItem(
+        sale_id=sale.id,
+        product_id="quick-sale",
+        product_name=data.product_name,
+        quantity=data.quantity,
+        unit_price_cfa=data.unit_price_cfa,
+        total_cfa=total,
+    )
+    db.add(sale_item)
+
+    if data.is_credit and data.customer_id:
+        result = await db.execute(
+            select(CreditTab).where(
+                CreditTab.customer_id == data.customer_id,
+                CreditTab.is_active == True,
+            )
+        )
+        tab = result.scalar_one_or_none()
+        if not tab:
+            tab = CreditTab(customer_id=data.customer_id)
+            db.add(tab)
+            await db.flush()
+
+        tab.balance_cfa += total
+        entry = CreditTabEntry(
+            tab_id=tab.id,
+            amount_cfa=total,
+            description=f"Vente rapide",
+            sale_id=sale.id,
+        )
+        db.add(entry)
+
+        customer_result = await db.execute(select(Customer).where(Customer.id == data.customer_id))
+        customer = customer_result.scalar_one_or_none()
+        if customer:
+            customer.total_credit_cfa += total
+
+    await db.flush()
+
+    result = await db.execute(
+        select(Sale).where(Sale.id == sale.id).options(
+            selectinload(Sale.items),
+            selectinload(Sale.customer),
+        )
+    )
+    return result.scalar_one()

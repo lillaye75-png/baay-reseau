@@ -9,7 +9,7 @@ import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import { formatCFA } from "@/lib/format";
 import api, { Customer } from "@/lib/api";
-import { Plus, Edit, Trash2, Phone, Search, X, History, Download } from "lucide-react";
+import { Plus, Edit, Trash2, Phone, Search, X, History, Download, Upload } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import { exportCustomers } from "@/lib/export";
 
@@ -99,6 +99,31 @@ export default function CustomersPage() {
             <Download className="h-4 w-4 mr-2" />
             Exporter
           </Button>
+          <label className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <Upload className="h-4 w-4" />
+            Importer CSV
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append("file", file);
+                try {
+                  const res = await api.post("/customers/import-csv", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+                  showToast(`${res.data.imported} client(s) importé(s), ${res.data.skipped} ignoré(s)`);
+                  loadCustomers();
+                } catch {
+                  showToast("Erreur lors de l'import", "error");
+                }
+                e.target.value = "";
+              }}
+            />
+          </label>
         </div>
 
         {showForm && (

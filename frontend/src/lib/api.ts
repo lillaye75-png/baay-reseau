@@ -21,7 +21,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
-        const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register";
+        const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register" || window.location.pathname === "/activate";
         if (!isLoginPage) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
@@ -29,9 +29,16 @@ api.interceptors.response.use(
         }
       }
     }
-    if (error.response?.status === 403 && error.response?.data?.detail === "licence_expired") {
-      if (typeof window !== "undefined") {
-        window.location.href = "/activate";
+    if (error.response?.status === 403) {
+      const detail = error.response?.data?.detail;
+      if (detail === "licence_expired" || detail === "Compte désactivé. Contactez l'administrateur.") {
+        if (typeof window !== "undefined") {
+          const isActivatePage = window.location.pathname === "/activate";
+          const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/register";
+          if (!isActivatePage && !isLoginPage) {
+            window.location.href = "/activate";
+          }
+        }
       }
     }
     return Promise.reject(error);
@@ -47,6 +54,7 @@ export interface Tenant {
   phone: string;
   email: string | null;
   subscription_plan: string;
+  wizard_completed: boolean;
   is_active: boolean;
   created_at: string;
 }

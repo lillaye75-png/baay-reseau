@@ -69,6 +69,8 @@ const translations: Record<string, Record<Lang, string>> = {
   loyalty: { fr: "Fidélité", wo: "Fidélité" },
   referral: { fr: "Parrainage", wo: "Parrainage" },
   shop: { fr: "Boutique publique", wo: "Boutique wi" },
+  quick_sale: { fr: "Vente Rapide", wo: "Jënd gaaw" },
+  licences: { fr: "Licences", wo: "Licences" },
 };
 
 interface I18nContextType {

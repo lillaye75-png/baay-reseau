@@ -16,6 +16,16 @@ class SaleCreate(BaseModel):
     is_credit: bool = False
 
 
+class QuickSaleCreate(BaseModel):
+    customer_id: str | None = None
+    product_name: str
+    quantity: int = 1
+    unit_price_cfa: int
+    payment_method: str = "cash"
+    payment_reference: str | None = None
+    is_credit: bool = False
+
+
 class SaleItemRead(BaseModel):
     id: str
     product_id: str

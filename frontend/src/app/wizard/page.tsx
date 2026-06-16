@@ -28,7 +28,7 @@ export default function WizardPage() {
 
   useEffect(() => {
     api.get("/tenants/me").then((res) => {
-      if (res.data.name && res.data.name !== "My Shop") {
+      if (res.data.wizard_completed) {
         window.location.href = "/";
       } else {
         setShopName(res.data.name === "My Shop" ? "" : res.data.name);
@@ -36,7 +36,7 @@ export default function WizardPage() {
         setShopEmail(res.data.email || "");
         setShopSlug(res.data.slug || "");
       }
-    });
+    }).catch(() => {});
   }, []);
 
   const handleFinish = async () => {
@@ -47,6 +47,7 @@ export default function WizardPage() {
         phone: shopPhone || user?.phone,
         email: shopEmail || null,
         slug: shopSlug || undefined,
+        wizard_completed: true,
       });
 
       if (selectedPlan !== "free" && licenceKey.trim()) {

@@ -14,9 +14,11 @@ class ProductCategory(Base):
     tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"))
     name: Mapped[str] = mapped_column(String(255))
     name_wo: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    parent_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("product_categories.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     products = relationship("Product", back_populates="category")
+    children = relationship("ProductCategory", backref="parent", remote_side="ProductCategory.id")
 
 
 class Product(Base):

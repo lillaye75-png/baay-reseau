@@ -56,7 +56,7 @@ async def update_category(category_id: str, data: ProductCategoryCreate, user: U
     category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
-    ALLOWED_FIELDS = {"name", "name_wo", "description"}
+    ALLOWED_FIELDS = {"name", "name_wo", "description", "parent_id"}
     for field, value in data.model_dump().items():
         if field in ALLOWED_FIELDS:
             setattr(category, field, value)

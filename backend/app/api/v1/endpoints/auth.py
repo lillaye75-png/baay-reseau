@@ -53,6 +53,11 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Compte désactivé. Contactez l'administrateur.")
 
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+    tenant = tenant_result.scalar_one_or_none()
+    if tenant and not tenant.is_active:
+        raise HTTPException(status_code=403, detail="Compte désactivé. Contactez l'administrateur.")
+
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
     return Token(access_token=token, user=UserRead.model_validate(user))
 

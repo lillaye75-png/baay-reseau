@@ -60,6 +60,25 @@ export default function SalesPage() {
               <Download className="h-4 w-4" />
               Exporter
             </button>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await api.get("/sales/export-csv", { responseType: "blob" });
+                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `ventes-${new Date().toISOString().split("T")[0]}.csv`;
+                  a.click();
+                  showToast("CSV exporté avec succès");
+                } catch {
+                  showToast("Erreur lors de l'export", "error");
+                }
+              }}
+              className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              <Download className="h-4 w-4" />
+              CSV
+            </button>
             <Card className="!p-0">
               <CardContent className="flex items-center gap-3 px-4 py-2">
                 <Calendar className="h-4 w-4 text-primary-600" />

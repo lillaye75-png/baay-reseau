@@ -144,6 +144,13 @@ async def toggle_licence(licence_id: str, user: User = Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Licence introuvable")
 
     licence.is_active = not licence.is_active
+
+    if not licence.is_active and licence.assigned_to:
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == licence.assigned_to))
+        tenant = tenant_result.scalar_one_or_none()
+        if tenant:
+            tenant.license_expires_at = datetime.now(timezone.utc)
+
     await db.flush()
     return {"is_active": licence.is_active}
 
@@ -157,6 +164,13 @@ async def delete_licence(licence_id: str, user: User = Depends(get_current_user)
     licence = result.scalar_one_or_none()
     if not licence:
         raise HTTPException(status_code=404, detail="Licence introuvable")
+
+    if licence.assigned_to:
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == licence.assigned_to))
+        tenant = tenant_result.scalar_one_or_none()
+        if tenant:
+            tenant.license_expires_at = datetime.now(timezone.utc)
+            tenant.subscription_plan = "free"
 
     await db.delete(licence)
     await db.flush()

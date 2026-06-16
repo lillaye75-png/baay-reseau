@@ -29,9 +29,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           window.location.href = "/login";
-        }
-        if (err.response?.status === 403 && err.response?.data?.detail === "licence_expired") {
-          window.location.href = "/activate";
+        } else if (err.response?.status === 403) {
+          const detail = err.response?.data?.detail;
+          if (detail === "licence_expired" || detail?.includes("désactivé")) {
+            window.location.href = "/activate";
+          }
         }
       });
     };

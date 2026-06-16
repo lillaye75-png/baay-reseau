@@ -29,7 +29,8 @@ app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS != ["*"] else ["*"],
+    allow_origins=[],
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,7 +74,23 @@ async def on_startup():
                     await conn.execute(text(f"ALTER TABLE tenants ADD COLUMN IF NOT EXISTS {col} VARCHAR(500)"))
                 except Exception:
                     pass
-        logger.info("Tenant integrations columns ensured")
+            try:
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS wizard_completed BOOLEAN DEFAULT FALSE"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE sale_items DROP CONSTRAINT IF EXISTS sale_items_product_id_fkey"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE product_categories ADD COLUMN IF NOT EXISTS parent_id VARCHAR(36)"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points INTEGER DEFAULT 0"))
+            except Exception:
+                pass
+        logger.info("Tenant columns ensured")
     except Exception as e:
         logger.error(f"Column migration error: {e}")
 

@@ -19,12 +19,14 @@ import {
   Crown,
   Wallet,
   Key,
+  Zap,
 } from "lucide-react";
 import api from "@/lib/api";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard, i18nKey: "dashboard" },
   { name: "POS / Vente", href: "/pos", icon: ShoppingCart, i18nKey: "pos" },
+  { name: "Vente Rapide", href: "/quick-sale", icon: Zap, i18nKey: "quick_sale" },
   { name: "Ventes & Factures", href: "/sales", icon: Receipt, i18nKey: "sales" },
   { name: "Commandes", href: "/orders", icon: ShoppingBag, i18nKey: "orders", showBadge: true },
   { name: "Dépenses", href: "/expenses", icon: Wallet, i18nKey: "expenses" },
