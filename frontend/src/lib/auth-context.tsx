@@ -46,9 +46,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("user", JSON.stringify(userData));
     setToken(access_token);
     setUser(userData);
-    if (localStorage.getItem("wizard_needed")) {
+
+    const tenantRes = await api.get("/tenants/me");
+    const needsWizard = !tenantRes.data.name || tenantRes.data.name === "My Shop";
+    if (needsWizard) {
       router.push("/wizard");
     } else {
+      localStorage.removeItem("wizard_needed");
       router.push("/");
     }
   };
@@ -58,7 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { access_token, user: userData } = res.data;
     localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("wizard_needed", "1");
     setToken(access_token);
     setUser(userData);
     router.push("/wizard");
@@ -67,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("wizard_needed");
     setToken(null);
     setUser(null);
     router.push("/login");

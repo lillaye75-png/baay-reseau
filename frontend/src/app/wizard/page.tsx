@@ -26,11 +26,24 @@ export default function WizardPage() {
     { id: "enterprise", name: "Enterprise", desc: "Illimité, multi-magasin", color: "border-yellow-500 ring-2 ring-yellow-500/20" },
   ];
 
+  useEffect(() => {
+    api.get("/tenants/me").then((res) => {
+      if (res.data.name && res.data.name !== "My Shop") {
+        window.location.href = "/";
+      } else {
+        setShopName(res.data.name === "My Shop" ? "" : res.data.name);
+        setShopPhone(res.data.phone || "");
+        setShopEmail(res.data.email || "");
+        setShopSlug(res.data.slug || "");
+      }
+    });
+  }, []);
+
   const handleFinish = async () => {
     setSaving(true);
     try {
       await api.put(`/tenants/${user?.tenant_id}`, {
-        name: shopName || user?.name,
+        name: shopName || "My Shop",
         phone: shopPhone || user?.phone,
         email: shopEmail || null,
         slug: shopSlug || undefined,
@@ -44,8 +57,8 @@ export default function WizardPage() {
         }
       }
 
+      localStorage.removeItem("wizard_needed");
       showToast("Bienvenue ! Configuration terminée");
-      localStorage.removeItem("wizard_done");
       window.location.href = "/";
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur", "error");
