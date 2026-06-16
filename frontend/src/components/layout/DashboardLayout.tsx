@@ -11,6 +11,7 @@ import NotificationsDropdown from "./NotificationsDropdown";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { useI18n } from "@/lib/i18n";
+import api from "@/lib/api";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,6 +21,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, toggle } = useTheme();
   const { lang, setLang, t } = useI18n();
   const pathname = usePathname();
+
+  useEffect(() => {
+    const checkSession = () => {
+      api.get("/tenants/me").catch((err) => {
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+        }
+        if (err.response?.status === 403 && err.response?.data?.detail === "licence_expired") {
+          window.location.href = "/activate";
+        }
+      });
+    };
+    checkSession();
+    const interval = setInterval(checkSession, 60000);
+    window.addEventListener("focus", checkSession);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", checkSession);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     setSidebarOpen(false);
