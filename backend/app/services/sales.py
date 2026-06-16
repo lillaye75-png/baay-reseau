@@ -272,59 +272,42 @@ async def delete_sale(db: AsyncSession, tenant_id: str, sale_id: str) -> dict:
 async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
     total = data.quantity * data.unit_price_cfa
 
-    sale = Sale(
-        tenant_id=tenant_id,
-        customer_id=data.customer_id,
-        total_cfa=total,
-        payment_method=data.payment_method,
-        payment_reference=data.payment_reference,
-        is_credit=data.is_credit,
-    )
-    db.add(sale)
-    await db.flush()
-
+    from sqlalchemy import text
     import uuid
-    qs_product_id = "00000000-0000-0000-0000-000000000001"
 
-    existing = await db.execute(select(Product).where(Product.id == qs_product_id))
-    if not existing.scalar_one_or_none():
-        dummy = Product(
-            id=qs_product_id, tenant_id=tenant_id, name="Vente Rapide",
-            price_cfa=0, stock_quantity=999999, unit="piece", is_active=False, is_online=False,
-        )
-        db.add(dummy)
-        await db.flush()
+    sale_id = str(uuid.uuid4())
+    await db.execute(text(
+        "INSERT INTO sales (id, tenant_id, customer_id, total_cfa, payment_method, payment_reference, is_credit, created_at) "
+        "VALUES (:id, :tenant_id, :customer_id, :total_cfa, :payment_method, :payment_reference, :is_credit, NOW())"
+    ), {
+        "id": sale_id, "tenant_id": tenant_id,
+        "customer_id": data.customer_id, "total_cfa": total,
+        "payment_method": data.payment_method,
+        "payment_reference": data.payment_reference,
+        "is_credit": data.is_credit,
+    })
 
-    sale_item = SaleItem(
-        sale_id=sale.id,
-        product_id=qs_product_id,
-        product_name=data.product_name,
-        quantity=data.quantity,
-        unit_price_cfa=data.unit_price_cfa,
-        total_cfa=total,
-    )
-    db.add(sale_item)
+    item_id = str(uuid.uuid4())
+    await db.execute(text(
+        "INSERT INTO sale_items (id, sale_id, product_id, product_name, quantity, unit_price_cfa, total_cfa) "
+        "VALUES (:id, :sale_id, '00000000-0000-0000-0000-000000000001', :product_name, :quantity, :unit_price_cfa, :total_cfa)"
+    ), {
+        "id": item_id, "sale_id": sale_id, "product_name": data.product_name,
+        "quantity": data.quantity, "unit_price_cfa": data.unit_price_cfa, "total_cfa": total,
+    })
 
     if data.is_credit and data.customer_id:
-        result = await db.execute(
-            select(CreditTab).where(
-                CreditTab.customer_id == data.customer_id,
-                CreditTab.is_active == True,
-            )
+        tab_result = await db.execute(
+            select(CreditTab).where(CreditTab.customer_id == data.customer_id, CreditTab.is_active == True)
         )
-        tab = result.scalar_one_or_none()
+        tab = tab_result.scalar_one_or_none()
         if not tab:
             tab = CreditTab(customer_id=data.customer_id)
             db.add(tab)
             await db.flush()
 
         tab.balance_cfa += total
-        entry = CreditTabEntry(
-            tab_id=tab.id,
-            amount_cfa=total,
-            description="Vente rapide",
-            sale_id=sale.id,
-        )
+        entry = CreditTabEntry(tab_id=tab.id, amount_cfa=total, description="Vente rapide", sale_id=sale_id)
         db.add(entry)
 
         customer_result = await db.execute(select(Customer).where(Customer.id == data.customer_id))
@@ -335,7 +318,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
     await db.flush()
 
     result = await db.execute(
-        select(Sale).where(Sale.id == sale.id).options(
+        select(Sale).where(Sale.id == sale_id).options(
             selectinload(Sale.items),
             selectinload(Sale.customer),
         )

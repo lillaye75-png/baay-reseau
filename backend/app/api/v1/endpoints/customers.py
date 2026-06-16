@@ -43,6 +43,64 @@ async def list_credit_debtors(user: User = Depends(get_current_user), db: AsyncS
     return list(result.scalars().all())
 
 
+@router.post("/import-csv")
+async def import_customers_csv(file: UploadFile = File(...), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    content = await file.read()
+    text = content.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+
+    imported = 0
+    skipped = 0
+    for row in reader:
+        name = row.get("name", "").strip()
+        if not name:
+            skipped += 1
+            continue
+
+        phone = row.get("phone", "").strip() or None
+        if phone:
+            existing = await db.execute(
+                select(Customer).where(Customer.tenant_id == user.tenant_id, Customer.phone == phone)
+            )
+            if existing.scalar_one_or_none():
+                skipped += 1
+                continue
+
+        customer = Customer(
+            tenant_id=user.tenant_id,
+            name=name,
+            phone=phone,
+            nickname=row.get("nickname", "").strip() or None,
+            notes=row.get("notes", "").strip() or None,
+        )
+        db.add(customer)
+        imported += 1
+
+    await db.flush()
+    return {"imported": imported, "skipped": skipped}
+
+
+@router.get("/export-csv")
+async def export_customers_csv(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Customer).where(Customer.tenant_id == user.tenant_id).order_by(Customer.created_at.desc())
+    )
+    customers = list(result.scalars().all())
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["name", "phone", "whatsapp_number", "nickname", "total_credit_cfa", "notes", "created_at"])
+    for c in customers:
+        writer.writerow([c.name, c.phone, c.whatsapp_number, c.nickname, c.total_credit_cfa, c.notes, str(c.created_at)])
+
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode("utf-8-sig")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=clients-{__import__('datetime').date.today()}.csv"},
+    )
+
+
 @router.get("/{customer_id}", response_model=CustomerRead)
 async def get_customer(customer_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -128,61 +186,3 @@ async def get_customer_purchases(customer_id: str, user: User = Depends(get_curr
             "total_paid_cfa": total_paid,
         },
     }
-
-
-@router.post("/import-csv")
-async def import_customers_csv(file: UploadFile = File(...), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    content = await file.read()
-    text = content.decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(text))
-
-    imported = 0
-    skipped = 0
-    for row in reader:
-        name = row.get("name", "").strip()
-        if not name:
-            skipped += 1
-            continue
-
-        phone = row.get("phone", "").strip() or None
-        if phone:
-            existing = await db.execute(
-                select(Customer).where(Customer.tenant_id == user.tenant_id, Customer.phone == phone)
-            )
-            if existing.scalar_one_or_none():
-                skipped += 1
-                continue
-
-        customer = Customer(
-            tenant_id=user.tenant_id,
-            name=name,
-            phone=phone,
-            nickname=row.get("nickname", "").strip() or None,
-            notes=row.get("notes", "").strip() or None,
-        )
-        db.add(customer)
-        imported += 1
-
-    await db.flush()
-    return {"imported": imported, "skipped": skipped}
-
-
-@router.get("/export-csv")
-async def export_customers_csv(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Customer).where(Customer.tenant_id == user.tenant_id).order_by(Customer.created_at.desc())
-    )
-    customers = list(result.scalars().all())
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["name", "phone", "whatsapp_number", "nickname", "total_credit_cfa", "notes", "created_at"])
-    for c in customers:
-        writer.writerow([c.name, c.phone, c.whatsapp_number, c.nickname, c.total_credit_cfa, c.notes, str(c.created_at)])
-
-    output.seek(0)
-    return StreamingResponse(
-        io.BytesIO(output.getvalue().encode("utf-8-sig")),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=clients-{__import__('datetime').date.today()}.csv"},
-    )
