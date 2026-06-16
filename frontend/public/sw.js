@@ -1,4 +1,4 @@
-const CACHE_NAME = "baay-reseau-v5";
+const CACHE_NAME = "baay-reseau-v6";
 
 self.addEventListener("install", () => {
   self.skipWaiting();

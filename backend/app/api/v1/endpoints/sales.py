@@ -14,6 +14,7 @@ from app.models.product import Product
 from app.schemas.sale import SaleCreate, SaleRead, QuickSaleCreate
 from app.services.sales import create_sale, get_sales, get_daily_revenue, get_weekly_revenue, create_quick_sale
 from app.integrations.payments import create_wave_checkout, create_orange_money_link, get_qr_svg
+from app.services.audit import log_action
 
 router = APIRouter()
 
@@ -64,12 +65,16 @@ async def get_sale(sale_id: str, user: User = Depends(get_current_user), db: Asy
 
 @router.post("/", response_model=SaleRead, status_code=201)
 async def create_new_sale(data: SaleCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return await create_sale(db, user.tenant_id, data)
+    sale = await create_sale(db, user.tenant_id, data)
+    await log_action(db, user.tenant_id, user.id, user.name, "create", "sale", sale.id, f"Vente {sale.total_cfa} CFA ({sale.payment_method})")
+    return sale
 
 
 @router.post("/quick", response_model=SaleRead, status_code=201)
 async def create_quick_sale_endpoint(data: QuickSaleCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return await create_quick_sale(db, user.tenant_id, data)
+    sale = await create_quick_sale(db, user.tenant_id, data)
+    await log_action(db, user.tenant_id, user.id, user.name, "create", "quick_sale", sale.id, f"Vente rapide {data.product_name} {data.unit_price_cfa} CFA")
+    return sale
 
 
 @router.post("/{product_id}/adjust-stock")

@@ -24,3 +24,4 @@ async def log_action(
         details=details,
     )
     db.add(entry)
+    await db.flush()

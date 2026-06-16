@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.product import Product, ProductCategory
 from app.models.product_image import ProductImage
 from app.schemas.product import ProductCreate, ProductRead, ProductCategoryCreate, ProductCategoryRead
+from app.services.audit import log_action
 
 router = APIRouter()
 
@@ -31,6 +32,7 @@ async def create_product(data: ProductCreate, user: User = Depends(get_current_u
     product = Product(tenant_id=user.tenant_id, **data.model_dump())
     db.add(product)
     await db.flush()
+    await log_action(db, user.tenant_id, user.id, user.name, "create", "product", product.id, product.name)
     return product
 
 
