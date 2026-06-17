@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 import os
 
 from app.core.config import settings
@@ -25,16 +26,27 @@ try:
 except Exception:
     pass
 
-app.add_middleware(RateLimitMiddleware)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+class CorsAlwaysMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin", "*")
+        if request.method == "OPTIONS":
+            from fastapi.responses import Response
+            return Response(status_code=204, headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Max-Age": "600",
+            })
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
+
+
+app.add_middleware(CorsAlwaysMiddleware)
+
+app.add_middleware(RateLimitMiddleware)
 
 
 app.include_router(api_router, prefix="/api/v1")
