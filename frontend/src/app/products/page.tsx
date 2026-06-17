@@ -199,11 +199,11 @@ export default function ProductsPage() {
   };
 
   const categories = Array.from(new Set(products.map(p => (p as any).category_name).filter(Boolean)));
-  const [categoriesList, setCategoriesList] = useState<string[]>([]);
+  const [categoriesList, setCategoriesList] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
     api.get("/products/categories/").then((res) => {
-      setCategoriesList(res.data.map((c: any) => c.name));
+      setCategoriesList(res.data.map((c: any) => ({id: c.id, name: c.name})));
     }).catch(() => {});
   }, []);
 
@@ -290,7 +290,7 @@ export default function ProductsPage() {
                     >
                       <option value="">Sans catégorie</option>
                       {categoriesList.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
                     <button
@@ -300,7 +300,7 @@ export default function ProductsPage() {
                         if (!name) return;
                         try {
                           const res = await api.post("/products/categories/", { name });
-                          setCategoriesList([...categoriesList, res.data.name]);
+                          setCategoriesList([...categoriesList, {id: res.data.id, name: res.data.name}]);
                           setForm({ ...form, category_id: res.data.id });
                           showToast("Catégorie créée");
                         } catch { showToast("Erreur", "error"); }
