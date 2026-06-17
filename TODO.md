@@ -1,6 +1,6 @@
 # Naatal ERP Cloud — TODO Complet
 
-> Dernière mise à jour : 2026-06-16
+> Dernière mise à jour : 2026-06-17
 > Projet : E:\movie laye sow\project\SaaS ERP for Boutique\baay-reseau
 > Compte test : 📱 776621410 / 🔑 admin123 (owner, licence 60j)
 > Super Admin : 📱 776621410, 708372127
@@ -20,10 +20,10 @@
 - [x] Shop (public) : store, products, orders, reviews
 - [x] Finance : suppliers, purchase-orders, expenses (7 catégories)
 - [x] WhatsApp : webhook + AI assistant (GPT-4o-mini, Wolof/Français)
-- [x] Rate limiting : 300 req/min (5 pour login, 3 pour shop orders)
-- [x] CORS : allow all origins (fixé avec allow_origin_regex)
+- [x] Rate limiting : 600 req/min (5 pour login, 3 pour shop orders)
+- [x] CORS : CorsAlwaysMiddleware custom — headers sur TOUTES les réponses (200, 429, 500)
 - [x] Licence : date expiration, check dans auth, 403 si expirée
-- [x] **Quick Sale** : vente rapide sans sélectionner de produit (POST /sales/quick)
+- [x] **Quick Sale** : vente rapide sans sélectionner de produit (POST /sales/quick) — ORM fix (raw SQL supprimé)
 - [x] **Sub-catégories** : hiérarchie avec parent_id sur ProductCategory
 - [x] **Description riche** : champ description sur les produits
 - [x] **CSV Import** : import clients depuis CSV (POST /customers/import-csv)
@@ -54,13 +54,32 @@
 - [x] **Fix SaleItem FK** : product_id nullable pour les ventes rapides (quick-sale)
 - [x] **Fix 403 on tenant/me** : interceptor gère licence_expired + account_disabled proprement
 
-### 13. Sécurité & Permissions (2026-06-16)
+### 12b. Bug Fixes (2026-06-16 → 2026-06-17)
+- [x] **Fix Google OAuth tokeninfo** : remplacé par userinfo endpoint (fonctionne avec access_token)
+- [x] **Fix Google OAuth phone overflow** : `google:{id}` (34 chars) → `goog:{id[:12]}` (17 chars) pour VARCHAR(20)
+- [x] **Fix tenants.phone VARCHAR(20)** : ALTER TABLE vers VARCHAR(255) + USING clause
+- [x] **Fix Google OAuth IntegrityError** : gestion des comptes partiels (tenant existe mais user non)
+- [x] **Fix Google OAuth wizard** : condition simplifiée `!wizard_completed` au lieu de check sur le nom
+- [x] **Fix Quick Sale raw SQL** : remplacé par ORM selectinload (raw SQL cassait sur PostgreSQL)
+- [x] **Fix product category FK error** : `category_id: ""` → `null` avant insert DB
+- [x] **Fix CORS persistant** : CorsAlwaysMiddleware custom — le CORSMiddleware standard ne marchait pas avec BaseHTTPMiddleware du rate limiter
+- [x] **Fix CORS 429** : headers CORS ajoutés sur les réponses rate-limit (429)
+- [x] **Fix categories dropdown** : utilisait les noms comme value au lieu des IDs UUID → FK error
+- [x] **Fix audit logs** : `log_action` ajouté sur create sale, quick sale, product (+try/except)
+- [x] **Fix audit flush** : ajout de `await db.flush()` dans le service audit
+- [x] **Fix SW cache** : bump v6 (push + notificationclick handlers)
+- [x] **Fix rate limit** : 300 → 600 req/min
+- [x] **Fix global exception handler** : supprimé (convertissait HTTPException en 500)
+- [x] **Fix empty string → null** : category_id, barcode, sku, image_url sur create/update product
+
+### 13. Sécurité & Permissions (2026-06-16 → 2026-06-17)
 - [x] **Rôle-based access** : employees ne peuvent PAS modifier les infos entreprise
 - [x] **Owner-only endpoints** : tenant update, storefront settings, reports, billing, settings
 - [x] **Employee management** : role assignation (employee/manager), toggle active/inactif
 - [x] **Employee delete restriction** : tous les DELETE endpoints requièrent owner
 - [x] **Inactive accounts** : bloqués au login
 - [x] **Session check** : vérification toutes les 60s + au focus de la fenêtre
+- [x] **Audit logs** : enregistrement des actions (create sale, quick sale, product) en DB
 
 ### 14. Licence Server (2026-06-16)
 - [x] **Modèle Licence** : clé unique, tier (free/pro/enterprise), durée, features
@@ -70,6 +89,22 @@
 - [x] **Super admin panel** : `/licences` — générer, activer/désactiver, supprimer licences
 - [x] **Licence key format** : `BAY-F-...` (Free), `BAY-P-...` (Pro), `BAY-E-...` (Enterprise)
 - [x] **Sidebar super admin** : icône Licences en jaune (visible uniquement pour 776621410, 708372127)
+
+### 18. Google OAuth (2026-06-17)
+- [x] **Backend** : POST /auth/google → userinfo endpoint, email sur User, phone `goog:{id[:12]}`
+- [x] **Frontend** : bouton "Se connecter avec Google" sur /login, callback /auth/callback
+- [x] **Client ID** : 251752897480-...750m9.apps.googleusercontent.com
+- [x] **Redirect URI** : https://baay-reseau.vercel.app/auth/callback
+- [x] **Wizard** : les users Google voient le wizard au premier login
+- [x] **Email matching** : si un user avec le même email existe déjà, retourne ses tokens
+
+### 19. Push Notifications FCM (2026-06-17)
+- [x] **Backend** : FCM v1 API via service account OAuth2 (firebase-service-account.json)
+- [x] **Service Worker** : push + notificationclick handlers (SW v6)
+- [x] **Subscriptions** : stockées en DB PostgreSQL (table push_subscriptions)
+- [x] **Frontend** : push.ts avec requestPushPermission, unsubscribePush, isPushSupported
+- [x] **Service account** : firebase-adminsdk-fbsvc@baay-reseau-5747e.iam.gserviceaccount.com
+- [x] **VAPID keys** : BL7T0E8wzw9p... (publique), pVczOskXf... (privée)
 
 ### 15. Settings & Données (2026-06-16)
 - [x] **WhatsApp Bot API** : configuration token + Phone Number ID dans settings
@@ -140,8 +175,7 @@
 ## 🔲 CE QUI N'EST PAS ENCORE FAIT
 
 ### Bugs connus
-- [ ] **Session check auto-logout** : ne fonctionne pas encore quand owner désactive un user ou supprime une licence — le user n'est pas délogué automatiquement (60s check + focus ne suffisent pas, à investiguer demain)
-- [ ] Service Worker parfois pas à jour (cache v4)
+- [ ] Service Worker parfois pas à jour (cache v6) — nécessite Ctrl+Shift+R
 - [ ] Hot-reload peut rater après changements Python
 
 ### Priorité Haute
@@ -184,6 +218,10 @@
 - **2026-06-16** : Base de données sur Neon (pas Render PostgreSQL)
 - **2026-06-16** : Licence server avec 7j d'essai + activation par clé
 - **2026-06-16** : Super admin phones : 776621410, 708372127
+- **2026-06-17** : Google OAuth fonctionnel — userinfo endpoint, email sur User, phone format `goog:{id[:12]}`
+- **2026-06-17** : Push Notifications FCM v1 — service account OAuth2, subscriptions en DB PostgreSQL
+- **2026-06-17** : CorsAlwaysMiddleware custom — le CORSMiddleware standard ne marchait pas avec BaseHTTPMiddleware
+- **2026-06-17** : firebase-service-account.json dans .gitignore — doit être ajouté manuellement sur Render
 - **Contact support** : +221776621410, +221708372127, layedevops@gmail.com, layedevops@gmail.com
 
 ## 📞 Support
