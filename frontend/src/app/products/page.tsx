@@ -242,7 +242,7 @@ export default function ProductsPage() {
               <Brain className="h-4 w-4 mr-2" />
               Prédictions
             </Button>
-            <Button variant="secondary" onClick={exportProducts}>
+            <Button variant="secondary" onClick={() => exportProducts(products)}>
               <Download className="h-4 w-4 mr-2" />
               Exporter
             </Button>
@@ -303,26 +303,6 @@ export default function ProductsPage() {
             </CardContent>
           </Card>
         )}
-          <Button onClick={() => { resetForm(); setShowForm(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un produit
-          </Button>
-          <Button variant="secondary" onClick={() => exportProducts(products)}>
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
-          </Button>
-          <Button variant="secondary" onClick={downloadExcelTemplate}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Template Excel
-          </Button>
-          <label className="cursor-pointer">
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-              <Package className="h-4 w-4" />
-              Importer CSV
-            </div>
-            <input type="file" accept=".csv" className="hidden" onChange={importProducts} />
-          </label>
-        </div>
 
         {showForm && (
           <Card>

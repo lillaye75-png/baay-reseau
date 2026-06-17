@@ -308,7 +308,7 @@ export default function OrdersPage() {
                         <span className="font-medium text-gray-900">{order.customer_name}</span>
                         <Badge variant={st.color as any}>{st.label}</Badge>
                         {order.tracking_status && (
-                          <Badge variant="info">{order.tracking_status}</Badge>
+                          <Badge variant="success">{order.tracking_status}</Badge>
                         )}
                         {order.status === "pending" && (
                           <Bell className="h-4 w-4 text-orange-500 animate-pulse" />
