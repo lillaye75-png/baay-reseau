@@ -5,6 +5,8 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://baay:baay_secret@db:5432/baay_reseau}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}

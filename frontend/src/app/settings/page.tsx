@@ -8,7 +8,7 @@ import Badge from "@/components/ui/Badge";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import api, { Tenant } from "@/lib/api";
-import { Store, User, Shield, Smartphone, Users, UserPlus, Trash2, MessageSquare, CreditCard, Phone, Download, Upload, AlertTriangle, Save } from "lucide-react";
+import { Store, User, Shield, Smartphone, Users, UserPlus, Trash2, MessageSquare, CreditCard, Phone, Download, Upload, AlertTriangle, Save, Printer } from "lucide-react";
 import { useTheme, COLOR_PRESETS } from "@/lib/theme-context";
 import { showToast } from "@/components/ui/Toast";
 
@@ -35,6 +35,11 @@ export default function SettingsPage() {
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
 
+  const [printLogoUrl, setPrintLogoUrl] = useState("");
+  const [printHeaderText, setPrintHeaderText] = useState("");
+  const [printFooterText, setPrintFooterText] = useState("");
+  const [savingPrint, setSavingPrint] = useState(false);
+
   useEffect(() => {
     api.get("/tenants/me").then((res) => {
       setTenant(res.data);
@@ -42,6 +47,11 @@ export default function SettingsPage() {
       setShopPhone(res.data.phone);
       setShopEmail(res.data.email || "");
       setShopSlug(res.data.slug || "");
+      api.get(`/tenants/${res.data.id}/print-settings`).then((r) => {
+        setPrintLogoUrl(r.data.print_logo_url || "");
+        setPrintHeaderText(r.data.print_header_text || "");
+        setPrintFooterText(r.data.print_footer_text || "");
+      }).catch(() => {});
     }).catch(() => {});
     if (user?.role === "owner") {
       api.get("/auth/employees").then((res) => setEmployees(res.data)).catch(() => {});
@@ -63,6 +73,22 @@ export default function SettingsPage() {
       showToast(err.response?.data?.detail || "Erreur lors de l'enregistrement", "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSavePrint = async () => {
+    setSavingPrint(true);
+    try {
+      await api.put(`/tenants/${tenant?.id}/print-settings`, {
+        print_logo_url: printLogoUrl || null,
+        print_header_text: printHeaderText || null,
+        print_footer_text: printFooterText || null,
+      });
+      showToast("Paramètres d'impression enregistrés !");
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    } finally {
+      setSavingPrint(false);
     }
   };
 
@@ -458,6 +484,44 @@ export default function SettingsPage() {
                   </div>
                   <p className="text-xs text-gray-400 mt-2">La couleur s&apos;applique instantanément</p>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                    <Printer className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Impression</h2>
+                    <p className="text-sm text-gray-500">Logo et en-tête des tickets</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input
+                  label="URL du logo"
+                  value={printLogoUrl}
+                  onChange={(e) => setPrintLogoUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                />
+                <Input
+                  label="Texte d'en-tête"
+                  value={printHeaderText}
+                  onChange={(e) => setPrintHeaderText(e.target.value)}
+                  placeholder="Nom de la boutique (laisser vide pour le nom par défaut)"
+                />
+                <Input
+                  label="Texte de pied de page"
+                  value={printFooterText}
+                  onChange={(e) => setPrintFooterText(e.target.value)}
+                  placeholder="Merci pour votre visite !"
+                />
+                <Button onClick={handleSavePrint} disabled={savingPrint} size="sm">
+                  <Save className="h-4 w-4 mr-1" />
+                  {savingPrint ? "Enregistrement..." : "Enregistrer"}
+                </Button>
               </CardContent>
             </Card>
 

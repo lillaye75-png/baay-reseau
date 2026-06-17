@@ -124,5 +124,91 @@ async def update_order_status(order_id: str, data: dict, user: User = Depends(ge
                 ))
 
     order.status = new_status
+
+    if new_status == "delivered":
+        from datetime import datetime, timezone
+        order.delivered_at = datetime.now(timezone.utc)
+
     await db.flush()
+
+    try:
+        from app.api.v1.endpoints.websocket import notify_order_update
+        await notify_order_update(order.tenant_id, {
+            "order_id": order.id,
+            "status": order.status,
+            "tracking_status": order.tracking_status,
+        })
+    except Exception:
+        pass
+
     return {"status": order.status}
+
+
+@router.put("/orders/{order_id}/tracking")
+async def update_order_tracking(order_id: str, data: dict, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from datetime import datetime, timezone
+    result = await db.execute(
+        select(Order).where(Order.id == order_id, Order.tenant_id == user.tenant_id)
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    ALLOWED_FIELDS = {"tracking_status", "estimated_delivery", "driver_name", "driver_phone"}
+    for field, value in data.items():
+        if field in ALLOWED_FIELDS:
+            if field == "estimated_delivery" and value:
+                value = datetime.fromisoformat(value)
+            setattr(order, field, value)
+
+    order.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+
+    try:
+        from app.api.v1.endpoints.websocket import notify_order_update
+        await notify_order_update(order.tenant_id, {
+            "order_id": order.id,
+            "status": order.status,
+            "tracking_status": order.tracking_status,
+            "estimated_delivery": str(order.estimated_delivery) if order.estimated_delivery else None,
+            "driver_name": order.driver_name,
+        })
+    except Exception:
+        pass
+
+    return {
+        "tracking_status": order.tracking_status,
+        "estimated_delivery": order.estimated_delivery,
+        "driver_name": order.driver_name,
+        "driver_phone": order.driver_phone,
+    }
+
+
+@router.get("/orders/{order_id}/tracking")
+async def get_order_tracking(order_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Order).where(Order.id == order_id)
+        .options(selectinload(Order.items))
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    tracking_steps = [
+        {"status": "pending", "label": "Commande reçue", "done": True},
+        {"status": "confirmed", "label": "Commande confirmée", "done": order.status in ["confirmed", "shipped", "out_for_delivery", "delivered"]},
+        {"status": "shipped", "label": "En cours de préparation", "done": order.status in ["shipped", "out_for_delivery", "delivered"]},
+        {"status": "out_for_delivery", "label": "En cours de livraison", "done": order.status in ["out_for_delivery", "delivered"]},
+        {"status": "delivered", "label": "Livrée", "done": order.status == "delivered"},
+    ]
+
+    return {
+        "order_id": order.id,
+        "status": order.status,
+        "tracking_status": order.tracking_status,
+        "estimated_delivery": order.estimated_delivery,
+        "delivered_at": order.delivered_at,
+        "driver_name": order.driver_name,
+        "total_cfa": order.total_cfa,
+        "tracking_steps": tracking_steps,
+    }

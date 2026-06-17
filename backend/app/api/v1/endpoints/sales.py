@@ -135,3 +135,27 @@ async def delete_sale(sale_id: str, user: User = Depends(require_owner), db: Asy
         return await delete_sale_svc(db, user.tenant_id, sale_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/sync")
+async def sync_offline_sales(data: dict, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    queued_sales = data.get("sales", [])
+    synced = []
+    errors = []
+
+    for sale_data in queued_sales:
+        try:
+            from app.schemas.sale import SaleCreate, SaleItemCreate
+            items = [SaleItemCreate(**item) for item in sale_data.get("items", [])]
+            sale_create = SaleCreate(
+                customer_id=sale_data.get("customer_id"),
+                items=items,
+                payment_method=sale_data.get("payment_method", "cash"),
+                is_credit=sale_data.get("is_credit", False),
+            )
+            sale = await create_sale(db, user.tenant_id, sale_create)
+            synced.append({"local_id": sale_data.get("local_id"), "server_id": sale.id})
+        except Exception as e:
+            errors.append({"local_id": sale_data.get("local_id"), "error": str(e)})
+
+    return {"synced": len(synced), "errors": len(errors), "details": synced, "error_details": errors}

@@ -44,18 +44,32 @@ const superAdminNav = [
   { name: "Licences", href: "/licences", icon: Key, i18nKey: "licences" },
 ];
 
+interface StoreInfo {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  is_default: boolean;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { t } = useI18n();
   const [pendingCount, setPendingCount] = useState(0);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [stores, setStores] = useState<StoreInfo[]>([]);
+  const [showStoreSwitcher, setShowStoreSwitcher] = useState(false);
 
   useEffect(() => {
     if (user?.phone && ["776621410", "708372127"].includes(user.phone)) {
       setIsSuperAdmin(true);
     }
   }, [user]);
+
+  useEffect(() => {
+    api.get("/tenants/stores").then((res) => setStores(res.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchPending = () => {
@@ -70,6 +84,13 @@ export default function Sidebar() {
     const interval = setInterval(fetchPending, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const switchStore = async (storeId: string) => {
+    try {
+      await api.put(`/tenants/stores/${storeId}/switch`);
+      window.location.reload();
+    } catch {}
+  };
 
   return (
     <div className="flex h-full w-60 flex-col bg-gray-900 text-white">
@@ -87,6 +108,35 @@ export default function Sidebar() {
         <div className="mx-3 mb-2 rounded-lg bg-gray-800/50 px-3 py-2">
           <p className="text-[11px] text-gray-400">{t("connected")}</p>
           <p className="text-xs font-medium text-white truncate">{user.name}</p>
+        </div>
+      )}
+
+      {stores.length > 1 && (
+        <div className="mx-3 mb-2">
+          <button
+            onClick={() => setShowStoreSwitcher(!showStoreSwitcher)}
+            className="w-full flex items-center justify-between rounded-lg bg-gray-800/50 px-3 py-2 text-xs"
+          >
+            <span className="text-gray-400">Boutique</span>
+            <span className="text-white font-medium truncate ml-2">{stores.find(s => s.is_default)?.name || "..."}</span>
+          </button>
+          {showStoreSwitcher && (
+            <div className="mt-1 rounded-lg bg-gray-800 p-1 space-y-1">
+              {stores.map((store) => (
+                <button
+                  key={store.id}
+                  onClick={() => switchStore(store.id)}
+                  className={`w-full text-left rounded-md px-3 py-2 text-xs ${
+                    store.is_default
+                      ? "bg-primary-600 text-white"
+                      : "text-gray-400 hover:bg-gray-700 hover:text-white"
+                  }`}
+                >
+                  {store.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

@@ -272,6 +272,42 @@ async def get_store_order(slug: str, order_id: str, db: AsyncSession = Depends(g
     }
 
 
+@router.get("/store/{slug}/order/{order_id}/tracking")
+async def get_store_order_tracking(slug: str, order_id: str, db: AsyncSession = Depends(get_db)):
+    from datetime import datetime, timezone
+    tenant_result = await db.execute(select(Tenant).where(Tenant.slug == slug, Tenant.is_active == True))
+    tenant = tenant_result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Store not found")
+
+    result = await db.execute(
+        select(Order).where(Order.id == order_id, Order.tenant_id == tenant.id)
+        .options(selectinload(Order.items))
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    tracking_steps = [
+        {"status": "pending", "label": "Commande reçue", "done": True},
+        {"status": "confirmed", "label": "Commande confirmée", "done": order.status in ["confirmed", "shipped", "out_for_delivery", "delivered"]},
+        {"status": "shipped", "label": "En cours de préparation", "done": order.status in ["shipped", "out_for_delivery", "delivered"]},
+        {"status": "out_for_delivery", "label": "En cours de livraison", "done": order.status in ["out_for_delivery", "delivered"]},
+        {"status": "delivered", "label": "Livrée", "done": order.status == "delivered"},
+    ]
+
+    return {
+        "order_id": order.id,
+        "status": order.status,
+        "tracking_status": order.tracking_status,
+        "estimated_delivery": str(order.estimated_delivery) if order.estimated_delivery else None,
+        "delivered_at": str(order.delivered_at) if order.delivered_at else None,
+        "driver_name": order.driver_name,
+        "total_cfa": order.total_cfa,
+        "tracking_steps": tracking_steps,
+    }
+
+
 @router.get("/store/{slug}/product/{product_id}/reviews")
 async def get_product_reviews(slug: str, product_id: str, db: AsyncSession = Depends(get_db)):
     tenant_result = await db.execute(select(Tenant).where(Tenant.slug == slug, Tenant.is_active == True))

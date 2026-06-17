@@ -115,7 +115,7 @@ async def on_startup():
                         entity_type VARCHAR(50) NOT NULL,
                         entity_id VARCHAR(36),
                         details TEXT,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """))
             except Exception:
@@ -141,10 +141,55 @@ async def on_startup():
                         endpoint TEXT NOT NULL,
                         p256dh TEXT NOT NULL,
                         auth TEXT NOT NULL,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """))
                 await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_push_subscriptions_tenant ON push_subscriptions(tenant_id)"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_status VARCHAR(50)"))
+                await conn.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS estimated_delivery TIMESTAMP WITH TIME ZONE"))
+                await conn.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP WITH TIME ZONE"))
+                await conn.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_name VARCHAR(255)"))
+                await conn.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_phone VARCHAR(50)"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS whatsapp_campaigns (
+                        id VARCHAR(36) PRIMARY KEY,
+                        tenant_id VARCHAR(36) NOT NULL,
+                        name VARCHAR(255) NOT NULL,
+                        message TEXT NOT NULL,
+                        recipient_count INTEGER DEFAULT 0,
+                        sent_count INTEGER DEFAULT 0,
+                        failed_count INTEGER DEFAULT 0,
+                        status VARCHAR(30) DEFAULT 'draft',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS user_stores (
+                        id VARCHAR(36) PRIMARY KEY,
+                        user_id VARCHAR(36) NOT NULL,
+                        tenant_id VARCHAR(36) NOT NULL,
+                        is_default BOOLEAN DEFAULT FALSE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, tenant_id)
+                    )
+                """))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS print_logo_url VARCHAR(500)"))
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS print_header_text VARCHAR(500)"))
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS print_footer_text VARCHAR(500)"))
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS print_show_barcode BOOLEAN DEFAULT TRUE"))
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS print_show_qr BOOLEAN DEFAULT FALSE"))
             except Exception:
                 pass
         logger.info("Tenant columns ensured")

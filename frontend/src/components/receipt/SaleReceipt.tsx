@@ -26,15 +26,27 @@ interface ReceiptProps {
   createdAt: string;
 }
 
+interface PrintSettings {
+  print_logo_url: string | null;
+  print_header_text: string | null;
+  print_footer_text: string | null;
+  print_show_barcode: boolean;
+  print_show_qr: boolean;
+}
+
 export default function SaleReceipt({ saleId, items, total, paymentMethod, customerName, createdAt }: ReceiptProps) {
   const { user } = useAuth();
   const { t } = useI18n();
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
   const [showBluetooth, setShowBluetooth] = useState(false);
   const [bluetoothPrinter, setBluetoothPrinter] = useState<any>(null);
 
   useEffect(() => {
-    api.get("/tenants/me").then((res) => setTenant(res.data)).catch(() => {});
+    api.get("/tenants/me").then((res) => {
+      setTenant(res.data);
+      api.get(`/tenants/${res.data.id}/print-settings`).then((r) => setPrintSettings(r.data)).catch(() => {});
+    }).catch(() => {});
   }, []);
 
   const paymentLabels: Record<string, string> = {
@@ -84,7 +96,10 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
     <>
       <div id="receipt-content" className="bg-white p-6 max-w-sm mx-auto font-mono text-sm" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
         <div className="text-center border-b border-dashed border-gray-300 pb-4 mb-4">
-          <h1 className="text-lg font-bold">{tenant?.name || "Naatal ERP Cloud"}</h1>
+          {printSettings?.print_logo_url && (
+            <img src={printSettings.print_logo_url} alt="Logo" className="mx-auto h-12 mb-2 object-contain" />
+          )}
+          <h1 className="text-lg font-bold">{printSettings?.print_header_text || tenant?.name || "Naatal ERP Cloud"}</h1>
           <p className="text-xs text-gray-500">{tenant?.phone || ""}</p>
           <p className="text-xs text-gray-400 mt-1">— {t("receipt")} —</p>
         </div>
@@ -133,7 +148,7 @@ export default function SaleReceipt({ saleId, items, total, paymentMethod, custo
         </div>
 
         <div className="text-center text-xs text-gray-400 mt-6 border-t border-dashed border-gray-300 pt-4">
-          <p>Mèrsi, dëgg na tànggi!</p>
+          <p>{printSettings?.print_footer_text || "Mèrsi, dëgg na tànggi!"}</p>
           <p className="mt-1">Naatal ERP Cloud — ERP Boutique</p>
         </div>
       </div>

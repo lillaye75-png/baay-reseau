@@ -22,6 +22,11 @@ class Order(Base):
     payment_reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="pending")
     delivery_method: Mapped[str] = mapped_column(String(50), default="delivery")
+    tracking_status: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
+    estimated_delivery: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    driver_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    driver_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

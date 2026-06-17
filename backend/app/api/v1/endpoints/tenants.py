@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.tenant import Tenant
-from app.schemas.tenant import TenantRead, TenantUpdate, TenantIntegrations
+from app.schemas.tenant import TenantRead, TenantUpdate, TenantIntegrations, PrintSettings
 
 router = APIRouter()
 
@@ -38,6 +38,36 @@ async def update_tenant(tenant_id: str, data: TenantUpdate, user: User = Depends
 
 @router.put("/{tenant_id}/integrations")
 async def update_integrations(tenant_id: str, data: TenantIntegrations, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    if user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(tenant, field, value)
+    await db.flush()
+    return {"status": "ok"}
+
+
+@router.get("/{tenant_id}/print-settings")
+async def get_print_settings(tenant_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return {
+        "print_logo_url": tenant.print_logo_url,
+        "print_header_text": tenant.print_header_text,
+        "print_footer_text": tenant.print_footer_text,
+        "print_show_barcode": tenant.print_show_barcode,
+        "print_show_qr": tenant.print_show_qr,
+    }
+
+
+@router.put("/{tenant_id}/print-settings")
+async def update_print_settings(tenant_id: str, data: PrintSettings, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     if user.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Not authorized")
     result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
@@ -128,3 +158,64 @@ async def delete_all_data(user: User = Depends(require_owner), db: AsyncSession 
 
     await db.flush()
     return {"status": "deleted", "message": "Toutes les données ont été supprimées"}
+
+
+@router.get("/stores")
+async def list_my_stores(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    result = await db.execute(
+        text("SELECT t.id, t.name, t.slug, t.is_active, us.is_default FROM tenants t JOIN user_stores us ON t.id = us.tenant_id WHERE us.user_id = :user_id"),
+        {"user_id": user.id}
+    )
+    stores = [{"id": row[0], "name": row[1], "slug": row[2], "is_active": row[3], "is_default": row[4]} for row in result.all()]
+
+    if not stores:
+        stores = [{"id": user.tenant_id, "name": "Ma Boutique", "slug": "", "is_active": True, "is_default": True}]
+
+    return stores
+
+
+@router.post("/stores")
+async def create_new_store(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    import uuid
+
+    name = data.get("name", "Nouvelle boutique")
+    slug = data.get("slug", f"store-{str(uuid.uuid4())[:8]}")
+    phone = data.get("phone", user.phone)
+
+    store = Tenant(name=name, slug=slug, phone=phone, email=data.get("email"))
+    db.add(store)
+    await db.flush()
+
+    await db.execute(
+        text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
+        {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
+    )
+    await db.flush()
+
+    return {"id": store.id, "name": store.name, "slug": store.slug}
+
+
+@router.put("/stores/{store_id}/switch")
+async def switch_store(store_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+
+    result = await db.execute(
+        text("SELECT tenant_id FROM user_stores WHERE user_id = :user_id AND tenant_id = :store_id"),
+        {"user_id": user.id, "store_id": store_id}
+    )
+    if not result.first():
+        raise HTTPException(status_code=403, detail="Store not accessible")
+
+    await db.execute(
+        text("UPDATE user_stores SET is_default = FALSE WHERE user_id = :user_id"),
+        {"user_id": user.id}
+    )
+    await db.execute(
+        text("UPDATE user_stores SET is_default = TRUE WHERE user_id = :user_id AND tenant_id = :store_id"),
+        {"user_id": user.id, "store_id": store_id}
+    )
+    await db.flush()
+
+    return {"status": "switched", "tenant_id": store_id}

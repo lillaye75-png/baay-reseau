@@ -8,11 +8,22 @@ import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import { formatCFA, getImageUrl } from "@/lib/format";
 import api, { Product } from "@/lib/api";
-import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera, FileSpreadsheet, Brain, AlertTriangle, Clock } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import { exportProducts } from "@/lib/export";
 import VariantManager from "@/components/products/VariantManager";
 import BarcodeScanner from "@/components/pos/BarcodeScanner";
+
+interface Prediction {
+  product_id: string;
+  product_name: string;
+  current_stock: number;
+  avg_daily_sales: number;
+  total_sold_30d: number;
+  days_until_stockout: number;
+  urgency: string;
+  suggested_reorder: number;
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,6 +31,9 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [showPredictions, setShowPredictions] = useState(false);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [predictionSummary, setPredictionSummary] = useState({ critical: 0, high: 0, medium: 0, suggested_total_reorder_cfa: 0 });
   const [form, setForm] = useState({
     name: "",
     price_cfa: 0,
@@ -42,6 +56,14 @@ export default function ProductsPage() {
 
   const loadProducts = () => {
     api.get("/products/").then((res) => setProducts(res.data));
+  };
+
+  const loadPredictions = () => {
+    api.get("/reports/stock-predictions").then((res) => {
+      setPredictions(res.data.predictions);
+      setPredictionSummary(res.data.summary);
+      setShowPredictions(true);
+    }).catch(() => {});
   };
 
   const resetForm = () => {
@@ -213,8 +235,74 @@ export default function ProductsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Produits</h1>
-            <p className="text-sm text-gray-500">{products.length} produits au total</p>
+            <p className="text-sm text-gray-500">{products.length} produits enregistrés</p>
           </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={loadPredictions}>
+              <Brain className="h-4 w-4 mr-2" />
+              Prédictions
+            </Button>
+            <Button variant="secondary" onClick={exportProducts}>
+              <Download className="h-4 w-4 mr-2" />
+              Exporter
+            </Button>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter
+            </Button>
+          </div>
+        </div>
+
+        {showPredictions && predictions.length > 0 && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-orange-600" />
+                  <h3 className="font-semibold text-orange-900">Prédictions de stock (IA)</h3>
+                </div>
+                <button onClick={() => setShowPredictions(false)} className="text-orange-400 hover:text-orange-600">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-red-100 rounded-lg p-2 text-center">
+                  <p className="text-2xl font-bold text-red-600">{predictionSummary.critical}</p>
+                  <p className="text-xs text-red-700">Critique</p>
+                </div>
+                <div className="bg-orange-100 rounded-lg p-2 text-center">
+                  <p className="text-2xl font-bold text-orange-600">{predictionSummary.high}</p>
+                  <p className="text-xs text-orange-700">Élevé</p>
+                </div>
+                <div className="bg-yellow-100 rounded-lg p-2 text-center">
+                  <p className="text-2xl font-bold text-yellow-600">{predictionSummary.medium}</p>
+                  <p className="text-xs text-yellow-700">Moyen</p>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {predictions.filter(p => p.urgency !== "low").slice(0, 10).map((p) => (
+                  <div key={p.product_id} className="flex items-center justify-between bg-white rounded-lg p-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      {p.urgency === "critical" ? (
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-orange-500" />
+                      )}
+                      <span className="font-medium">{p.product_name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span>Stock: {p.current_stock}</span>
+                      <span>Vente/j: {p.avg_daily_sales}</span>
+                      <span className={`font-bold ${p.urgency === "critical" ? "text-red-600" : "text-orange-600"}`}>
+                        {p.days_until_stockout}j
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
           <Button onClick={() => { resetForm(); setShowForm(true); }}>
             <Plus className="h-4 w-4 mr-2" />
             Ajouter un produit

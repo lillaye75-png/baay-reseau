@@ -32,6 +32,11 @@ class Tenant(Base):
     whatsapp_phone_number_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     wave_api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     orange_money_api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    print_logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    print_header_text: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    print_footer_text: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    print_show_barcode: Mapped[bool] = mapped_column(Boolean, default=True)
+    print_show_qr: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

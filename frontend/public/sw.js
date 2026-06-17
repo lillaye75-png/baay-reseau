@@ -1,6 +1,7 @@
-const CACHE_NAME = "baay-reseau-v6";
+const CACHE_NAME = "baay-reseau-v7";
+const CACHE_VERSION = 7;
 
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
@@ -11,6 +12,20 @@ self.addEventListener("activate", (event) => {
     )
   );
   self.clients.claim();
+  self.clients.matchAll({ type: "window" }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({ type: "SW_UPDATED", version: CACHE_VERSION });
+    });
+  });
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === "GET_VERSION") {
+    event.source.postMessage({ type: "SW_VERSION", version: CACHE_VERSION });
+  }
 });
 
 self.addEventListener("push", (event) => {

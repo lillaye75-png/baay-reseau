@@ -24,6 +24,14 @@ class TenantIntegrations(BaseModel):
     orange_money_api_key: str | None = None
 
 
+class PrintSettings(BaseModel):
+    print_logo_url: str | None = None
+    print_header_text: str | None = None
+    print_footer_text: str | None = None
+    print_show_barcode: bool = True
+    print_show_qr: bool = False
+
+
 class TenantRead(BaseModel):
     id: str
     name: str

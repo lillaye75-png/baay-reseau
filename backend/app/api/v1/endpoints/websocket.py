@@ -51,6 +51,10 @@ async def notify_new_order(tenant_id: str, order_data: dict):
     await broadcast_to_tenant(tenant_id, "new_order", order_data)
 
 
+async def notify_order_update(tenant_id: str, order_data: dict):
+    await broadcast_to_tenant(tenant_id, "order_update", order_data)
+
+
 async def notify_stock_alert(tenant_id: str, product_data: dict):
     await broadcast_to_tenant(tenant_id, "stock_alert", product_data)
 

@@ -146,3 +146,112 @@ async def get_top_products(db: AsyncSession, tenant_id: str, limit: int = 10, st
             "total_revenue": int(row[2]),
         })
     return products
+
+
+async def get_trends(db: AsyncSession, tenant_id: str, days: int = 30) -> dict:
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(days=days)
+
+    result = await db.execute(
+        select(
+            func.date(Sale.created_at).label("date"),
+            func.count(Sale.id).label("sales_count"),
+            func.coalesce(func.sum(Sale.total_cfa), 0).label("revenue"),
+        )
+        .where(Sale.tenant_id == tenant_id, Sale.created_at >= start)
+        .group_by(func.date(Sale.created_at))
+        .order_by(func.date(Sale.created_at))
+    )
+    rows = result.all()
+
+    daily_data = [{"date": str(row[0]), "sales_count": row[1], "revenue": int(row[2])} for row in rows]
+
+    total_revenue = sum(d["revenue"] for d in daily_data)
+    total_sales = sum(d["sales_count"] for d in daily_data)
+    avg_daily_revenue = total_revenue // max(len(daily_data), 1)
+    avg_daily_sales = total_sales // max(len(daily_data), 1)
+
+    if len(daily_data) >= 7:
+        recent_7 = daily_data[-7:]
+        previous_7 = daily_data[-14:-7] if len(daily_data) >= 14 else daily_data[:7]
+        recent_avg = sum(d["revenue"] for d in recent_7) / 7
+        previous_avg = sum(d["revenue"] for d in previous_7) / max(len(previous_7), 1)
+        revenue_trend = ((recent_avg - previous_avg) / max(previous_avg, 1)) * 100
+    else:
+        revenue_trend = 0
+
+    return {
+        "daily_data": daily_data,
+        "summary": {
+            "total_revenue": total_revenue,
+            "total_sales": total_sales,
+            "avg_daily_revenue": avg_daily_revenue,
+            "avg_daily_sales": avg_daily_sales,
+            "revenue_trend_pct": round(revenue_trend, 1),
+        },
+    }
+
+
+async def get_period_comparison(
+    db: AsyncSession, tenant_id: str,
+    p1_start: str, p1_end: str,
+    p2_start: str, p2_end: str,
+) -> dict:
+    start1 = datetime.fromisoformat(p1_start).replace(tzinfo=timezone.utc)
+    end1 = datetime.fromisoformat(p1_end).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+    start2 = datetime.fromisoformat(p2_start).replace(tzinfo=timezone.utc)
+    end2 = datetime.fromisoformat(p2_end).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+
+    async def get_period_data(start, end):
+        sales_result = await db.execute(
+            select(
+                func.count(Sale.id),
+                func.coalesce(func.sum(Sale.total_cfa), 0),
+            ).where(Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end)
+        )
+        row = sales_result.one()
+
+        expense_result = await db.execute(
+            select(func.coalesce(func.sum(Expense.amount_cfa), 0))
+            .where(Expense.tenant_id == tenant_id, Expense.expense_date >= start, Expense.expense_date <= end)
+        )
+        expenses = int(expense_result.scalar())
+
+        margin_result = await db.execute(
+            select(
+                func.coalesce(
+                    func.sum((SaleItem.unit_price_cfa - Product.cost_price_cfa) * SaleItem.quantity),
+                    0,
+                )
+            )
+            .join(Sale, SaleItem.sale_id == Sale.id)
+            .join(Product, SaleItem.product_id == Product.id)
+            .where(Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end)
+        )
+        margin = int(margin_result.scalar())
+
+        return {
+            "sales_count": row[0],
+            "revenue": int(row[1]),
+            "expenses": expenses,
+            "profit": margin - expenses,
+        }
+
+    period1 = await get_period_data(start1, end1)
+    period2 = await get_period_data(start2, end2)
+
+    def calc_change(v1, v2):
+        if v2 == 0:
+            return 100 if v1 > 0 else 0
+        return round(((v1 - v2) / v2) * 100, 1)
+
+    return {
+        "period1": period1,
+        "period2": period2,
+        "changes": {
+            "sales_count": calc_change(period1["sales_count"], period2["sales_count"]),
+            "revenue": calc_change(period1["revenue"], period2["revenue"]),
+            "expenses": calc_change(period1["expenses"], period2["expenses"]),
+            "profit": calc_change(period1["profit"], period2["profit"]),
+        },
+    }

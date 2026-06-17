@@ -12,6 +12,7 @@ import { showToast } from "@/components/ui/Toast";
 import SaleReceipt from "@/components/receipt/SaleReceipt";
 import PaymentLinkModal from "@/components/pos/PaymentLinkModal";
 import BarcodeScanner from "@/components/pos/BarcodeScanner";
+import { queueSaleOffline, isOnline, syncPendingSales } from "@/lib/offline-sync";
 
 interface CartItem {
   product: Product;
@@ -100,17 +101,44 @@ export default function POSPage() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setProcessing(true);
-    try {
-      const res = await api.post("/sales/", {
-        customer_id: selectedCustomer?.id || null,
+
+    const saleData = {
+      customer_id: selectedCustomer?.id || null,
+      items: cart.map((i) => ({
+        product_id: i.product.id,
+        quantity: i.quantity,
+        unit_price_cfa: i.product.price_cfa,
+      })),
+      payment_method: paymentMethod,
+      is_credit: paymentMethod === "credit",
+    };
+
+    if (!isOnline()) {
+      const local_id = await queueSaleOffline(saleData);
+      showToast("Vente mise en file d'attente (hors-ligne)");
+      setLastSale({
+        id: local_id,
         items: cart.map((i) => ({
-          product_id: i.product.id,
+          name: i.product.name,
           quantity: i.quantity,
           unit_price_cfa: i.product.price_cfa,
+          total_cfa: i.product.price_cfa * i.quantity,
         })),
-        payment_method: paymentMethod,
-        is_credit: paymentMethod === "credit",
+        total,
+        paymentMethod,
+        customerName: selectedCustomer?.name,
+        createdAt: new Date().toISOString(),
+        offline: true,
       });
+      setCart([]);
+      setSelectedCustomer(null);
+      setPaymentMethod("cash");
+      setProcessing(false);
+      return;
+    }
+
+    try {
+      const res = await api.post("/sales/", saleData);
       showToast(`Vente de ${formatCFA(total)} enregistrée !`);
       setLastSale({
         id: res.data.id,
@@ -129,8 +157,31 @@ export default function POSPage() {
       setSelectedCustomer(null);
       setPaymentMethod("cash");
       api.get("/products/").then((res) => setProducts(res.data));
+
+      const pending = await syncPendingSales();
+      if (pending.synced > 0) {
+        showToast(`${pending.synced} vente(s) hors-ligne synchronisée(s) !`);
+      }
     } catch (err) {
-      showToast("Erreur lors de la vente", "error");
+      const local_id = await queueSaleOffline(saleData);
+      showToast("Vente mise en file d'attente (erreur réseau)");
+      setLastSale({
+        id: local_id,
+        items: cart.map((i) => ({
+          name: i.product.name,
+          quantity: i.quantity,
+          unit_price_cfa: i.product.price_cfa,
+          total_cfa: i.product.price_cfa * i.quantity,
+        })),
+        total,
+        paymentMethod,
+        customerName: selectedCustomer?.name,
+        createdAt: new Date().toISOString(),
+        offline: true,
+      });
+      setCart([]);
+      setSelectedCustomer(null);
+      setPaymentMethod("cash");
     } finally {
       setProcessing(false);
     }

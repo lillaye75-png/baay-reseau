@@ -1,12 +1,14 @@
 import hashlib
 import hmac
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.api.deps import require_owner
+from app.models.user import User
 from app.models.tenant import Tenant
 from app.models.customer import Customer
 from app.models.product import Product
@@ -174,3 +176,64 @@ async def handle_whatsapp_command(phone: str, text: str, db: AsyncSession) -> st
 
     await db.flush()
     return response_message
+
+
+@router.post("/campaigns")
+async def create_campaign(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    from app.models.customer import Customer
+    from app.core.database import Base
+    from sqlalchemy import Column, String, Integer, DateTime, Text
+    import uuid
+    from datetime import datetime, timezone
+
+    customers_result = await db.execute(
+        select(Customer).where(Customer.tenant_id == user.tenant_id)
+    )
+    customers = list(customers_result.scalars().all())
+
+    recipients = data.get("recipients", "all")
+    message = data.get("message", "")
+    name = data.get("name", f"Campaign {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}")
+
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    recipient_phones = []
+    if recipients == "all":
+        recipient_phones = [c.phone for c in customers if c.phone]
+    elif recipients == "credit":
+        recipient_phones = [c.phone for c in customers if c.phone and c.total_credit_cfa > 0]
+    elif isinstance(recipients, list):
+        recipient_phones = [c.phone for c in customers if c.phone and c.id in recipients]
+
+    sent_count = 0
+    failed_count = 0
+    for phone in recipient_phones:
+        try:
+            from app.integrations.whatsapp import send_whatsapp_message
+            await send_whatsapp_message(phone, message)
+            sent_count += 1
+        except Exception:
+            failed_count += 1
+
+    return {
+        "status": "completed",
+        "name": name,
+        "recipient_count": len(recipient_phones),
+        "sent_count": sent_count,
+        "failed_count": failed_count,
+    }
+
+
+@router.get("/campaigns")
+async def list_campaigns(user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    from app.models.customer import Customer
+    customers_result = await db.execute(
+        select(Customer).where(Customer.tenant_id == user.tenant_id)
+    )
+    customers = list(customers_result.scalars().all())
+    return {
+        "total_customers": len(customers),
+        "customers_with_phone": len([c for c in customers if c.phone]),
+        "customers_with_credit": len([c for c in customers if c.total_credit_cfa > 0]),
+    }

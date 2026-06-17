@@ -49,11 +49,21 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{
           __html: `
             if('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) { registration.unregister(); }
-              });
               window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').catch(function() {});
+                navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                  reg.addEventListener('updatefound', function() {
+                    var newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', function() {
+                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        window.location.reload();
+                      }
+                    });
+                  });
+                }).catch(function() {});
+              });
+              navigator.serviceWorker.addEventListener('controllerchange', function() {
+                window.location.reload();
               });
             }
           `

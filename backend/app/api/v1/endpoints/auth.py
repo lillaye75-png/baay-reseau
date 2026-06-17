@@ -41,6 +41,16 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.flush()
 
+    try:
+        from sqlalchemy import text
+        import uuid as _uuid
+        await db.execute(text(
+            "INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 1)"
+        ), {"id": str(_uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id})
+        await db.flush()
+    except Exception:
+        pass
+
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
     return Token(access_token=token, user=UserRead.model_validate(user))
 

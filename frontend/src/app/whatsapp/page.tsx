@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 import { formatCFA } from "@/lib/format";
+import api from "@/lib/api";
+import { showToast } from "@/components/ui/Toast";
 import {
   MessageSquare,
   Bot,
@@ -15,6 +18,8 @@ import {
   BarChart3,
   ArrowRight,
   ShoppingCart,
+  Users,
+  Megaphone,
 } from "lucide-react";
 
 const commandExamples = [
@@ -69,17 +74,71 @@ const colorMap: Record<string, string> = {
 
 export default function WhatsAppPage() {
   const [activeTab, setActiveTab] = useState(0);
+  const [campaignTab, setCampaignTab] = useState<"bot" | "campaigns">("bot");
+  const [campaignName, setCampaignName] = useState("");
+  const [campaignMessage, setCampaignMessage] = useState("");
+  const [campaignRecipients, setCampaignRecipients] = useState("all");
+  const [sending, setSending] = useState(false);
+  const [stats, setStats] = useState({ total_customers: 0, customers_with_phone: 0, customers_with_credit: 0 });
+
+  useEffect(() => {
+    api.get("/whatsapp/campaigns").then((res) => setStats(res.data)).catch(() => {});
+  }, []);
+
+  const handleSendCampaign = async () => {
+    if (!campaignMessage.trim()) {
+      showToast("Entrez un message", "error");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await api.post("/whatsapp/campaigns", {
+        name: campaignName || `Campagne ${new Date().toLocaleDateString("fr-SN")}`,
+        message: campaignMessage,
+        recipients: campaignRecipients,
+      });
+      showToast(`${res.data.sent_count} message(s) envoyé(s) !`);
+      setCampaignMessage("");
+      setCampaignName("");
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur lors de l'envoi", "error");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">WhatsApp AI Bot</h1>
+          <h1 className="text-2xl font-bold text-gray-900">WhatsApp</h1>
           <p className="text-sm text-gray-500">
-            Gérez votre boutique directement depuis WhatsApp — en Wolof, Français ou Anglais
+            Bot IA et campagnes de messages — en Wolof, Français ou Anglais
           </p>
         </div>
 
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 max-w-md">
+          <button
+            onClick={() => setCampaignTab("bot")}
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              campaignTab === "bot" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Bot className="h-4 w-4 inline mr-2" />
+            Bot IA
+          </button>
+          <button
+            onClick={() => setCampaignTab("campaigns")}
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              campaignTab === "campaigns" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Megaphone className="h-4 w-4 inline mr-2" />
+            Campagnes
+          </button>
+        </div>
+
+        {campaignTab === "bot" && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <Card>
@@ -243,6 +302,101 @@ export default function WhatsAppPage() {
             </Card>
           </div>
         </div>
+        )}
+
+        {campaignTab === "campaigns" && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Megaphone className="h-5 w-5 text-primary-600" />
+                  <h2 className="text-lg font-semibold">Nouvelle campagne</h2>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Nom de la campagne</label>
+                  <input
+                    type="text"
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Promo du mois, Relance crédit..."
+                    className="w-full mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Destinataires</label>
+                  <select
+                    value={campaignRecipients}
+                    onChange={(e) => setCampaignRecipients(e.target.value)}
+                    className="w-full mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  >
+                    <option value="all">Tous les clients ({stats.customers_with_phone})</option>
+                    <option value="credit">Clients avec crédit ({stats.customers_with_credit})</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Message</label>
+                  <textarea
+                    value={campaignMessage}
+                    onChange={(e) => setCampaignMessage(e.target.value)}
+                    placeholder="Bonjour ! Nous avons une promotion spéciale pour vous..."
+                    rows={5}
+                    className="w-full mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <Button onClick={handleSendCampaign} disabled={sending}>
+                  <Send className="h-4 w-4 mr-2" />
+                  {sending ? "Envoi en cours..." : "Envoyer la campagne"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <h2 className="text-lg font-semibold">Statistiques</h2>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Users className="h-5 w-5 text-gray-500" />
+                    <span className="text-sm text-gray-600">Total clients</span>
+                  </div>
+                  <span className="font-bold">{stats.total_customers}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="h-5 w-5 text-green-500" />
+                    <span className="text-sm text-gray-600">Avec téléphone</span>
+                  </div>
+                  <span className="font-bold">{stats.customers_with_phone}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="h-5 w-5 text-red-500" />
+                    <span className="text-sm text-gray-600">Avec crédit</span>
+                  </div>
+                  <span className="font-bold">{stats.customers_with_credit}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardContent className="p-4">
+                <p className="text-sm text-yellow-800 font-medium mb-1">Conseils</p>
+                <ul className="text-xs text-yellow-700 space-y-1">
+                  <li>- Messages promotionnels, relances crédit</li>
+                  <li>- Notifications de nouveautés</li>
+                  <li>- Remerciements aux clients fidèles</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        )}
       </div>
     </DashboardLayout>
   );
