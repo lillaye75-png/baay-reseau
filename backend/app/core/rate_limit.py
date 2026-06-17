@@ -10,7 +10,7 @@ RATE_LIMITS = {
 }
 
 ORDER_RATE_LIMIT = (3, 60)
-DEFAULT_LIMIT = (300, 60)
+DEFAULT_LIMIT = (600, 60)
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -49,11 +49,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests[key] = [t for t in self.requests[key] if now - t < window]
 
         if len(self.requests[key]) >= max_requests:
+            origin = request.headers.get("origin", "*")
             return Response(
-                content='{"detail":"Too many requests. Please try again later."}',
+                content='{"detail":"Trop de requêtes. Réessayez plus tard."}',
                 status_code=429,
                 media_type="application/json",
-                headers=CORS_HEADERS,
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                },
             )
 
         self.requests[key].append(now)
