@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Key, Shield, ArrowRight } from "lucide-react";
+import { Key, Shield, ArrowRight, Clock } from "lucide-react";
 import api from "@/lib/api";
 import { showToast } from "@/components/ui/Toast";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import Link from "next/link";
 export default function ActivatePage() {
   const [licenceKey, setLicenceKey] = useState("");
   const [loading, setLoading] = useState(false);
+  const [extending, setExtending] = useState(false);
 
   const handleActivate = async () => {
     if (!licenceKey.trim()) {
@@ -21,12 +22,25 @@ export default function ActivatePage() {
     setLoading(true);
     try {
       const res = await api.post("/licences/activate", { key: licenceKey.trim() });
-      showToast(`Licence ${res.data.tier} activée ! Valide ${res.data.expires_at ? "jusqu'au " + new Date(res.data.expires_at).toLocaleDateString("fr") : ""}`);
+      showToast(`Licence ${res.data.tier} activée ! Valide jusqu'au ${new Date(res.data.expires_at).toLocaleDateString("fr")}`);
       setTimeout(() => window.location.href = "/", 1500);
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExtendTrial = async () => {
+    setExtending(true);
+    try {
+      const res = await api.post("/licences/extend-trial", { days: 30 });
+      showToast(`Essai prolongé de 30 jours ! Valide jusqu'au ${new Date(res.data.expires_at).toLocaleDateString("fr")}`);
+      setTimeout(() => window.location.href = "/", 1500);
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    } finally {
+      setExtending(false);
     }
   };
 
@@ -39,7 +53,7 @@ export default function ActivatePage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Licence requise</h1>
           <p className="text-sm text-gray-500 mt-2">
-            Votre période d&apos;essai est terminée. Entrez votre clé de licence pour continuer.
+            Votre période d&apos;essai est terminée. Activez une licence ou prolongez votre essai.
           </p>
         </div>
 
@@ -53,9 +67,32 @@ export default function ActivatePage() {
               className="font-mono text-center text-lg tracking-wider"
             />
             <Button className="w-full" onClick={handleActivate} disabled={loading}>
-              {loading ? "Activation..." : "Activer"}
+              {loading ? "Activation..." : "Activer la licence"}
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
+          </CardContent>
+        </Card>
+
+        <div className="text-center">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-gray-50 px-2 text-gray-500">ou</span>
+            </div>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-6">
+            <Button variant="secondary" className="w-full" onClick={handleExtendTrial} disabled={extending}>
+              <Clock className="h-4 w-4 mr-2" />
+              {extending ? "Prolongation..." : "Prolonger l'essai de 30 jours"}
+            </Button>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              Extension gratuite, sans clé de licence requise
+            </p>
           </CardContent>
         </Card>
 

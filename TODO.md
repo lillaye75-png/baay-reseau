@@ -1,6 +1,6 @@
 # Naatal ERP Cloud — Project Status
 
-> Dernière mise à jour : 2026-06-17
+> Dernière mise à jour : 2026-06-21
 > Projet : E:\movie laye sow\project\SaaS ERP for Boutique\baay-reseau
 > Compte test : 📱 776621410 / 🔑 admin123 (owner, licence 60j)
 > Super Admin : 📱 776621410, 708372127
@@ -28,11 +28,12 @@
 - Description riche : champ description sur les produits
 - CSV Import/Export : clients + ventes
 - Auto-logout licence : désactivation/suppression invalide le tenant
-- Stock predictions : IA avec niveaux d'urgence et recommandations réapprovisionnement
+- Stock predictions : IA avec niveaux d'urgence + alertes stock nul/ bas + commandes integrées
 - Offline sync : endpoint POST /sales/sync pour ventes hors-ligne
-- Print settings : logo, en-tête, pied de page personnalisables
+- Print settings : logo, en-tête, pied de page, description société
 - Multi-store : user_stores table, création/switch de boutiques
 - Delivery tracking : status, livreur, livraison estimée
+- Extend trial : POST /licences/extend-trial pour prolonger l'essai sans clé
 
 ### Bug Fixes (All Resolved)
 - 500 auth errors, postgres:// URL, duplicate require_owner, DB éphémère
@@ -44,6 +45,12 @@
 - Quick Sale raw SQL, product category FK, CORS persistant/CORS 429
 - categories dropdown, audit logs/flush, SW cache, rate limit
 - empty string → null, SW cache v7
+- **2026-06-21 : tenants table missing address/description columns → ALTER TABLE auto**
+- **2026-06-21 : Stock predictions showing zeros → added OrderItem queries + zero-stock detection**
+- **2026-06-21 : Offline products gone after reload → IndexedDB product cache**
+- **2026-06-21 : A4 print missing logo → load print_settings + show logo/description**
+- **2026-06-21 : License not activating → added /extend-trial endpoint**
+- **2026-06-21 : Employee could modify invoices → backend PUT/DELETE requires owner**
 
 ### Security & Permissions
 - Rôle-based access : employees ne peuvent PAS modifier les infos entreprise
@@ -52,12 +59,15 @@
 - Inactive accounts : bloqués au login
 - Session check : vérification toutes les 60s + au focus de la fenêtre
 - Audit logs : enregistrement des actions en DB
+- **Invoice permissions : employees cannot delete/modify invoices (backend + frontend)**
+- **License auto-logoff : periodic check every 60s + window focus for ALL roles**
 
 ### Licence Server
 - Modèle Licence : clé unique, tier (free/pro/enterprise), durée, features
 - 7 jours d'essai → auto-expire
 - Activation/Upgrade : page `/activate` + Billing
 - Super admin panel : `/licences`
+- **Extend trial : POST /licences/extend-trial → 30 jours sans clé de licence**
 
 ### Google OAuth
 - POST /auth/google → userinfo endpoint, email sur User, phone `goog:{id[:12]}`
@@ -70,15 +80,17 @@
 - Subscriptions : stockées en DB PostgreSQL
 
 ### Frontend (Next.js 14 + Tailwind)
-- 26+ pages : login, register, wizard, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, settings, whatsapp, storefront, shop/*, billing, licences, activate
+- 28+ pages : login, register, wizard, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, settings, whatsapp, storefront, shop/*, billing, licences, activate, **guide**
 - 3 thèmes : Light, Dark, Solarized
 - i18n : Français + Wolof + Anglais
 - POS mobile : toggle Produits/Panier
 - MobileNav : Rapports + Vente Rapide
 - Wizard 3 étapes : infos boutique → choix plan → confirmation
-- Offline sync : IndexedDB queue + auto-sync
+- Offline sync : IndexedDB queue + auto-sync + **product cache**
 - Store switcher : changement de boutique dans la sidebar
 - Stock predictions : section IA sur la page produits
+- **Onboarding Guide : 7-step tooltip tour, auto-shows on first login**
+- **User Guide : /guide page with 16 sections, printable as PDF**
 
 ### Infrastructure
 - Docker Compose
@@ -86,7 +98,7 @@
 - Render deploy : backend + PostgreSQL
 - Vercel deploy : frontend
 - Keep-alive ping toutes les 10min (anti-sleep Render free tier)
-- ALTER TABLE auto-add columns au démarrage
+- ALTER TABLE auto-add columns au démarrage (address, description, etc.)
 - Neon : base de données PostgreSQL gérée via Neon
 - Hot-reload : `--reload` flag + volume mount pour dev
 
@@ -99,7 +111,7 @@
 # Backend
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 
 # Frontend
 cd frontend
@@ -120,6 +132,7 @@ npm run dev
 **Delivery Tracking:**
 - Go to `/orders` → select an order → click "Suivi"
 - Update tracking status → should see real-time updates via WebSocket
+- Public tracking URL: `/shop/{slug}/order/{id}` → shows checkmark timeline
 
 **Advanced Analytics:**
 - Go to `/reports` → click "Tendances" tab → see 30-day line chart
@@ -128,22 +141,47 @@ npm run dev
 **WhatsApp Campaigns:**
 - Go to `/whatsapp` → click "Campagnes" tab
 - Select recipients → write message → send
+- WhatsApp Bot config: Settings → WhatsApp Bot card
 
 **AI Stock Predictions:**
 - Go to `/products` → click "Prédictions" button
-- See urgency levels (critical/high/medium) with reorder suggestions
+- Shows urgency levels (critical/high/medium) with reorder suggestions
+- Includes both Sales + Orders data
 
 **Multi-Store:**
-- Sidebar → if multiple stores, see store switcher dropdown
-- Switch between stores → data changes
+- Go to Settings → "Mes Boutiques" card
+- Create new store, switch between stores
+- Store switcher in sidebar when multiple stores
 
 **Offline Sync:**
 - Turn off network → make a sale in POS → sale queued in IndexedDB
+- Products cached in IndexedDB → survive page reload
 - Turn on network → next sale auto-syncs pending sales
 
 **Custom Print:**
 - Go to `/settings` → "Impression" card
 - Add logo URL, header/footer text → test receipt printing
+- A4 invoice shows logo + company description
+
+**Invoice Permissions:**
+- Login as employee → `/sales` → click a sale
+- Employee sees only "Imprimer" and "PDF" buttons (no delete/edit)
+- Owner sees all buttons including "Annuler la facture"
+
+**License Management:**
+- Trial lasts 7 days from registration
+- When expired: page `/activate` shows
+- Click "Prolonger l'essai de 30 jours" → extends without licence key
+- Or enter licence key to activate pro/enterprise plan
+
+**Onboarding Guide:**
+- First login → 7-step tooltip tour appears
+- Walks through: Dashboard, POS, Products, Orders, Reports, Settings
+- Click "Terminé" to dismiss, never shows again
+
+**User Guide:**
+- Go to `/guide` → comprehensive 16-section documentation
+- Click "Imprimer / PDF" to save as PDF
 
 ### 3. API Endpoints to test
 ```
@@ -159,6 +197,7 @@ GET  /api/v1/tenants/{id}/print-settings
 PUT  /api/v1/tenants/{id}/print-settings
 PUT  /api/v1/storefront/orders/{id}/tracking
 GET  /api/v1/storefront/orders/{id}/tracking
+POST /api/v1/licences/extend-trial
 ```
 
 ---
@@ -169,6 +208,8 @@ GET  /api/v1/storefront/orders/{id}/tracking
 - Toutes les tables sont UUID + tenant_id pour l'isolation multi-tenant
 - Base de données sur Neon (pas Render PostgreSQL)
 - firebase-service-account.json dans .gitignore — doit être ajouté manuellement sur Render
+- SQLite dev DB: `backend/naatal_erp.db` — persists across restarts
+- Tenant model now has `address` and `description` columns (auto-added on startup)
 
 ## 📞 Support
 - 📱 +221 77 662 14 10

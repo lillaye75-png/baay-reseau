@@ -25,19 +25,19 @@ import {
 import api from "@/lib/api";
 
 const navigation = [
-  { name: "Tableau de bord", href: "/", icon: LayoutDashboard, i18nKey: "dashboard" },
-  { name: "POS / Vente", href: "/pos", icon: ShoppingCart, i18nKey: "pos" },
+  { name: "Tableau de bord", href: "/", icon: LayoutDashboard, i18nKey: "dashboard", guide: "dashboard" },
+  { name: "POS / Vente", href: "/pos", icon: ShoppingCart, i18nKey: "pos", guide: "pos" },
   { name: "Vente Rapide", href: "/quick-sale", icon: Zap, i18nKey: "quick_sale" },
   { name: "Ventes & Factures", href: "/sales", icon: Receipt, i18nKey: "sales" },
-  { name: "Commandes", href: "/orders", icon: ShoppingBag, i18nKey: "orders", showBadge: true },
+  { name: "Commandes", href: "/orders", icon: ShoppingBag, i18nKey: "orders", showBadge: true, guide: "orders" },
   { name: "Dépenses", href: "/expenses", icon: Wallet, i18nKey: "expenses" },
-  { name: "Rapports", href: "/reports", icon: BarChart3, i18nKey: "reports" },
-  { name: "Produits", href: "/products", icon: Package, i18nKey: "products" },
-  { name: "Clients", href: "/customers", icon: Users, i18nKey: "clients" },
+  { name: "Rapports", href: "/reports", icon: BarChart3, i18nKey: "reports", guide: "reports" },
+  { name: "Produits", href: "/products", icon: Package, i18nKey: "products", guide: "products" },
+  { name: "Clients", href: "/customers", icon: Users, i18nKey: "clients", guide: "customers" },
   { name: "Crédit", href: "/credit", icon: CreditCard, i18nKey: "credit" },
   { name: "Abonnement", href: "/billing", icon: Crown, i18nKey: "billing" },
   { name: "Journal", href: "/audit", icon: Activity, i18nKey: "audit_log" },
-  { name: "Paramètres", href: "/settings", icon: Settings, i18nKey: "settings" },
+  { name: "Paramètres", href: "/settings", icon: Settings, i18nKey: "settings", guide: "settings" },
 ];
 
 const superAdminNav = [
@@ -147,6 +147,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              data-guide={item.guide}
               className={`relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-primary-600 text-white shadow-md shadow-primary-600/25"

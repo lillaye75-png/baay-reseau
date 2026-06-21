@@ -96,6 +96,45 @@ async def activate_licence(data: dict, user: User = Depends(require_owner), db: 
     return {"status": "activated", "tier": licence.tier, "expires_at": licence.expires_at.isoformat()}
 
 
+@router.post("/extend-trial")
+async def extend_trial(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    days = data.get("days", 30)
+    now = datetime.now(timezone.utc)
+
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+    tenant = tenant_result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant non trouvé")
+
+    if tenant.license_expires_at:
+        exp = tenant.license_expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if exp > now:
+            tenant.license_expires_at = exp + timedelta(days=days)
+        else:
+            tenant.license_expires_at = now + timedelta(days=days)
+    else:
+        tenant.license_expires_at = now + timedelta(days=days)
+
+    tenant.is_active = True
+
+    key = generate_licence_key("pro")
+    licence = Licence(
+        licence_key=key,
+        tier="pro",
+        duration_days=days,
+        assigned_to=user.tenant_id,
+        activated_at=now,
+        expires_at=tenant.license_expires_at,
+        created_by=user.id,
+    )
+    db.add(licence)
+    await db.flush()
+
+    return {"status": "extended", "expires_at": tenant.license_expires_at.isoformat(), "key": key}
+
+
 @router.delete("/wipe-all")
 async def wipe_all_data(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if not is_super_admin(user):

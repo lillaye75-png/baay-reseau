@@ -8,6 +8,7 @@ import Sidebar from "./Sidebar";
 import AuthGuard from "./AuthGuard";
 import MobileNav from "./MobileNav";
 import NotificationsDropdown from "./NotificationsDropdown";
+import OnboardingGuide from "./OnboardingGuide";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { useI18n } from "@/lib/i18n";
@@ -74,6 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <AuthGuard>
+      <OnboardingGuide />
       <div className="flex h-screen overflow-hidden">
         <div className="hidden lg:block">
           <Sidebar />

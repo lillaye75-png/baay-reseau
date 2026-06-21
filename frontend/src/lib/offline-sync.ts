@@ -1,6 +1,7 @@
 const DB_NAME = "baay-offline-db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "pending-sales";
+const PRODUCTS_STORE = "cached-products";
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -11,6 +12,9 @@ function openDB(): Promise<IDBDatabase> {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "local_id" });
+      }
+      if (!db.objectStoreNames.contains(PRODUCTS_STORE)) {
+        db.createObjectStore(PRODUCTS_STORE, { keyPath: "id" });
       }
     };
   });
@@ -82,4 +86,50 @@ export function onOnlineChange(callback: (online: boolean) => void): () => void 
     window.removeEventListener("online", handleOnline);
     window.removeEventListener("offline", handleOffline);
   };
+}
+
+// Product caching for offline support
+export async function cacheProducts(products: any[]): Promise<void> {
+  const db = await openDB();
+  const tx = db.transaction(PRODUCTS_STORE, "readwrite");
+  const store = tx.objectStore(PRODUCTS_STORE);
+  for (const product of products) {
+    store.put(product);
+  }
+}
+
+export async function getCachedProducts(): Promise<any[]> {
+  const db = await openDB();
+  const tx = db.transaction(PRODUCTS_STORE, "readonly");
+  const store = tx.objectStore(PRODUCTS_STORE);
+  return new Promise((resolve, reject) => {
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function clearCachedProducts(): Promise<void> {
+  const db = await openDB();
+  const tx = db.transaction(PRODUCTS_STORE, "readwrite");
+  const store = tx.objectStore(PRODUCTS_STORE);
+  store.clear();
+}
+
+export async function loadProductsWithCache(): Promise<any[]> {
+  const cached = await getCachedProducts();
+  if (cached.length > 0) {
+    // Return cached products and refresh in background
+    import("@/lib/api").then(({ default: api }) => {
+      api.get("/products/").then((res) => {
+        cacheProducts(res.data);
+      }).catch(() => {});
+    });
+    return cached;
+  }
+  // No cache, fetch from API
+  const { default: api } = await import("@/lib/api");
+  const res = await api.get("/products/");
+  await cacheProducts(res.data);
+  return res.data;
 }

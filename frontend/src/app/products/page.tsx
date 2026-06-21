@@ -11,6 +11,7 @@ import api, { Product } from "@/lib/api";
 import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera, FileSpreadsheet, Brain, AlertTriangle, Clock } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import { exportProducts } from "@/lib/export";
+import { loadProductsWithCache, cacheProducts } from "@/lib/offline-sync";
 import * as XLSX from "xlsx";
 import VariantManager from "@/components/products/VariantManager";
 import BarcodeScanner from "@/components/pos/BarcodeScanner";
@@ -56,7 +57,14 @@ export default function ProductsPage() {
   }, []);
 
   const loadProducts = () => {
-    api.get("/products/").then((res) => setProducts(res.data));
+    loadProductsWithCache()
+      .then((data) => setProducts(data))
+      .catch(() => {
+        api.get("/products/").then((res) => {
+          setProducts(res.data);
+          cacheProducts(res.data);
+        });
+      });
   };
 
   const loadPredictions = () => {

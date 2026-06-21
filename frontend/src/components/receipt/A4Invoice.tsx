@@ -27,10 +27,15 @@ interface InvoiceProps {
 
 export default function A4Invoice({ saleId, items, total, paymentMethod, customerName, customerPhone, createdAt, showActions = true, onDelete }: InvoiceProps) {
   const { user } = useAuth();
+  const isOwner = user?.role === "owner";
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [printSettings, setPrintSettings] = useState<any>(null);
 
   useEffect(() => {
-    api.get("/tenants/me").then((res) => setTenant(res.data)).catch(() => {});
+    api.get("/tenants/me").then((res) => {
+      setTenant(res.data);
+      api.get(`/tenants/${res.data.id}/print-settings`).then((r) => setPrintSettings(r.data)).catch(() => {});
+    }).catch(() => {});
   }, []);
 
   const paymentLabels: Record<string, string> = {
@@ -49,6 +54,10 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
     if (!el) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
+    const logoHtml = printSettings?.print_logo_url ? `<img src="${printSettings.print_logo_url}" alt="Logo" style="height:60px;margin-bottom:8px;" />` : "";
+    const headerText = printSettings?.print_header_text || tenant?.name || "Naatal ERP Cloud";
+    const footerText = printSettings?.print_footer_text || "Merci, dëgg na tànggi!";
+    const activityText = tenant?.description || "";
     printWindow.document.write(`
       <html><head><title>Facture ${saleId.slice(0, 8)}</title>
       <style>
@@ -87,9 +96,14 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
       <div id="a4-invoice" className="bg-white max-w-[210mm] mx-auto" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
         <div className="flex justify-between border-b-2 border-gray-900 pb-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{tenant?.name || "Naatal ERP Cloud"}</h1>
+            {printSettings?.print_logo_url && (
+              <img src={printSettings.print_logo_url} alt="Logo" className="h-16 mb-2" onError={(e) => (e.currentTarget.style.display = "none")} />
+            )}
+            <h1 className="text-2xl font-bold text-gray-900">{printSettings?.print_header_text || tenant?.name || "Naatal ERP Cloud"}</h1>
+            {tenant?.description && <p className="text-sm text-gray-600 mt-1">{tenant.description}</p>}
             <p className="text-sm text-gray-500">{tenant?.phone || ""}</p>
             {tenant?.email && <p className="text-sm text-gray-500">{tenant.email}</p>}
+            {tenant?.address && <p className="text-sm text-gray-500">{tenant.address}</p>}
           </div>
           <div className="text-right">
             <h2 className="text-xl font-bold text-primary-600">FACTURE</h2>
@@ -146,12 +160,12 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
         </div>
 
         <div className="border-t border-gray-200 pt-4 mt-8 text-center text-xs text-gray-400">
-          <p>Mèrsi, dëgg na tànggi! — {tenant?.name || "Naatal ERP Cloud"}</p>
+          <p>{printSettings?.print_footer_text || "Merci, dëgg na tànggi!"} — {tenant?.name || "Naatal ERP Cloud"}</p>
           <p className="mt-1">Naatal ERP Cloud — ERP Boutique Sénégal</p>
         </div>
       </div>
 
-      {showActions && (
+      {showActions && isOwner && onDelete && (
         <div className="print:hidden flex justify-center gap-3 mt-4">
           <button
             onClick={handlePrint}
@@ -167,14 +181,30 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
             <Download className="h-4 w-4" />
             PDF
           </button>
-          {onDelete && (
-            <button
-              onClick={onDelete}
-              className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
-            >
-              Annuler la facture
-            </button>
-          )}
+          <button
+            onClick={onDelete}
+            className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+          >
+            Annuler la facture
+          </button>
+        </div>
+      )}
+      {showActions && !isOwner && (
+        <div className="print:hidden flex justify-center gap-3 mt-4">
+          <button
+            onClick={handlePrint}
+            className="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Imprimer A4
+          </button>
+          <button
+            onClick={handleDownload}
+            className="rounded-lg bg-gray-100 border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            PDF
+          </button>
         </div>
       )}
 

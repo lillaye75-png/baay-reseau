@@ -101,6 +101,14 @@ async def on_startup():
             except Exception:
                 pass
             try:
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS address VARCHAR(500)"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS description TEXT"))
+            except Exception:
+                pass
+            try:
                 await conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points INTEGER DEFAULT 0"))
             except Exception:
                 pass

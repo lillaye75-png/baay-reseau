@@ -39,6 +39,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  // Periodic session check (every 60 seconds)
+  useEffect(() => {
+    if (!token) return;
+
+    const checkSession = async () => {
+      try {
+        await api.get("/tenants/me");
+      } catch (err: any) {
+        if (err.response?.status === 403) {
+          const detail = err.response?.data?.detail;
+          if (detail === "licence_expired") {
+            localStorage.removeItem("token");
+            localStorage.removeItem("refresh_token");
+            localStorage.removeItem("user");
+            setToken(null);
+            setUser(null);
+            alert("Votre licence a expiré. Contactez l'administrateur.");
+            router.push("/login");
+          }
+        } else if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("user");
+          setToken(null);
+          setUser(null);
+          router.push("/login");
+        }
+      }
+    };
+
+    const interval = setInterval(checkSession, 60000);
+
+    // Also check on window focus
+    const handleFocus = () => checkSession();
+    window.addEventListener("focus", handleFocus);
+
+    // Initial check
+    checkSession();
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [token, router]);
+
   const login = async (phone: string, password: string) => {
     const res = await api.post("/auth/login", { phone, password });
     const { access_token, refresh_token, user: userData } = res.data;

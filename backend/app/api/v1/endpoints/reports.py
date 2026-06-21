@@ -65,6 +65,7 @@ async def stock_predictions(
     from datetime import datetime, timezone, timedelta
     from app.models.product import Product
     from app.models.sale import Sale, SaleItem
+    from app.models.order import Order, OrderItem
 
     now = datetime.now(timezone.utc)
     thirty_days_ago = now - timedelta(days=30)
@@ -76,9 +77,9 @@ async def stock_predictions(
 
     predictions = []
     for product in products:
-        sales_result = await db.execute(
+        sale_result = await db.execute(
             select(
-                func.sum(SaleItem.quantity).label("total_sold"),
+                func.coalesce(func.sum(SaleItem.quantity), 0).label("total_sold"),
                 func.count(SaleItem.id).label("sale_count"),
             )
             .join(Sale, SaleItem.sale_id == Sale.id)
@@ -88,24 +89,50 @@ async def stock_predictions(
                 Sale.created_at >= thirty_days_ago,
             )
         )
-        sales_data = sales_result.one()
-        total_sold = int(sales_data[0] or 0)
-        sale_count = int(sales_data[1] or 0)
+        sale_data = sale_result.one()
+        sale_qty = int(sale_data[0] or 0)
+
+        order_result = await db.execute(
+            select(
+                func.coalesce(func.sum(OrderItem.quantity), 0).label("total_ordered"),
+                func.count(OrderItem.id).label("order_count"),
+            )
+            .join(Order, OrderItem.order_id == Order.id)
+            .where(
+                OrderItem.product_id == product.id,
+                Order.tenant_id == user.tenant_id,
+                Order.created_at >= thirty_days_ago,
+                Order.status != "cancelled",
+            )
+        )
+        order_data = order_result.one()
+        order_qty = int(order_data[0] or 0)
+
+        total_sold = sale_qty + order_qty
+        sale_count = int(sale_data[1] or 0) + int(order_data[1] or 0)
 
         avg_daily_sales = total_sold / 30 if total_sold > 0 else 0
         days_until_stockout = product.stock_quantity / avg_daily_sales if avg_daily_sales > 0 else 999
 
         urgency = "low"
-        if days_until_stockout <= 3:
+        if product.stock_quantity == 0:
+            urgency = "critical"
+            days_until_stockout = 0
+        elif days_until_stockout <= 3:
             urgency = "critical"
         elif days_until_stockout <= 7:
             urgency = "high"
         elif days_until_stockout <= 14:
             urgency = "medium"
+        elif product.stock_quantity <= product.low_stock_threshold:
+            urgency = "high"
+            days_until_stockout = 0
 
         suggested_reorder = 0
         if avg_daily_sales > 0:
             suggested_reorder = max(int(avg_daily_sales * 30), product.low_stock_threshold * 2)
+        elif product.stock_quantity <= product.low_stock_threshold:
+            suggested_reorder = product.low_stock_threshold * 3
 
         predictions.append({
             "product_id": product.id,
@@ -120,11 +147,16 @@ async def stock_predictions(
             "low_stock_threshold": product.low_stock_threshold,
         })
 
-    predictions.sort(key=lambda x: x["days_until_stockout"])
+    predictions.sort(key=lambda x: (
+        {"critical": 0, "high": 1, "medium": 2, "low": 3}.get(x["urgency"], 4),
+        x["days_until_stockout"],
+    ))
 
     critical = [p for p in predictions if p["urgency"] == "critical"]
     high = [p for p in predictions if p["urgency"] == "high"]
     medium = [p for p in predictions if p["urgency"] == "medium"]
+
+    product_price_map = {p.id: p.price_cfa for p in products}
 
     return {
         "predictions": predictions,
@@ -134,7 +166,7 @@ async def stock_predictions(
             "high": len(high),
             "medium": len(medium),
             "suggested_total_reorder_cfa": sum(
-                p["suggested_reorder"] * (next((pp for pp in products if pp.id == p["product_id"]), Product(price_cfa=0)).price_cfa)
+                p["suggested_reorder"] * product_price_map.get(p["product_id"], 0)
                 for p in critical + high
             ),
         },

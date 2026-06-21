@@ -120,7 +120,7 @@ async def generate_orange_money_link(data: dict, user: User = Depends(get_curren
 
 
 @router.put("/{sale_id}", response_model=SaleRead)
-async def update_sale(sale_id: str, data: SaleCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def update_sale(sale_id: str, data: SaleCreate, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     from app.services.sales import update_sale as update_sale_svc
     try:
         return await update_sale_svc(db, user.tenant_id, sale_id, data)

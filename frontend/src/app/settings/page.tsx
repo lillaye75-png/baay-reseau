@@ -591,6 +591,23 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100">
+                    <Store className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Mes Boutiques</h2>
+                    <p className="text-sm text-gray-500">Gérer vos points de vente</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <StoreManager />
+              </CardContent>
+            </Card>
           </>
         )}
 
@@ -648,5 +665,85 @@ export default function SettingsPage() {
         </Card>
       </div>
     </DashboardLayout>
+  );
+}
+
+function StoreManager() {
+  const [stores, setStores] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [newStore, setNewStore] = useState({ name: "", slug: "", phone: "" });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get("/tenants/stores").then((res) => setStores(res.data)).catch(() => {});
+  }, []);
+
+  const handleCreate = async () => {
+    if (!newStore.name.trim()) {
+      showToast("Entrez un nom de boutique", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.post("/tenants/stores", newStore);
+      showToast("Boutique créée !");
+      setStores([...stores, { ...res.data, is_default: false, is_active: true }]);
+      setNewStore({ name: "", slug: "", phone: "" });
+      setShowForm(false);
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSwitch = async (storeId: string) => {
+    try {
+      await api.put(`/tenants/stores/${storeId}/switch`);
+      showToast("Boutique changée !");
+      window.location.reload();
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {stores.map((store) => (
+        <div key={store.id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
+              {store.name.charAt(0)}
+            </div>
+            <div>
+              <p className="text-sm font-medium">{store.name}</p>
+              <p className="text-xs text-gray-500">{store.slug || "Boutique principale"}</p>
+            </div>
+            {store.is_default && <Badge variant="success">Actuelle</Badge>}
+          </div>
+          {!store.is_default && (
+            <Button variant="secondary" size="sm" onClick={() => handleSwitch(store.id)}>
+              Basculer
+            </Button>
+          )}
+        </div>
+      ))}
+
+      {showForm ? (
+        <div className="rounded-lg bg-gray-50 p-4 space-y-3">
+          <Input label="Nom de la boutique" value={newStore.name} onChange={(e) => setNewStore({ ...newStore, name: e.target.value })} placeholder="Ma Nouvelle Boutique" />
+          <Input label="Slug (URL)" value={newStore.slug} onChange={(e) => setNewStore({ ...newStore, slug: e.target.value })} placeholder="ma-boutique" />
+          <Input label="Téléphone" value={newStore.phone} onChange={(e) => setNewStore({ ...newStore, phone: e.target.value })} placeholder="+221 77 123 45 67" />
+          <div className="flex gap-2 justify-end">
+            <Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>Annuler</Button>
+            <Button size="sm" onClick={handleCreate} disabled={saving}>{saving ? "Création..." : "Créer"}</Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" size="sm" onClick={() => setShowForm(true)} className="w-full">
+          + Ajouter une boutique
+        </Button>
+      )}
+    </div>
   );
 }

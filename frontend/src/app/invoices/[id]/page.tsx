@@ -7,6 +7,7 @@ import A4Invoice from "@/components/receipt/A4Invoice";
 import Button from "@/components/ui/Button";
 import { formatCFA } from "@/lib/format";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, Edit, Trash2, Printer } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 
@@ -24,7 +25,9 @@ interface SaleData {
 export default function InvoicePage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const saleId = (params?.id || "") as string;
+  const isOwner = user?.role === "owner";
   const [sale, setSale] = useState<SaleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -145,12 +148,16 @@ export default function InvoicePage() {
           <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeft className="h-5 w-5" /></button>
           <h1 className="text-2xl font-bold text-gray-900">Facture #{saleId.slice(0, 8).toUpperCase()}</h1>
           <div className="ml-auto flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setEditMode(true)}>
-              <Edit className="h-4 w-4 mr-1" /> Modifier
-            </Button>
-            <Button variant="danger" size="sm" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4 mr-1" /> Annuler
-            </Button>
+            {isOwner && (
+              <>
+                <Button variant="secondary" size="sm" onClick={() => setEditMode(true)}>
+                  <Edit className="h-4 w-4 mr-1" /> Modifier
+                </Button>
+                <Button variant="danger" size="sm" onClick={handleDelete}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Annuler
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
