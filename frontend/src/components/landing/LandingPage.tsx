@@ -244,7 +244,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 mb-6">
                 <Zap className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm text-white/90">Propulsé par l&apos;Intelligence Artificielle</span>
+                <span className="text-sm text-white/90">Développé par Abdoulaye Sow</span>
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
                 Gérez votre boutique
