@@ -188,7 +188,11 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
 
     try:
         name = str(data.get("name", "Nouvelle boutique"))[:255]
-        slug = str(data.get("slug", f"store-{str(uuid.uuid4())[:8]}"))[:100]
+        raw_slug = str(data.get("slug", "")).strip().lower()
+        if raw_slug:
+            slug = f"{raw_slug}-{str(uuid.uuid4())[:8]}"
+        else:
+            slug = f"store-{str(uuid.uuid4())[:8]}"
         phone = str(data.get("phone") or user.phone or "")[:255]
         email_val = data.get("email")
         if email_val and str(email_val).strip():
