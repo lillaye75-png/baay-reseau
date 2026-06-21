@@ -157,6 +157,6 @@ async def remove_employee(employee_id: str, user: User = Depends(require_owner),
     employee = result.scalar_one_or_none()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
-    employee.is_active = False
+    await db.delete(employee)
     await db.flush()
-    return {"status": "deactivated"}
+    return {"status": "deleted", "name": employee.name}
