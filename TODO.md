@@ -4,6 +4,12 @@
 > Projet : E:\movie laye sow\project\SaaS ERP for Boutique\baay-reseau
 > Compte test : 📱 776621410 / 🔑 admin123 (owner, licence 60j)
 > Super Admin : 📱 776621410, 708372127
+>
+> ## 🚀 Deployments
+> - Backend: https://baay-reseau-api.onrender.com (Render)
+> - Frontend: https://baay-reseau.vercel.app (Vercel)
+> - Landing page: https://baay-reseau.vercel.app/
+> - Dashboard: https://baay-reseau.vercel.app/dashboard
 
 ---
 
@@ -219,6 +225,9 @@ GET  /api/v1/storefront/orders/{id}/tracking
 POST /api/v1/licences/extend-trial
 GET  /api/v1/licences/features
 GET  /api/v1/reports/by-store
+GET  /api/v1/reports/sales?store_id=...
+GET  /api/v1/reports/top-products?store_id=...
+GET  /api/v1/reports/trends?store_id=...
 ```
 
 ---
