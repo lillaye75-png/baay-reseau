@@ -11,6 +11,7 @@ import api, { Product } from "@/lib/api";
 import { Plus, Edit, Trash2, Search, X, PackagePlus, PackageMinus, Package, Download, Globe, Camera, FileSpreadsheet, Brain, AlertTriangle, Clock } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import { exportProducts } from "@/lib/export";
+import * as XLSX from "xlsx";
 import VariantManager from "@/components/products/VariantManager";
 import BarcodeScanner from "@/components/pos/BarcodeScanner";
 
@@ -171,46 +172,63 @@ export default function ProductsPage() {
   );
 
   const downloadExcelTemplate = () => {
-    const header = "Nom,SKU,Code-barres,Prix de vente (CFA),Prix d'achat (CFA),Stock,Seuil stock bas,Unité,Catégorie,URL Image\n";
-    const existingRows = products.map(p =>
-      `"${p.name}","${p.sku || ""}","${p.barcode || ""}",${p.price_cfa},${p.cost_price_cfa},${p.stock_quantity},${p.low_stock_threshold},"${p.unit}","","${p.image_url || ""}"`
-    ).join("\n");
-    const blankRows = "\n\"Nom du produit\",\"SKU\",\"Code-barres\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"\n\"\",\"\",\"\",0,0,0,5,\"piece\",\"\",\"\"";
-    const csv = header + existingRows + blankRows;
-    const bom = "\uFEFF";
-    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `template-produits-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const headers = [
+      "Nom du produit", "SKU", "Code-barres", "Catégorie",
+      "Prix de vente (CFA)", "Prix d'achat (CFA)",
+      "Stock", "Seuil stock bas", "Unité",
+      "Images du produit", "Description"
+    ];
+    const blankRows = Array(5).fill(["", "", "", "", 0, 0, 0, 5, "piece", "", ""]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...blankRows]);
+    ws["!cols"] = headers.map(() => ({ wch: 20 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Produits");
+    XLSX.writeFile(wb, `template-produits-${new Date().toISOString().slice(0, 10)}.xlsx`);
     showToast("Template téléchargé !");
   };
 
   const importProducts = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const text = await file.text();
-    const lines = text.split("\n").filter((l) => l.trim() && !l.startsWith("Nom,"));
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: "" });
+    const HEADER_MAP: Record<string, string> = {
+      "Nom du produit": "name", "Nom": "name",
+      "SKU": "sku",
+      "Code-barres": "barcode",
+      "Catégorie": "category",
+      "Prix de vente (CFA)": "price_cfa", "Prix (CFA)": "price_cfa",
+      "Prix d'achat (CFA)": "cost_price_cfa", "Coût (CFA)": "cost_price_cfa",
+      "Stock": "stock",
+      "Seuil stock bas": "threshold", "Seuil": "threshold",
+      "Unité": "unit",
+      "Images du produit": "image_url",
+      "Description": "description",
+    };
     let imported = 0;
     let errors = 0;
-    for (const line of lines) {
-      const parts = line.match(/(".*?"|[^,]+)/g);
-      if (!parts || parts.length < 5) continue;
-      const [name, sku, barcode, price, cost, stock, threshold, unit, category, image_url] = parts.map((p) => p.replace(/^"|"$/g, "").trim());
-      if (!name || name === "Nom du produit") continue;
+    for (const row of rows) {
+      const mapped: Record<string, any> = {};
+      for (const [k, v] of Object.entries(row)) {
+        const key = HEADER_MAP[k.trim()] || HEADER_MAP[Object.keys(HEADER_MAP).find(h => h.toLowerCase() === k.trim().toLowerCase()) || ""] || k;
+        mapped[key] = v;
+      }
+      const name = String(mapped.name || "").trim();
+      if (!name) continue;
       try {
         await api.post("/products/", {
           name,
-          sku: sku || null,
-          barcode: barcode || null,
-          price_cfa: parseInt(price) || 0,
-          cost_price_cfa: parseInt(cost) || 0,
-          stock_quantity: parseInt(stock) || 0,
-          low_stock_threshold: parseInt(threshold) || 5,
-          unit: unit || "piece",
-          image_url: image_url || null,
+          sku: String(mapped.sku || "").trim() || null,
+          barcode: String(mapped.barcode || "").trim() || null,
+          price_cfa: parseInt(mapped.price_cfa) || 0,
+          cost_price_cfa: parseInt(mapped.cost_price_cfa) || 0,
+          stock_quantity: parseInt(mapped.stock) || 0,
+          low_stock_threshold: parseInt(mapped.threshold) || 5,
+          unit: String(mapped.unit || "piece").trim() || "piece",
+          image_url: String(mapped.image_url || "").trim() || null,
+          description: String(mapped.description || "").trim() || null,
         });
         imported++;
       } catch { errors++; }

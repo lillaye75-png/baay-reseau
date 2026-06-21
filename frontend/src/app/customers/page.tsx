@@ -104,7 +104,7 @@ export default function CustomersPage() {
             Importer CSV
             <input
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               className="hidden"
               onChange={async (e) => {
                 const file = e.target.files?.[0];

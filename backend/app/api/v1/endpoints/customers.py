@@ -46,18 +46,51 @@ async def list_credit_debtors(user: User = Depends(get_current_user), db: AsyncS
 @router.post("/import-csv")
 async def import_customers_csv(file: UploadFile = File(...), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     content = await file.read()
-    text = content.decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(text))
+    filename = (file.filename or "").lower()
+
+    if filename.endswith(".xlsx") or filename.endswith(".xls"):
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            return {"imported": 0, "skipped": 0}
+        headers = [str(h or "").strip() for h in rows[0]]
+        raw_rows = [dict(zip(headers, row)) for row in rows[1:]]
+    else:
+        text = content.decode("utf-8-sig")
+        lines = text.split("\n")
+        lines = [l for l in lines if not l.strip().startswith("sep=")]
+        text = "\n".join(lines)
+        reader = csv.DictReader(io.StringIO(text))
+        raw_rows = [row for row in reader]
+
+    HEADER_MAP = {
+        "Nom": "name", "Nom complet": "name",
+        "Téléphone": "phone",
+        "WhatsApp": "whatsapp_number",
+        "Surnom": "nickname",
+        "Notes": "notes",
+        "Crédit (CFA)": "_skip_credit",
+        "Date de création": "_skip_date",
+    }
 
     imported = 0
     skipped = 0
-    for row in reader:
-        name = row.get("name", "").strip()
+    for row in raw_rows:
+        mapped = {}
+        for k, v in row.items():
+            mapped_key = HEADER_MAP.get(str(k or "").strip(), str(k or "").strip())
+            if mapped_key.startswith("_skip"):
+                continue
+            mapped[mapped_key] = v
+
+        name = mapped.get("name", "").strip() if mapped.get("name") else ""
         if not name:
             skipped += 1
             continue
 
-        phone = row.get("phone", "").strip() or None
+        phone = mapped.get("phone", "").strip() if mapped.get("phone") else None
         if phone:
             existing = await db.execute(
                 select(Customer).where(Customer.tenant_id == user.tenant_id, Customer.phone == phone)
@@ -70,8 +103,8 @@ async def import_customers_csv(file: UploadFile = File(...), user: User = Depend
             tenant_id=user.tenant_id,
             name=name,
             phone=phone,
-            nickname=row.get("nickname", "").strip() or None,
-            notes=row.get("notes", "").strip() or None,
+            nickname=mapped.get("nickname", "").strip() if mapped.get("nickname") else None,
+            notes=mapped.get("notes", "").strip() if mapped.get("notes") else None,
         )
         db.add(customer)
         imported += 1
@@ -89,14 +122,14 @@ async def export_customers_csv(user: User = Depends(get_current_user), db: Async
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["name", "phone", "whatsapp_number", "nickname", "total_credit_cfa", "notes", "created_at"])
+    writer.writerow(["Nom", "Surnom", "Téléphone", "WhatsApp", "Crédit (CFA)", "Notes"])
     for c in customers:
-        writer.writerow([c.name, c.phone, c.whatsapp_number, c.nickname, c.total_credit_cfa, c.notes, str(c.created_at)])
+        writer.writerow([c.name, c.nickname, c.phone, c.whatsapp_number, c.total_credit_cfa, c.notes])
 
     output.seek(0)
     return StreamingResponse(
         io.BytesIO(output.getvalue().encode("utf-8-sig")),
-        media_type="text/csv",
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename=clients-{__import__('datetime').date.today()}.csv"},
     )
 

@@ -35,14 +35,14 @@ async def export_sales_csv(user: User = Depends(get_current_user), db: AsyncSess
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["date", "total_cfa", "payment_method", "is_credit", "items_count"])
+    writer.writerow(["Date", "Total (CFA)", "Paiement", "Crédit", "Articles"])
     for s in sales:
-        writer.writerow([str(s.created_at), s.total_cfa, s.payment_method, s.is_credit, len(s.items)])
+        writer.writerow([str(s.created_at), s.total_cfa, s.payment_method, "Oui" if s.is_credit else "Non", len(s.items)])
 
     output.seek(0)
     return StreamingResponse(
         io.BytesIO(output.getvalue().encode("utf-8-sig")),
-        media_type="text/csv",
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename=ventes-{__import__('datetime').date.today()}.csv"},
     )
 
