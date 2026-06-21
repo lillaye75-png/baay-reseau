@@ -758,17 +758,18 @@ function StoreManager() {
     }
     setSaving(true);
     try {
-      const payload: any = { name: newStore.name, slug: newStore.slug, phone: newStore.phone };
-      if (newStore.assigned_user_id) {
-        payload.assigned_user_id = newStore.assigned_user_id;
+      const payload: any = { name: newStore.name, slug: newStore.slug || undefined, phone: newStore.phone || undefined };
+      if (newStore.assigned_user_id && newStore.assigned_user_id.trim()) {
+        payload.assigned_user_id = newStore.assigned_user_id.trim();
       }
       const res = await api.post("/tenants/stores", payload);
       showToast("Boutique créée !");
       setStores([...stores, { ...res.data, is_default: false, is_active: true }]);
       setNewStore({ name: "", slug: "", phone: "", assigned_user_id: "" });
       setShowForm(false);
+      api.get("/tenants/stores").then((r) => setStores(r.data)).catch(() => {});
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Erreur", "error");
+      showToast(err.response?.data?.detail || "Erreur lors de la création", "error");
     } finally {
       setSaving(false);
     }

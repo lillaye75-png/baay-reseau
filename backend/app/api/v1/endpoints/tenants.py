@@ -192,6 +192,10 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
     await db.flush()
 
     assigned_user_id = data.get("assigned_user_id")
+    if assigned_user_id and str(assigned_user_id).strip():
+        assigned_user_id = str(assigned_user_id).strip()
+    else:
+        assigned_user_id = None
 
     try:
         await db.execute(
