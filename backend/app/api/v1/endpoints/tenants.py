@@ -184,14 +184,22 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
     from app.core.logging import logger
     import uuid
 
-    try:
-        name = data.get("name", "Nouvelle boutique")
-        slug = data.get("slug", f"store-{str(uuid.uuid4())[:8]}")
-        phone = data.get("phone", user.phone)
+    logger.info(f"POST /stores by user={user.id} data={data}")
 
-        store = Tenant(name=name, slug=slug, phone=phone, email=data.get("email") or None)
+    try:
+        name = str(data.get("name", "Nouvelle boutique"))[:255]
+        slug = str(data.get("slug", f"store-{str(uuid.uuid4())[:8]}"))[:100]
+        phone = str(data.get("phone") or user.phone or "")[:255]
+        email_val = data.get("email")
+        if email_val and str(email_val).strip():
+            email_val = str(email_val).strip()[:255]
+        else:
+            email_val = None
+
+        store = Tenant(name=name, slug=slug, phone=phone, email=email_val)
         db.add(store)
         await db.flush()
+        logger.info(f"Store created: {store.id}")
 
         assigned_user_id = data.get("assigned_user_id")
         if assigned_user_id and str(assigned_user_id).strip():
@@ -204,8 +212,9 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
                 text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
                 {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
             )
+            logger.info("Owner added to user_stores")
         except Exception as e:
-            logger.warning(f"user_stores insert owner: {e}")
+            logger.warning(f"user_stores owner insert failed: {e}")
 
         if assigned_user_id:
             try:
@@ -218,15 +227,21 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
                         text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
                         {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
                     )
+                    logger.info(f"Employee {assigned_user_id} assigned to store")
+                else:
+                    logger.info("Employee already in user_stores")
             except Exception as e:
-                logger.warning(f"user_stores insert assign: {e}")
+                logger.warning(f"user_stores assign failed: {e}")
 
         await db.flush()
+        logger.info(f"Store creation OK: {store.id}")
 
         return {"id": store.id, "name": store.name, "slug": store.slug, "assigned_user_id": assigned_user_id}
     except Exception as e:
-        logger.error(f"Store creation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Store creation FAILED: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Erreur création boutique: {str(e)}")
 
 
 @router.put("/stores/{store_id}/switch")
