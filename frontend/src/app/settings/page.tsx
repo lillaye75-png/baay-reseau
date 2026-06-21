@@ -742,6 +742,7 @@ function PlanInfo() {
 function StoreManager() {
   const [stores, setStores] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingStore, setEditingStore] = useState<any>(null);
   const [newStore, setNewStore] = useState({ name: "", slug: "", phone: "", assigned_user_id: "" });
   const [saving, setSaving] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -764,15 +765,21 @@ function StoreManager() {
       }
       const res = await api.post("/tenants/stores", payload);
       showToast("Boutique créée !");
-      setStores([...stores, { ...res.data, is_default: false, is_active: true }]);
       setNewStore({ name: "", slug: "", phone: "", assigned_user_id: "" });
       setShowForm(false);
+      setEditingStore(null);
       api.get("/tenants/stores").then((r) => setStores(r.data)).catch(() => {});
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur lors de la création", "error");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEdit = (store: any) => {
+    setEditingStore(store);
+    setNewStore({ name: store.name, slug: store.slug || "", phone: store.phone || "", assigned_user_id: "" });
+    setShowForm(true);
   };
 
   const handleSwitch = async (storeId: string) => {
@@ -806,51 +813,73 @@ function StoreManager() {
     }
   };
 
+  const openNewForm = () => {
+    setEditingStore(null);
+    setNewStore({ name: "", slug: "", phone: "", assigned_user_id: "" });
+    setShowForm(true);
+  };
+
+  const cancelForm = () => {
+    setEditingStore(null);
+    setNewStore({ name: "", slug: "", phone: "", assigned_user_id: "" });
+    setShowForm(false);
+  };
+
   return (
     <div className="space-y-3">
       {stores.map((store) => (
-        <div key={store.id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
-              {store.name.charAt(0)}
+        <div key={store.id} className="rounded-lg bg-gray-50 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
+                {store.name.charAt(0)}
+              </div>
+              <div>
+                <p className="text-sm font-medium">{store.name}</p>
+                <p className="text-xs text-gray-500">{store.slug || "Boutique principale"}</p>
+              </div>
+              {store.is_default && <Badge variant="success">Actuelle</Badge>}
+              {!store.is_active && <Badge variant="danger">Suspendue</Badge>}
             </div>
-            <div>
-              <p className="text-sm font-medium">{store.name}</p>
-              <p className="text-xs text-gray-500">{store.slug || "Boutique principale"}</p>
+            <div className="flex items-center gap-1">
+              {!store.is_default && (
+                <Button variant="secondary" size="sm" onClick={() => handleSwitch(store.id)}>
+                  Basculer
+                </Button>
+              )}
+              {!store.is_default && (
+                <>
+                  <button
+                    onClick={() => handleEdit(store)}
+                    className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                    title="Modifier"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleSuspend(store.id)}
+                    className="p-1.5 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
+                    title={store.is_active ? "Suspendre" : "Activer"}
+                  >
+                    {store.is_active ? "⏸" : "▶"}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(store.id, store.name)}
+                    className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
             </div>
-            {store.is_default && <Badge variant="success">Actuelle</Badge>}
-            {!store.is_active && <Badge variant="danger">Suspendue</Badge>}
-          </div>
-          <div className="flex items-center gap-1">
-            {!store.is_default && (
-              <Button variant="secondary" size="sm" onClick={() => handleSwitch(store.id)}>
-                Basculer
-              </Button>
-            )}
-            {!store.is_default && (
-              <>
-                <button
-                  onClick={() => handleSuspend(store.id)}
-                  className="p-1.5 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
-                  title={store.is_active ? "Suspendre" : "Activer"}
-                >
-                  {store.is_active ? "⏸" : "▶"}
-                </button>
-                <button
-                  onClick={() => handleDelete(store.id, store.name)}
-                  className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                  title="Supprimer"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </>
-            )}
           </div>
         </div>
       ))}
 
       {showForm ? (
         <div className="rounded-lg bg-gray-50 p-4 space-y-3">
+          <p className="text-sm font-medium text-gray-700">{editingStore ? "Modifier la boutique" : "Nouvelle boutique"}</p>
           <Input label="Nom de la boutique" value={newStore.name} onChange={(e) => setNewStore({ ...newStore, name: e.target.value })} placeholder="Ma Nouvelle Boutique" />
           <Input label="Slug (URL)" value={newStore.slug} onChange={(e) => setNewStore({ ...newStore, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="ma-boutique" />
           <Input label="Téléphone" value={newStore.phone} onChange={(e) => setNewStore({ ...newStore, phone: e.target.value })} placeholder="+221 77 123 45 67" />
@@ -871,12 +900,12 @@ function StoreManager() {
             <p className="text-xs text-gray-400 mt-1">L&apos;employé sélectionné pourra accéder à cette boutique</p>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>Annuler</Button>
+            <Button variant="secondary" size="sm" onClick={cancelForm}>Annuler</Button>
             <Button size="sm" onClick={handleCreate} disabled={saving}>{saving ? "Création..." : "Créer"}</Button>
           </div>
         </div>
       ) : (
-        <Button variant="secondary" size="sm" onClick={() => setShowForm(true)} className="w-full">
+        <Button variant="secondary" size="sm" onClick={openNewForm} className="w-full">
           + Ajouter une boutique
         </Button>
       )}
