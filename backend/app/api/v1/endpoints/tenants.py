@@ -181,47 +181,52 @@ async def list_my_stores(user: User = Depends(get_current_user), db: AsyncSessio
 @router.post("/stores")
 async def create_new_store(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     from sqlalchemy import text
+    from app.core.logging import logger
     import uuid
 
-    name = data.get("name", "Nouvelle boutique")
-    slug = data.get("slug", f"store-{str(uuid.uuid4())[:8]}")
-    phone = data.get("phone", user.phone)
-
-    store = Tenant(name=name, slug=slug, phone=phone, email=data.get("email") or None)
-    db.add(store)
-    await db.flush()
-
-    assigned_user_id = data.get("assigned_user_id")
-    if assigned_user_id and str(assigned_user_id).strip():
-        assigned_user_id = str(assigned_user_id).strip()
-    else:
-        assigned_user_id = None
-
     try:
-        await db.execute(
-            text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
-            {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
-        )
-    except Exception:
-        pass
+        name = data.get("name", "Nouvelle boutique")
+        slug = data.get("slug", f"store-{str(uuid.uuid4())[:8]}")
+        phone = data.get("phone", user.phone)
 
-    if assigned_user_id:
+        store = Tenant(name=name, slug=slug, phone=phone, email=data.get("email") or None)
+        db.add(store)
+        await db.flush()
+
+        assigned_user_id = data.get("assigned_user_id")
+        if assigned_user_id and str(assigned_user_id).strip():
+            assigned_user_id = str(assigned_user_id).strip()
+        else:
+            assigned_user_id = None
+
         try:
-            existing = await db.execute(
-                text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
-                {"uid": assigned_user_id, "tid": store.id}
+            await db.execute(
+                text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
+                {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
             )
-            if not existing.first():
-                await db.execute(
-                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
-                    {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
+        except Exception as e:
+            logger.warning(f"user_stores insert owner: {e}")
+
+        if assigned_user_id:
+            try:
+                existing = await db.execute(
+                    text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+                    {"uid": assigned_user_id, "tid": store.id}
                 )
-        except Exception:
-            pass
+                if not existing.first():
+                    await db.execute(
+                        text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
+                        {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
+                    )
+            except Exception as e:
+                logger.warning(f"user_stores insert assign: {e}")
 
-    await db.flush()
+        await db.flush()
 
-    return {"id": store.id, "name": store.name, "slug": store.slug, "assigned_user_id": assigned_user_id}
+        return {"id": store.id, "name": store.name, "slug": store.slug, "assigned_user_id": assigned_user_id}
+    except Exception as e:
+        logger.error(f"Store creation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/stores/{store_id}/switch")
