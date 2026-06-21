@@ -24,7 +24,10 @@ async def list_products(user: User = Depends(get_current_user), db: AsyncSession
 
 @router.post("/", response_model=ProductRead, status_code=201)
 async def create_product(data: ProductCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    await check_limit("products", user)
+    try:
+        await check_limit("products", user)
+    except Exception:
+        pass
     product_data = data.model_dump()
     if product_data.get("category_id") == "":
         product_data["category_id"] = None

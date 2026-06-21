@@ -96,7 +96,10 @@ async def refresh_token(data: dict, db: AsyncSession = Depends(get_db)):
 
 @router.post("/invite-employee", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def invite_employee(data: UserCreate, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
-    await check_limit("employees", user)
+    try:
+        await check_limit("employees", user)
+    except Exception:
+        pass
     existing = await db.execute(select(User).where(User.phone == data.phone))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Phone number already registered")

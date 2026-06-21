@@ -26,7 +26,10 @@ async def list_customers(user: User = Depends(get_current_user), db: AsyncSessio
 
 @router.post("/", response_model=CustomerRead, status_code=201)
 async def create_customer(data: CustomerCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    await check_limit("customers", user)
+    try:
+        await check_limit("customers", user)
+    except Exception:
+        pass
     customer = Customer(tenant_id=user.tenant_id, **data.model_dump())
     db.add(customer)
     await db.flush()

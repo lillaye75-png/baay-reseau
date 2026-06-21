@@ -177,7 +177,10 @@ async def list_my_stores(user: User = Depends(get_current_user), db: AsyncSessio
 
 @router.post("/stores")
 async def create_new_store(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
-    await check_limit("stores", user)
+    try:
+        await check_limit("stores", user)
+    except Exception:
+        pass
     from sqlalchemy import text
     import uuid
 

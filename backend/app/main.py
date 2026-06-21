@@ -38,7 +38,11 @@ class CorsAlwaysMiddleware(BaseHTTPMiddleware):
                 "Access-Control-Allow-Headers": "*",
                 "Access-Control-Max-Age": "600",
             })
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            from fastapi.responses import JSONResponse
+            response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
