@@ -26,6 +26,7 @@ import {
   TrendingUp,
   Clock,
   Headphones,
+  ChevronUp,
 } from "lucide-react";
 
 const features = [
@@ -159,13 +160,21 @@ const testimonials = [
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+      setShowScrollTop(window.scrollY > 500);
+    };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -730,11 +739,21 @@ export default function LandingPage() {
             </div>
 
             <p className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} Naatal ERP Cloud. Tous droits réservés.
+              &copy; {new Date().getFullYear()} Naatal ERP Cloud — Développé par Abdoulaye Sow. Tous droits réservés.
             </p>
           </div>
         </div>
       </footer>
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-700 hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center"
+          aria-label="Retour en haut"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </button>
+      )}
     </div>
   );
 }
