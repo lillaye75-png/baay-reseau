@@ -67,8 +67,15 @@
 - **Sidebar mobile fix → scrollable, closes on any click (including same page), no overflow**
 - **Hamburger click-to-close → clicking anywhere closes sidebar, even same page links**
 - **Settings plan info → shows current tier, usage counts, limits reached warnings**
-- **Billing page → tier-specific features displayed for free/pro/enterprise plans**
+- **Billing page → tier-specific features displayed for free/starter/pro/enterprise plans**
 - **Activate page → shows detected tier features when entering licence key**
+- **Starter plan → 5,000 F/mois, 200 products, 2 boutiques, online store, CSV, offline sync**
+- **Pricing updated → Starter 5K, Pro 10K, Enterprise 15K**
+- **Store delete/suspend → admin can suspend (⏸) or delete (🗑) non-active stores**
+- **Employee full delete → admin can permanently delete employees (not just deactivate)**
+- **Order tracking partial ID → search by first 8 characters of order UUID**
+- **POS 500 fix → simplified SaleRead schema, removed lazy-load crash**
+- **Tenant.sales ambiguous FK fix → explicit foreign_keys=[Sale.tenant_id]****
 
 ### Landing Page & Order Tracking (2026-06-21)
 - **Landing page → modern premium page at / with hero, features, pricing, testimonials, developer info**
@@ -76,6 +83,9 @@
 - **Order tracking button → "Suivre" button in shop header, /track page for order ID lookup**
 - **Login page → added "Retour à l'accueil" link to landing page**
 - **Developer info → Abdoulaye Sow, +221776621410, +221708372127, layedevops@gmail.com**
+- **Scroll-to-top button → appears after 500px scroll, smooth scrolls to top**
+- **Footer copyright → includes developer name**
+- **Badge → "Développé par Abdoulaye Sow"
 
 ### Security & Permissions
 - Rôle-based access : employees ne peuvent PAS modifier les infos entreprise
@@ -88,11 +98,12 @@
 - **License auto-logoff : periodic check every 60s + window focus for ALL roles**
 
 ### Licence Server
-- Modèle Licence : clé unique, tier (free/pro/enterprise), durée, features
+- Modèle Licence : clé unique, tier (free/starter/pro/enterprise), durée, features
 - 7 jours d'essai → auto-expire
 - Activation/Upgrade : page `/activate` + Billing
 - Super admin panel : `/licences`
 - **Extend trial : POST /licences/extend-trial → 30 jours sans clé de licence**
+- **Pricing : Starter 5,000 F, Pro 10,000 F, Enterprise 15,000 F**
 
 ### Google OAuth
 - POST /auth/google → userinfo endpoint, email sur User, phone `goog:{id[:12]}`
@@ -105,7 +116,7 @@
 - Subscriptions : stockées en DB PostgreSQL
 
 ### Frontend (Next.js 14 + Tailwind)
-- 28+ pages : landing, login, register, wizard, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, settings, whatsapp, storefront, shop/*, billing, licences, activate, guide, **track**
+- 30+ pages : landing, login, register, wizard, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, settings, whatsapp, storefront, shop/*, billing, licences, activate, guide, **track**
 - 3 thèmes : Light, Dark, Solarized
 - i18n : Français + Wolof + Anglais
 - POS mobile : toggle Produits/Panier
