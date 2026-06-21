@@ -45,5 +45,5 @@ class Tenant(Base):
     users = relationship("User", back_populates="tenant")
     products = relationship("Product", back_populates="tenant")
     customers = relationship("Customer", back_populates="tenant")
-    sales = relationship("Sale", back_populates="tenant")
+    sales = relationship("Sale", back_populates="tenant", foreign_keys="[Sale.tenant_id]")
     orders = relationship("Order", back_populates="tenant")
