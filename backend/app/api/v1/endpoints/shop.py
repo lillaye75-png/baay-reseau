@@ -252,10 +252,16 @@ async def get_store_order(slug: str, order_id: str, db: AsyncSession = Depends(g
     if not tenant:
         raise HTTPException(status_code=404, detail="Store not found")
 
-    result = await db.execute(
-        select(Order).where(Order.id == order_id, Order.tenant_id == tenant.id)
-        .options(selectinload(Order.items))
-    )
+    if len(order_id) < 36:
+        result = await db.execute(
+            select(Order).where(Order.id.ilike(f"{order_id}%"), Order.tenant_id == tenant.id)
+            .options(selectinload(Order.items)).limit(1)
+        )
+    else:
+        result = await db.execute(
+            select(Order).where(Order.id == order_id, Order.tenant_id == tenant.id)
+            .options(selectinload(Order.items))
+        )
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -280,10 +286,16 @@ async def get_store_order_tracking(slug: str, order_id: str, db: AsyncSession = 
     if not tenant:
         raise HTTPException(status_code=404, detail="Store not found")
 
-    result = await db.execute(
-        select(Order).where(Order.id == order_id, Order.tenant_id == tenant.id)
-        .options(selectinload(Order.items))
-    )
+    if len(order_id) < 36:
+        result = await db.execute(
+            select(Order).where(Order.id.ilike(f"{order_id}%"), Order.tenant_id == tenant.id)
+            .options(selectinload(Order.items)).limit(1)
+        )
+    else:
+        result = await db.execute(
+            select(Order).where(Order.id == order_id, Order.tenant_id == tenant.id)
+            .options(selectinload(Order.items))
+        )
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
