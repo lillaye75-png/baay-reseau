@@ -79,7 +79,12 @@
 - **CORS 500 fix → check_limit wrapped in try/except, CORS middleware catches all errors**
 - **Global exception handler → catches unhandled exceptions, returns CORS headers**
 - **Reports store filter → dropdown to view all stores or specific store reports**
-- **Store manager UI → edit button, pre-fill form, suspend/delete/switch actions****
+- **Store manager UI → edit button, pre-fill form, suspend/delete/switch actions**
+- **Slug uniqueness → auto-suffix with UUID to prevent duplicate key errors**
+
+### Known Issues (To Fix)
+- **Store assignment → creates store but employee assignment doesn't persist (needs investigation)**
+- **Onboarding guide → appears on every login instead of only first login (localStorage/DB check needed)****
 
 ### Landing Page & Order Tracking (2026-06-21)
 - **Landing page → modern premium page at / with hero, features, pricing, testimonials, developer info**
