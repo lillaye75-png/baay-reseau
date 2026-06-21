@@ -187,7 +187,7 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
     slug = data.get("slug", f"store-{str(uuid.uuid4())[:8]}")
     phone = data.get("phone", user.phone)
 
-    store = Tenant(name=name, slug=slug, phone=phone, email=data.get("email"))
+    store = Tenant(name=name, slug=slug, phone=phone, email=data.get("email") or None)
     db.add(store)
     await db.flush()
 

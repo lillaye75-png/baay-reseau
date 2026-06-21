@@ -58,6 +58,20 @@ app.include_router(api_router, prefix="/api/v1")
 from app.api.v1.endpoints.websocket import router as ws_router
 app.include_router(ws_router, tags=["websocket"])
 
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
+
 if os.path.exists(UPLOAD_DIR):
     app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
