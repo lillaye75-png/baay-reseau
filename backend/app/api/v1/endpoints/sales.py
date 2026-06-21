@@ -21,33 +21,7 @@ router = APIRouter()
 
 @router.get("/", response_model=list[SaleRead])
 async def list_sales(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    sales = await get_sales(db, user.tenant_id)
-    result = []
-    for s in sales:
-        store_name = None
-        employee_name = None
-        if hasattr(s, 'store') and s.store:
-            store_name = s.store.name
-        if hasattr(s, 'user') and s.user:
-            employee_name = s.user.name
-        sale_dict = {
-            "id": s.id,
-            "tenant_id": s.tenant_id,
-            "store_id": s.store_id if hasattr(s, 'store_id') else None,
-            "user_id": s.user_id if hasattr(s, 'user_id') else None,
-            "store_name": store_name,
-            "employee_name": employee_name,
-            "customer_id": s.customer_id,
-            "customer": s.customer,
-            "total_cfa": s.total_cfa,
-            "payment_method": s.payment_method,
-            "payment_reference": s.payment_reference,
-            "is_credit": s.is_credit,
-            "created_at": s.created_at,
-            "items": s.items,
-        }
-        result.append(SaleRead.model_validate(sale_dict))
-    return result
+    return await get_sales(db, user.tenant_id)
 
 
 @router.get("/stats/weekly")
@@ -96,27 +70,7 @@ async def create_new_sale(data: SaleCreate, user: User = Depends(get_current_use
         await log_action(db, user.tenant_id, user.id, user.name, "create", "sale", sale.id, f"Vente {sale.total_cfa} CFA ({sale.payment_method})")
     except Exception:
         pass
-    store_name = None
-    employee_name = user.name
-    if hasattr(sale, 'store') and sale.store:
-        store_name = sale.store.name
-    sale_dict = {
-        "id": sale.id,
-        "tenant_id": sale.tenant_id,
-        "store_id": sale.store_id if hasattr(sale, 'store_id') else None,
-        "user_id": sale.user_id if hasattr(sale, 'user_id') else None,
-        "store_name": store_name,
-        "employee_name": employee_name,
-        "customer_id": sale.customer_id,
-        "customer": sale.customer,
-        "total_cfa": sale.total_cfa,
-        "payment_method": sale.payment_method,
-        "payment_reference": sale.payment_reference,
-        "is_credit": sale.is_credit,
-        "created_at": sale.created_at,
-        "items": sale.items,
-    }
-    return SaleRead.model_validate(sale_dict)
+    return sale
 
 
 @router.post("/quick", response_model=SaleRead, status_code=201)

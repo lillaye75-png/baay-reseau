@@ -21,9 +21,10 @@ export default function WizardPage() {
   const [saving, setSaving] = useState(false);
 
   const plans = [
-    { id: "free", name: "Free", desc: "50 produits, 100 clients", color: "border-gray-200" },
-    { id: "pro", name: "Pro", desc: "500 produits, boutique en ligne, WhatsApp", color: "border-primary-500 ring-2 ring-primary-500/20" },
-    { id: "enterprise", name: "Enterprise", desc: "Illimité, multi-magasin", color: "border-yellow-500 ring-2 ring-yellow-500/20" },
+    { id: "free", name: "Free", desc: "50 produits, 100 clients, 7 jours", color: "border-gray-200" },
+    { id: "starter", name: "Starter", desc: "5 000 F/mois — 200 produits, boutique en ligne", color: "border-blue-500" },
+    { id: "pro", name: "Pro", desc: "10 000 F/mois — 500 produits, WhatsApp Bot, IA", color: "border-primary-500 ring-2 ring-primary-500/20" },
+    { id: "enterprise", name: "Enterprise", desc: "15 000 F/mois — Illimité, multi-magasin", color: "border-yellow-500 ring-2 ring-yellow-500/20" },
   ];
 
   useEffect(() => {

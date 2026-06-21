@@ -784,6 +784,27 @@ function StoreManager() {
     }
   };
 
+  const handleSuspend = async (storeId: string) => {
+    try {
+      const res = await api.put(`/tenants/stores/${storeId}/suspend`);
+      showToast(res.data.is_active ? "Boutique activée" : "Boutique suspendue");
+      setStores(stores.map((s) => s.id === storeId ? { ...s, is_active: res.data.is_active } : s));
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    }
+  };
+
+  const handleDelete = async (storeId: string, name: string) => {
+    if (!confirm(`Supprimer "${name}" ? Cette action est irréversible.`)) return;
+    try {
+      await api.delete(`/tenants/stores/${storeId}`);
+      showToast("Boutique supprimée");
+      setStores(stores.filter((s) => s.id !== storeId));
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Erreur", "error");
+    }
+  };
+
   return (
     <div className="space-y-3">
       {stores.map((store) => (
@@ -797,12 +818,33 @@ function StoreManager() {
               <p className="text-xs text-gray-500">{store.slug || "Boutique principale"}</p>
             </div>
             {store.is_default && <Badge variant="success">Actuelle</Badge>}
+            {!store.is_active && <Badge variant="danger">Suspendue</Badge>}
           </div>
-          {!store.is_default && (
-            <Button variant="secondary" size="sm" onClick={() => handleSwitch(store.id)}>
-              Basculer
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {!store.is_default && (
+              <Button variant="secondary" size="sm" onClick={() => handleSwitch(store.id)}>
+                Basculer
+              </Button>
+            )}
+            {!store.is_default && (
+              <>
+                <button
+                  onClick={() => handleSuspend(store.id)}
+                  className="p-1.5 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
+                  title={store.is_active ? "Suspendre" : "Activer"}
+                >
+                  {store.is_active ? "⏸" : "▶"}
+                </button>
+                <button
+                  onClick={() => handleDelete(store.id, store.name)}
+                  className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                  title="Supprimer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ))}
 

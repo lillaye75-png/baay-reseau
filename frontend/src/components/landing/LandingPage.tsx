@@ -98,21 +98,40 @@ const plans = [
     cta: "Essai gratuit",
   },
   {
+    name: "Starter",
+    price: "5 000",
+    period: "F/mois",
+    description: "Pour les boutiques qui décollent",
+    features: [
+      "200 produits",
+      "500 clients",
+      "3 employés",
+      "2 boutiques",
+      "Boutique en ligne",
+      "Rapports par boutique",
+      "Import/Export CSV",
+      "Sync hors-ligne",
+      "Impression personnalisée",
+    ],
+    color: "border-blue-500",
+    cta: "Commencer",
+  },
+  {
     name: "Pro",
-    price: "15 000",
-    period: "/mois",
+    price: "10 000",
+    period: "F/mois",
     description: "Pour les boutiques en croissance",
     features: [
       "500 produits",
       "1000 clients",
       "5 employés",
-      "3 boutiques",
+      "5 boutiques",
       "Boutique en ligne",
       "WhatsApp Bot IA",
       "Prédictions stock",
-      "Import/Export CSV",
       "Suivi livraison",
-      "Impression personnalisée",
+      "API access",
+      "Support prioritaire",
     ],
     color: "border-primary-500 ring-2 ring-primary-500/20",
     popular: true,
@@ -120,8 +139,8 @@ const plans = [
   },
   {
     name: "Enterprise",
-    price: "45 000",
-    period: "/mois",
+    price: "15 000",
+    period: "F/mois",
     description: "Tout illimité — support dédié",
     features: [
       "Produits illimités",
@@ -129,8 +148,7 @@ const plans = [
       "Employés illimités",
       "Boutiques illimitées",
       "Tout le Pro inclus",
-      "API access",
-      "Support prioritaire",
+      "Support prioritaire dédié",
     ],
     color: "border-yellow-500",
     cta: "Contacter",
@@ -445,7 +463,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {plans.map((plan) => (
               <div
                 key={plan.name}

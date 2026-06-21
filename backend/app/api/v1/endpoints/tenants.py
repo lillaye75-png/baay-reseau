@@ -234,3 +234,55 @@ async def switch_store(store_id: str, user: User = Depends(get_current_user), db
     await db.flush()
 
     return {"status": "switched", "tenant_id": store_id}
+
+
+@router.put("/stores/{store_id}/suspend")
+async def suspend_store(store_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+
+    is_owner = await db.execute(
+        text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+        {"uid": user.id, "tid": store_id}
+    )
+    if not is_owner.first():
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(select(Tenant).where(Tenant.id == store_id))
+    store = result.scalar_one_or_none()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+
+    store.is_active = not store.is_active
+    await db.flush()
+
+    return {"status": "suspended" if not store.is_active else "activated", "is_active": store.is_active}
+
+
+@router.delete("/stores/{store_id}")
+async def delete_store(store_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+
+    is_owner = await db.execute(
+        text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+        {"uid": user.id, "tid": store_id}
+    )
+    if not is_owner.first():
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    is_default = await db.execute(
+        text("SELECT is_default FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+        {"uid": user.id, "tid": store_id}
+    )
+    row = is_default.first()
+    if row and row[0]:
+        raise HTTPException(status_code=400, detail="Cannot delete your active store. Switch to another store first.")
+
+    await db.execute(text("DELETE FROM user_stores WHERE tenant_id = :tid"), {"tid": store_id})
+
+    result = await db.execute(select(Tenant).where(Tenant.id == store_id))
+    store = result.scalar_one_or_none()
+    if store:
+        store.is_active = False
+        await db.flush()
+
+    return {"status": "deleted"}

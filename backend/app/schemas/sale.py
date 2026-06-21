@@ -70,8 +70,6 @@ class SaleRead(BaseModel):
     tenant_id: str
     store_id: str | None = None
     user_id: str | None = None
-    store_name: str | None = None
-    employee_name: str | None = None
     customer_id: str | None
     customer: CustomerRead | None = None
     total_cfa: int
