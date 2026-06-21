@@ -76,6 +76,8 @@ export interface Tenant {
   slug: string;
   phone: string;
   email: string | null;
+  address: string | null;
+  description: string | null;
   subscription_plan: string;
   wizard_completed: boolean;
   is_active: boolean;
