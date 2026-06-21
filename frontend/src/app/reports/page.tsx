@@ -84,13 +84,19 @@ export default function ReportsPage() {
   const [customEnd, setCustomEnd] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "trends" | "compare">("overview");
+  const [stores, setStores] = useState<{ id: string; name: string; is_default: boolean }[]>([]);
+  const [selectedStore, setSelectedStore] = useState("all");
 
   const [compP1Start, setCompP1Start] = useState("");
   const [compP1End, setCompP1End] = useState("");
   const [compP2Start, setCompP2Start] = useState("");
   const [compP2End, setCompP2End] = useState("");
 
-  const fetchReport = (p?: string, start?: string, end?: string) => {
+  useEffect(() => {
+    api.get("/tenants/stores").then((res) => setStores(res.data)).catch(() => {});
+  }, []);
+
+  const fetchReport = (p?: string, start?: string, end?: string, storeId?: string) => {
     setLoading(true);
     const params = new URLSearchParams();
     if (start && end) {
@@ -99,10 +105,14 @@ export default function ReportsPage() {
     } else {
       params.set("period", p || period);
     }
+    const sid = storeId || selectedStore;
+    if (sid && sid !== "all") {
+      params.set("store_id", sid);
+    }
     Promise.all([
       api.get(`/reports/sales?${params.toString()}`),
       api.get(`/reports/top-products?${params.toString()}`),
-      api.get("/reports/trends?days=30"),
+      api.get(`/reports/trends?days=30${sid && sid !== "all" ? `&store_id=${sid}` : ""}`),
     ])
       .then(([r, tp, tr]) => {
         setReport(r.data);
@@ -115,7 +125,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (!isCustom) fetchReport(period);
-  }, [period, isCustom]);
+  }, [period, isCustom, selectedStore]);
 
   const handleCustomDate = () => {
     if (!customStart || !customEnd) {
@@ -136,9 +146,10 @@ export default function ReportsPage() {
       showToast("Remplissez les 4 dates", "error");
       return;
     }
+    const sid = selectedStore !== "all" ? `&store_id=${selectedStore}` : "";
     try {
       const res = await api.get(
-        `/reports/compare?period1_start=${compP1Start}&period1_end=${compP1End}&period2_start=${compP2Start}&period2_end=${compP2End}`
+        `/reports/compare?period1_start=${compP1Start}&period1_end=${compP1End}&period2_start=${compP2Start}&period2_end=${compP2End}${sid}`
       );
       setComparison(res.data);
     } catch {
@@ -245,6 +256,24 @@ export default function ReportsPage() {
             </Button>
           </div>
         </div>
+
+        {stores.length > 1 && (
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Boutique :</label>
+            <select
+              value={selectedStore}
+              onChange={(e) => setSelectedStore(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="all">Toutes les boutiques</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} {s.is_default ? "(actuelle)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
           {[
