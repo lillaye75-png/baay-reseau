@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, ShoppingCart, Package, Users, BarChart3, Settings, Zap } from "lucide-react";
 
 const items = [
-  { name: "Accueil", href: "/", icon: LayoutDashboard },
+  { name: "Accueil", href: "/dashboard", icon: LayoutDashboard },
   { name: "POS", href: "/pos", icon: ShoppingCart },
   { name: "Rapide", href: "/quick-sale", icon: Zap },
   { name: "Produits", href: "/products", icon: Package },

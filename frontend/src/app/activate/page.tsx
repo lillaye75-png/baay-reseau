@@ -4,15 +4,35 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Key, Shield, ArrowRight, Clock } from "lucide-react";
+import { Key, Shield, ArrowRight, Clock, Check, Zap, Crown, Building2 } from "lucide-react";
 import api from "@/lib/api";
 import { showToast } from "@/components/ui/Toast";
 import Link from "next/link";
+
+const tierFeatures: Record<string, { icon: any; name: string; features: string[] }> = {
+  free: {
+    icon: Zap,
+    name: "Gratuit",
+    features: ["50 produits", "100 clients", "1 employé", "Rapports de base"],
+  },
+  pro: {
+    icon: Crown,
+    name: "Pro",
+    features: ["500 produits", "1000 clients", "5 employés", "3 boutiques", "Boutique en ligne", "WhatsApp Bot", "Rapports avancés", "Prédictions IA"],
+  },
+  enterprise: {
+    icon: Building2,
+    name: "Enterprise",
+    features: ["Illimité", "Tout le Pro", "API access", "Support prioritaire"],
+  },
+};
 
 export default function ActivatePage() {
   const [licenceKey, setLicenceKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [extending, setExtending] = useState(false);
+
+  const detectedTier = licenceKey.startsWith("BAY-E") ? "enterprise" : licenceKey.startsWith("BAY-P") ? "pro" : "free";
 
   const handleActivate = async () => {
     if (!licenceKey.trim()) {
@@ -23,7 +43,7 @@ export default function ActivatePage() {
     try {
       const res = await api.post("/licences/activate", { key: licenceKey.trim() });
       showToast(`Licence ${res.data.tier} activée ! Valide jusqu'au ${new Date(res.data.expires_at).toLocaleDateString("fr")}`);
-      setTimeout(() => window.location.href = "/", 1500);
+      setTimeout(() => window.location.href = "/dashboard", 1500);
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur", "error");
     } finally {
@@ -36,7 +56,7 @@ export default function ActivatePage() {
     try {
       const res = await api.post("/licences/extend-trial", { days: 30 });
       showToast(`Essai prolongé de 30 jours ! Valide jusqu'au ${new Date(res.data.expires_at).toLocaleDateString("fr")}`);
-      setTimeout(() => window.location.href = "/", 1500);
+      setTimeout(() => window.location.href = "/dashboard", 1500);
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur", "error");
     } finally {
@@ -73,6 +93,23 @@ export default function ActivatePage() {
           </CardContent>
         </Card>
 
+        {licenceKey && tierFeatures[detectedTier] && (
+          <Card className="border-primary-200">
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-primary-700 mb-2">
+                Plan {tierFeatures[detectedTier].name} détecté :
+              </p>
+              <ul className="space-y-1">
+                {tierFeatures[detectedTier].features.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                    <Check className="h-3 w-3 text-green-500" /> {f}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="text-center">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -104,9 +141,9 @@ export default function ActivatePage() {
                 <p className="font-medium mb-1">Besoin d&apos;une licence ?</p>
                 <p>Contactez-nous pour obtenir votre clé :</p>
                 <div className="mt-2 space-y-1">
-                  <p>📱 +221 77 662 14 10</p>
-                  <p>💬 <a href="https://wa.me/221708372127" className="text-primary-600 hover:underline">+221 70 837 21 27 (WhatsApp)</a></p>
-                  <p>📧 <a href="mailto:layedevops@gmail.com" className="text-primary-600 hover:underline">layedevops@gmail.com</a></p>
+                  <p>+221 77 662 14 10</p>
+                  <p><a href="https://wa.me/221708372127" className="text-primary-600 hover:underline">+221 70 837 21 27 (WhatsApp)</a></p>
+                  <p><a href="mailto:layedevops@gmail.com" className="text-primary-600 hover:underline">layedevops@gmail.com</a></p>
                 </div>
               </div>
             </div>

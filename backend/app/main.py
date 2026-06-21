@@ -200,6 +200,11 @@ async def on_startup():
                 await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS print_show_qr BOOLEAN DEFAULT FALSE"))
             except Exception:
                 pass
+            try:
+                await conn.execute(text("ALTER TABLE sales ADD COLUMN IF NOT EXISTS store_id VARCHAR(36)"))
+                await conn.execute(text("ALTER TABLE sales ADD COLUMN IF NOT EXISTS user_id VARCHAR(36)"))
+            except Exception:
+                pass
         logger.info("Tenant columns ensured")
     except Exception as e:
         logger.error(f"Column migration error: {e}")

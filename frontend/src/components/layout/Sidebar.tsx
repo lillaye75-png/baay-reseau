@@ -25,7 +25,7 @@ import {
 import api from "@/lib/api";
 
 const navigation = [
-  { name: "Tableau de bord", href: "/", icon: LayoutDashboard, i18nKey: "dashboard", guide: "dashboard" },
+  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, i18nKey: "dashboard", guide: "dashboard" },
   { name: "POS / Vente", href: "/pos", icon: ShoppingCart, i18nKey: "pos", guide: "pos" },
   { name: "Vente Rapide", href: "/quick-sale", icon: Zap, i18nKey: "quick_sale" },
   { name: "Ventes & Factures", href: "/sales", icon: Receipt, i18nKey: "sales" },
@@ -52,7 +52,11 @@ interface StoreInfo {
   is_default: boolean;
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const { t } = useI18n();
@@ -88,12 +92,13 @@ export default function Sidebar() {
   const switchStore = async (storeId: string) => {
     try {
       await api.put(`/tenants/stores/${storeId}/switch`);
+      if (onNavigate) onNavigate();
       window.location.reload();
     } catch {}
   };
 
   return (
-    <div className="flex h-full w-60 flex-col bg-gray-900 text-white">
+    <div className="flex h-full w-60 flex-col bg-gray-900 text-white overflow-y-auto">
       <div className="flex items-center gap-3 px-5 py-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold shadow-lg">
           BR
@@ -140,7 +145,7 @@ export default function Sidebar() {
         </div>
       )}
 
-      <nav className="flex flex-1 flex-col justify-evenly px-3 py-2">
+      <nav className="flex flex-1 flex-col justify-evenly px-3 py-2 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -148,6 +153,7 @@ export default function Sidebar() {
               key={item.name}
               href={item.href}
               data-guide={item.guide}
+              onClick={onNavigate}
               className={`relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-primary-600 text-white shadow-md shadow-primary-600/25"
@@ -170,6 +176,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onNavigate}
               className={`relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-yellow-600 text-white shadow-md shadow-yellow-600/25"

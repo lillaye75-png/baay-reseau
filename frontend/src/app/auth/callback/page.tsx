@@ -25,9 +25,9 @@ export default function AuthCallbackPage() {
 
         api.get("/tenants/me").then((tenantRes) => {
           const needsWizard = !tenantRes.data.wizard_completed;
-          window.location.href = needsWizard ? "/wizard" : "/";
+          window.location.href = needsWizard ? "/wizard" : "/dashboard";
         }).catch(() => {
-          window.location.href = "/";
+          window.location.href = "/dashboard";
         });
       })
       .catch((err) => {

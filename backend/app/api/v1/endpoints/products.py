@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
 from app.core.database import get_db
-from app.api.deps import get_current_user, require_owner
+from app.api.deps import get_current_user, require_owner, check_limit
 from app.models.user import User
 from app.models.product import Product, ProductCategory
 from app.models.product_image import ProductImage
@@ -24,6 +24,7 @@ async def list_products(user: User = Depends(get_current_user), db: AsyncSession
 
 @router.post("/", response_model=ProductRead, status_code=201)
 async def create_product(data: ProductCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await check_limit("products", user)
     product_data = data.model_dump()
     if product_data.get("category_id") == "":
         product_data["category_id"] = None

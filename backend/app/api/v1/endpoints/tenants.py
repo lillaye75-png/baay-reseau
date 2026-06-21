@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.api.deps import get_current_user, require_owner
+from app.api.deps import get_current_user, require_owner, check_limit
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.schemas.tenant import TenantRead, TenantUpdate, TenantIntegrations, PrintSettings
@@ -177,6 +177,7 @@ async def list_my_stores(user: User = Depends(get_current_user), db: AsyncSessio
 
 @router.post("/stores")
 async def create_new_store(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    await check_limit("stores", user)
     from sqlalchemy import text
     import uuid
 
@@ -188,13 +189,27 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
     db.add(store)
     await db.flush()
 
+    assigned_user_id = data.get("assigned_user_id")
+
     await db.execute(
         text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
         {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
     )
+
+    if assigned_user_id:
+        existing = await db.execute(
+            text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+            {"uid": assigned_user_id, "tid": store.id}
+        )
+        if not existing.first():
+            await db.execute(
+                text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
+                {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
+            )
+
     await db.flush()
 
-    return {"id": store.id, "name": store.name, "slug": store.slug}
+    return {"id": store.id, "name": store.name, "slug": store.slug, "assigned_user_id": assigned_user_id}
 
 
 @router.put("/stores/{store_id}/switch")

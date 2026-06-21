@@ -17,7 +17,60 @@ interface Plan {
   name: string;
   price_cfa: number;
   features: string[];
+  description?: string;
 }
+
+const planData: Plan[] = [
+  {
+    id: "free",
+    name: "Gratuit",
+    price_cfa: 0,
+    description: "7 jours d'essai — idéal pour démarrer",
+    features: [
+      "50 produits max",
+      "100 clients max",
+      "1 employé",
+      "1 boutique",
+      "Rapports de base",
+      "POS & Vente rapide",
+    ],
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price_cfa: 15000,
+    description: "Pour les boutiques en croissance",
+    features: [
+      "500 produits",
+      "1000 clients",
+      "5 employés",
+      "3 boutiques",
+      "Boutique en ligne",
+      "WhatsApp Bot IA",
+      "Rapports par boutique",
+      "Prédictions stock IA",
+      "Import/Export CSV",
+      "Suivi livraison",
+      "Impression personnalisée",
+      "Sync hors-ligne",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    price_cfa: 45000,
+    description: "Tout illimité — support prioritaire",
+    features: [
+      "Produits illimités",
+      "Clients illimités",
+      "Employés illimités",
+      "Boutiques illimitées",
+      "Tout le plan Pro inclus",
+      "API access",
+      "Support prioritaire dédié",
+    ],
+  },
+];
 
 const planIcons: Record<string, any> = {
   free: Zap,
@@ -41,10 +94,7 @@ export default function BillingPage() {
   const [activating, setActivating] = useState(false);
 
   useEffect(() => {
-    api.get("/billing/plans").then((res) => {
-      const list = Object.values(res.data) as Plan[];
-      setPlans(list.sort((a, b) => a.price_cfa - b.price_cfa));
-    });
+    setPlans(planData);
     api.get("/billing/current").then((res) => setCurrent(res.data));
   }, []);
 
@@ -137,6 +187,9 @@ export default function BillingPage() {
                       </p>
                     </div>
                   </div>
+                  {plan.description && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{plan.description}</p>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 mb-6">

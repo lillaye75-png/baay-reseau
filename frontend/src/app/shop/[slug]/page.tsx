@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatCFA, getImageUrl } from "@/lib/format";
-import { ShoppingCart, Search, Package, Plus, Minus, Trash2, Store, Phone, MessageSquare } from "lucide-react";
+import { ShoppingCart, Search, Package, Plus, Minus, Trash2, Store, Phone, MessageSquare, Truck } from "lucide-react";
 
 interface StoreInfo {
   tenant_id: string;
@@ -94,17 +94,26 @@ function StoreContent() {
               <p className="text-sm text-gray-500">{store.store_description}</p>
             )}
           </div>
-          <Link
-            href={`/shop/${slug}/cart`}
-            className="relative flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {itemCount > 0 && (
-              <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-xs font-bold flex items-center justify-center">
-                {itemCount}
-              </span>
-            )}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/shop/${slug}/track`}
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Truck className="h-4 w-4" />
+              <span className="hidden sm:inline">Suivre</span>
+            </Link>
+            <Link
+              href={`/shop/${slug}/cart`}
+              className="relative flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-xs font-bold flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </header>
 

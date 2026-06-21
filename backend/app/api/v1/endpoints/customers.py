@@ -7,7 +7,7 @@ import csv
 import io
 
 from app.core.database import get_db
-from app.api.deps import get_current_user, require_owner
+from app.api.deps import get_current_user, require_owner, check_limit
 from app.models.user import User
 from app.models.customer import Customer
 from app.models.sale import Sale
@@ -26,6 +26,7 @@ async def list_customers(user: User = Depends(get_current_user), db: AsyncSessio
 
 @router.post("/", response_model=CustomerRead, status_code=201)
 async def create_customer(data: CustomerCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await check_limit("customers", user)
     customer = Customer(tenant_id=user.tenant_id, **data.model_dump())
     db.add(customer)
     await db.flush()

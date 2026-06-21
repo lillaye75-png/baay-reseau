@@ -14,6 +14,7 @@ class SaleCreate(BaseModel):
     payment_method: str = "cash"
     payment_reference: str | None = None
     is_credit: bool = False
+    store_id: str | None = None
 
 
 class QuickSaleCreate(BaseModel):
@@ -67,6 +68,10 @@ class CustomerRead(BaseModel):
 class SaleRead(BaseModel):
     id: str
     tenant_id: str
+    store_id: str | None = None
+    user_id: str | None = None
+    store_name: str | None = None
+    employee_name: str | None = None
     customer_id: str | None
     customer: CustomerRead | None = None
     total_cfa: int

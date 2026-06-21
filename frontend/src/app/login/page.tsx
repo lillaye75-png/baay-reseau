@@ -175,6 +175,12 @@ function LoginForm() {
             </svg>
             Se connecter avec Google
           </button>
+
+          <div className="mt-6 text-center">
+            <Link href="/" className="text-sm text-gray-500 hover:text-primary-600 transition-colors">
+              ← Retour à l&apos;accueil
+            </Link>
+          </div>
         </div>
       </div>
     </div>

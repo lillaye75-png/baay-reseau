@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.core.database import get_db
-from app.api.deps import require_owner
+from app.api.deps import require_owner, get_current_user
 from app.models.user import User
 from app.services.reports import get_sales_report, get_top_products, get_trends, get_period_comparison
 
@@ -16,29 +16,35 @@ async def sales_report(
     period: str = "daily",
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    store_id: Optional[str] = Query(None),
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_sales_report(db, user.tenant_id, period, start_date, end_date)
+    tenant_id = store_id or user.tenant_id
+    return await get_sales_report(db, tenant_id, period, start_date, end_date)
 
 
 @router.get("/top-products")
 async def top_products(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    store_id: Optional[str] = Query(None),
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_top_products(db, user.tenant_id, start_date=start_date, end_date=end_date)
+    tenant_id = store_id or user.tenant_id
+    return await get_top_products(db, tenant_id, start_date=start_date, end_date=end_date)
 
 
 @router.get("/trends")
 async def sales_trends(
     days: int = 30,
+    store_id: Optional[str] = Query(None),
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_trends(db, user.tenant_id, days)
+    tenant_id = store_id or user.tenant_id
+    return await get_trends(db, tenant_id, days)
 
 
 @router.get("/compare")
@@ -47,14 +53,41 @@ async def compare_periods(
     period1_end: str = Query(...),
     period2_start: str = Query(...),
     period2_end: str = Query(...),
+    store_id: Optional[str] = Query(None),
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
+    tenant_id = store_id or user.tenant_id
     return await get_period_comparison(
-        db, user.tenant_id,
+        db, tenant_id,
         period1_start, period1_end,
         period2_start, period2_end,
     )
+
+
+@router.get("/by-store")
+async def reports_by_store(
+    period: str = "daily",
+    user: User = Depends(require_owner),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import text
+    from app.models.tenant import Tenant
+
+    result = await db.execute(
+        text("SELECT t.id, t.name FROM tenants t JOIN user_stores us ON t.id = us.tenant_id WHERE us.user_id = :user_id"),
+        {"user_id": user.id}
+    )
+    stores = [{"id": row[0], "name": row[1]} for row in result.all()]
+
+    store_reports = []
+    for store in stores:
+        report = await get_sales_report(db, store["id"], period)
+        report["store_id"] = store["id"]
+        report["store_name"] = store["name"]
+        store_reports.append(report)
+
+    return store_reports
 
 
 @router.get("/stock-predictions")

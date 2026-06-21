@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, Sun, Moon, Leaf, LogOut, Settings, ChevronDown, Globe } from "lucide-react";
+import { Menu, Sun, Moon, Leaf, LogOut, Settings, ChevronDown, Globe } from "lucide-react";
 import Sidebar from "./Sidebar";
 import AuthGuard from "./AuthGuard";
 import MobileNav from "./MobileNav";
@@ -62,17 +62,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  useEffect(() => {
-    if (sidebarOpen) {
-      const main = document.querySelector("main");
-      if (main) {
-        const handleScroll = () => setSidebarOpen(false);
-        main.addEventListener("scroll", handleScroll, { once: true });
-        return () => main.removeEventListener("scroll", handleScroll);
-      }
-    }
-  }, [sidebarOpen]);
-
   return (
     <AuthGuard>
       <OnboardingGuide />
@@ -84,19 +73,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setSidebarOpen(false)}>
             <div className="fixed inset-0 bg-black/50" />
-            <div className="relative z-10 h-full" onClick={(e) => e.stopPropagation()}>
-              <Sidebar />
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="absolute top-4 right-[-48px] rounded-full bg-gray-800 p-2 text-white shadow-lg"
-              >
-                <X className="h-5 w-5" />
-              </button>
+            <div className="relative z-10 h-full">
+              <Sidebar onNavigate={() => setSidebarOpen(false)} />
             </div>
           </div>
         )}
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden" onClick={() => { if (sidebarOpen) setSidebarOpen(false); }}>
           <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center gap-3">
               <button

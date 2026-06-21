@@ -52,6 +52,25 @@
 - **2026-06-21 : License not activating → added /extend-trial endpoint**
 - **2026-06-21 : Employee could modify invoices → backend PUT/DELETE requires owner**
 
+### New Features (2026-06-21)
+- **Multi-store employee assignment → owner creates store, assigns to employee, sales tracked per store**
+- **Store-filtered reports → GET /reports/by-store, GET /reports/sales?store_id=...**
+- **License tier enforcement → backend limit checks on products/customers/employees/stores**
+- **License /features endpoint → GET /licences/features returns tier, limits, counts, limits_reached**
+- **POS mobile fix → no longer auto-switches to cart when adding product**
+- **Sidebar mobile fix → scrollable, closes on any click (including same page), no overflow**
+- **Hamburger click-to-close → clicking anywhere closes sidebar, even same page links**
+- **Settings plan info → shows current tier, usage counts, limits reached warnings**
+- **Billing page → tier-specific features displayed for free/pro/enterprise plans**
+- **Activate page → shows detected tier features when entering licence key**
+
+### Landing Page & Order Tracking (2026-06-21)
+- **Landing page → modern premium page at / with hero, features, pricing, testimonials, developer info**
+- **Dashboard moved to /dashboard → all redirects updated (login, register, wizard, activate, auth callback)**
+- **Order tracking button → "Suivre" button in shop header, /track page for order ID lookup**
+- **Login page → added "Retour à l'accueil" link to landing page**
+- **Developer info → Abdoulaye Sow, +221776621410, +221708372127, layedevops@gmail.com**
+
 ### Security & Permissions
 - Rôle-based access : employees ne peuvent PAS modifier les infos entreprise
 - Owner-only endpoints : tenant update, storefront settings, reports, billing, settings
@@ -80,7 +99,7 @@
 - Subscriptions : stockées en DB PostgreSQL
 
 ### Frontend (Next.js 14 + Tailwind)
-- 28+ pages : login, register, wizard, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, settings, whatsapp, storefront, shop/*, billing, licences, activate, **guide**
+- 28+ pages : landing, login, register, wizard, dashboard, POS, products, customers, sales, invoices, orders, credit, expenses, reports, settings, whatsapp, storefront, shop/*, billing, licences, activate, guide, **track**
 - 3 thèmes : Light, Dark, Solarized
 - i18n : Français + Wolof + Anglais
 - POS mobile : toggle Produits/Panier
@@ -198,6 +217,8 @@ PUT  /api/v1/tenants/{id}/print-settings
 PUT  /api/v1/storefront/orders/{id}/tracking
 GET  /api/v1/storefront/orders/{id}/tracking
 POST /api/v1/licences/extend-trial
+GET  /api/v1/licences/features
+GET  /api/v1/reports/by-store
 ```
 
 ---

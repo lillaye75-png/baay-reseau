@@ -29,7 +29,7 @@ export default function WizardPage() {
   useEffect(() => {
     api.get("/tenants/me").then((res) => {
       if (res.data.wizard_completed) {
-        window.location.href = "/";
+        window.location.href = "/dashboard";
       } else {
         setShopName(res.data.name === "My Shop" ? "" : res.data.name);
         setShopPhone(res.data.phone || "");
@@ -60,7 +60,7 @@ export default function WizardPage() {
 
       localStorage.removeItem("wizard_needed");
       showToast("Bienvenue ! Configuration terminée");
-      window.location.href = "/";
+      window.location.href = "/dashboard";
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur", "error");
     } finally {

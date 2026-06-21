@@ -8,7 +8,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.schemas.user import UserCreate, UserLogin, UserRead, Token, EmployeeUpdate
-from app.api.deps import require_owner
+from app.api.deps import require_owner, check_limit
 
 SUPER_ADMIN_PHONES = ["776621410", "708372127"]
 
@@ -96,6 +96,7 @@ async def refresh_token(data: dict, db: AsyncSession = Depends(get_db)):
 
 @router.post("/invite-employee", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def invite_employee(data: UserCreate, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
+    await check_limit("employees", user)
     existing = await db.execute(select(User).where(User.phone == data.phone))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Phone number already registered")

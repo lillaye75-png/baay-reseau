@@ -11,11 +11,13 @@ from app.schemas.sale import SaleCreate
 from app.services.inventory import update_stock
 
 
-async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate) -> Sale:
+async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate, user_id: str = None) -> Sale:
     total = sum(item.quantity * item.unit_price_cfa for item in data.items)
 
     sale = Sale(
         tenant_id=tenant_id,
+        store_id=data.store_id or tenant_id,
+        user_id=user_id,
         customer_id=data.customer_id,
         total_cfa=total,
         payment_method=data.payment_method,

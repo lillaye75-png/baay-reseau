@@ -78,7 +78,6 @@ export default function POSPage() {
       }
       return [...prev, { product, quantity: 1 }];
     });
-    setMobileView("cart");
   };
 
   const updateQuantity = (productId: string, delta: number) => {

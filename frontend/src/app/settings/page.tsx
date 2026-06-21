@@ -654,13 +654,7 @@ export default function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">Plan Gratuit</p>
-                <p className="text-sm text-gray-500">Jusqu&apos;à 50 produits, 100 clients</p>
-              </div>
-              <Button variant="secondary">Passer au Premium</Button>
-            </div>
+            <PlanInfo />
           </CardContent>
         </Card>
       </div>
@@ -668,14 +662,93 @@ export default function SettingsPage() {
   );
 }
 
+function PlanInfo() {
+  const [planData, setPlanData] = useState<any>(null);
+
+  useEffect(() => {
+    api.get("/licences/features").then((res) => setPlanData(res.data)).catch(() => {});
+  }, []);
+
+  if (!planData) {
+    return <p className="text-sm text-gray-500">Chargement...</p>;
+  }
+
+  const tierNames: Record<string, string> = { free: "Plan Gratuit", pro: "Plan Pro", enterprise: "Plan Enterprise" };
+  const tierColors: Record<string, string> = { free: "text-gray-700", pro: "text-primary-600", enterprise: "text-yellow-600" };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={`font-medium ${tierColors[planData.tier] || "text-gray-700"}`}>
+            {tierNames[planData.tier] || planData.tier}
+            {planData.is_trial && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Essai</span>}
+          </p>
+          {planData.expires_at && (
+            <p className="text-xs text-gray-500">
+              Expire le {new Date(planData.expires_at).toLocaleDateString("fr")}
+            </p>
+          )}
+        </div>
+        <Button variant="secondary" size="sm" onClick={() => window.location.href = "/billing"}>
+          Gérer
+        </Button>
+      </div>
+
+      {planData.counts && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg bg-gray-50 p-2 text-center">
+            <p className="text-lg font-bold text-gray-900">{planData.counts.products || 0}</p>
+            <p className="text-[10px] text-gray-500">
+              Produits {planData.features?.max_products > 0 ? `/ ${planData.features.max_products}` : ""}
+            </p>
+          </div>
+          <div className="rounded-lg bg-gray-50 p-2 text-center">
+            <p className="text-lg font-bold text-gray-900">{planData.counts.customers || 0}</p>
+            <p className="text-[10px] text-gray-500">
+              Clients {planData.features?.max_customers > 0 ? `/ ${planData.features.max_customers}` : ""}
+            </p>
+          </div>
+          <div className="rounded-lg bg-gray-50 p-2 text-center">
+            <p className="text-lg font-bold text-gray-900">{planData.counts.employees || 0}</p>
+            <p className="text-[10px] text-gray-500">
+              Employés {planData.features?.max_employees > 0 ? `/ ${planData.features.max_employees}` : ""}
+            </p>
+          </div>
+          <div className="rounded-lg bg-gray-50 p-2 text-center">
+            <p className="text-lg font-bold text-gray-900">{planData.counts.stores || 1}</p>
+            <p className="text-[10px] text-gray-500">
+              Boutiques {planData.features?.max_stores > 0 ? `/ ${planData.features.max_stores}` : ""}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {planData.limits_reached && planData.limits_reached.length > 0 && (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          <p className="font-medium mb-1">Limite atteinte !</p>
+          <ul className="text-xs space-y-1">
+            {planData.limits_reached.map((l: any, i: number) => (
+              <li key={i}>• {l.feature.replace("max_", "")} : {l.current}/{l.limit}</li>
+            ))}
+          </ul>
+          <p className="text-xs mt-2">Passez au plan supérieur pour continuer.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StoreManager() {
   const [stores, setStores] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newStore, setNewStore] = useState({ name: "", slug: "", phone: "" });
+  const [newStore, setNewStore] = useState({ name: "", slug: "", phone: "", assigned_user_id: "" });
   const [saving, setSaving] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   useEffect(() => {
     api.get("/tenants/stores").then((res) => setStores(res.data)).catch(() => {});
+    api.get("/auth/employees").then((res) => setEmployees(res.data)).catch(() => {});
   }, []);
 
   const handleCreate = async () => {
@@ -685,10 +758,14 @@ function StoreManager() {
     }
     setSaving(true);
     try {
-      const res = await api.post("/tenants/stores", newStore);
+      const payload: any = { name: newStore.name, slug: newStore.slug, phone: newStore.phone };
+      if (newStore.assigned_user_id) {
+        payload.assigned_user_id = newStore.assigned_user_id;
+      }
+      const res = await api.post("/tenants/stores", payload);
       showToast("Boutique créée !");
       setStores([...stores, { ...res.data, is_default: false, is_active: true }]);
-      setNewStore({ name: "", slug: "", phone: "" });
+      setNewStore({ name: "", slug: "", phone: "", assigned_user_id: "" });
       setShowForm(false);
     } catch (err: any) {
       showToast(err.response?.data?.detail || "Erreur", "error");
@@ -732,8 +809,24 @@ function StoreManager() {
       {showForm ? (
         <div className="rounded-lg bg-gray-50 p-4 space-y-3">
           <Input label="Nom de la boutique" value={newStore.name} onChange={(e) => setNewStore({ ...newStore, name: e.target.value })} placeholder="Ma Nouvelle Boutique" />
-          <Input label="Slug (URL)" value={newStore.slug} onChange={(e) => setNewStore({ ...newStore, slug: e.target.value })} placeholder="ma-boutique" />
+          <Input label="Slug (URL)" value={newStore.slug} onChange={(e) => setNewStore({ ...newStore, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="ma-boutique" />
           <Input label="Téléphone" value={newStore.phone} onChange={(e) => setNewStore({ ...newStore, phone: e.target.value })} placeholder="+221 77 123 45 67" />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Assigner un employé (optionnel)</label>
+            <select
+              value={newStore.assigned_user_id}
+              onChange={(e) => setNewStore({ ...newStore, assigned_user_id: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="">Aucun employé</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} ({emp.phone})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">L&apos;employé sélectionné pourra accéder à cette boutique</p>
+          </div>
           <div className="flex gap-2 justify-end">
             <Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>Annuler</Button>
             <Button size="sm" onClick={handleCreate} disabled={saving}>{saving ? "Création..." : "Créer"}</Button>

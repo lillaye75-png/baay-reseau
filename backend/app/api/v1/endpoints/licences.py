@@ -62,6 +62,126 @@ async def get_my_licence(user: User = Depends(get_current_user), db: AsyncSessio
     }
 
 
+@router.get("/features")
+async def get_my_features(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+
+    result = await db.execute(
+        select(Licence).where(Licence.assigned_to == user.tenant_id, Licence.is_active == True)
+        .order_by(Licence.created_at.desc()).limit(1)
+    )
+    licence = result.scalar_one_or_none()
+
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+    tenant = tenant_result.scalar_one_or_none()
+
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    tier = "free"
+    is_trial = False
+
+    if licence:
+        tier = licence.tier
+        if licence.expires_at:
+            exp = licence.expires_at
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp < datetime.now(timezone.utc):
+                tier = "free"
+    else:
+        if tenant.license_expires_at:
+            exp = tenant.license_expires_at
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp > datetime.now(timezone.utc):
+                is_trial = True
+                tier = "pro"
+            else:
+                tier = "free"
+        else:
+            is_trial = True
+            tier = "pro"
+
+    features = TIER_FEATURES.get(tier, TIER_FEATURES["free"])
+
+    counts = {}
+    for table, col in [("products", "tenant_id"), ("customers", "tenant_id")]:
+        try:
+            r = await db.execute(text(f"SELECT COUNT(*) FROM {table} WHERE {col} = :tid"), {"tid": user.tenant_id})
+            counts[table] = r.scalar()
+        except Exception:
+            counts[table] = 0
+
+    try:
+        r = await db.execute(text("SELECT COUNT(*) FROM users WHERE tenant_id = :tid AND role != 'owner'"), {"tid": user.tenant_id})
+        counts["employees"] = r.scalar()
+    except Exception:
+        counts["employees"] = 0
+
+    try:
+        r = await db.execute(text("SELECT COUNT(*) FROM user_stores WHERE user_id = :uid"), {"uid": user.id})
+        counts["stores"] = r.scalar()
+    except Exception:
+        counts["stores"] = 1
+
+    limits_reached = []
+    if features["max_products"] > 0 and counts["products"] >= features["max_products"]:
+        limits_reached.append({"feature": "max_products", "limit": features["max_products"], "current": counts["products"]})
+    if features["max_customers"] > 0 and counts["customers"] >= features["max_customers"]:
+        limits_reached.append({"feature": "max_customers", "limit": features["max_customers"], "current": counts["customers"]})
+    if features["max_employees"] > 0 and counts["employees"] >= features["max_employees"]:
+        limits_reached.append({"feature": "max_employees", "limit": features["max_employees"], "current": counts["employees"]})
+    if features["max_stores"] > 0 and counts["stores"] >= features["max_stores"]:
+        limits_reached.append({"feature": "max_stores", "limit": features["max_stores"], "current": counts["stores"]})
+
+    expires_at = None
+    if licence and licence.expires_at:
+        expires_at = licence.expires_at.isoformat()
+    elif tenant.license_expires_at:
+        expires_at = tenant.license_expires_at.isoformat()
+
+    return {
+        "tier": tier,
+        "is_trial": is_trial,
+        "features": features,
+        "counts": counts,
+        "limits_reached": limits_reached,
+        "expires_at": expires_at,
+        "is_expired": len(limits_reached) > 0 and tier == "free" and not is_trial,
+    }
+    result = await db.execute(
+        select(Licence).where(Licence.assigned_to == user.tenant_id, Licence.is_active == True)
+        .order_by(Licence.created_at.desc()).limit(1)
+    )
+    licence = result.scalar_one_or_none()
+
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+    tenant = tenant_result.scalar_one_or_none()
+
+    if licence and licence.expires_at:
+        exp = licence.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if exp < datetime.now(timezone.utc):
+            return {"licence": None, "expired": True, "expires_at": licence.expires_at.isoformat(), "tier": licence.tier}
+
+    features = TIER_FEATURES.get(licence.tier if licence else "free", TIER_FEATURES["free"])
+
+    return {
+        "licence": {
+            "id": licence.id if licence else None,
+            "key": licence.licence_key if licence else None,
+            "tier": licence.tier if licence else "free",
+            "features": features,
+            "expires_at": licence.expires_at.isoformat() if licence and licence.expires_at else None,
+            "activated_at": licence.activated_at.isoformat() if licence and licence.activated_at else None,
+        } if licence else None,
+        "expired": False,
+        "trial": not bool(licence) and tenant and not tenant.license_expires_at,
+    }
+
+
 @router.post("/activate")
 async def activate_licence(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     key = data.get("key", "").strip().upper()

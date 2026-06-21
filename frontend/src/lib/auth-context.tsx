@@ -99,10 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (needsWizard) {
         router.push("/wizard");
       } else {
-        router.push("/");
+        router.push("/dashboard");
       }
     } catch {
-      router.push("/");
+      router.push("/dashboard");
     }
   };
 
