@@ -65,7 +65,12 @@ if os.path.exists(UPLOAD_DIR):
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.time()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        logger.error(f"Request error: {e}")
+        from fastapi.responses import JSONResponse
+        response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
     duration = round((time.time() - start) * 1000)
     logger.info(
         f"{request.method} {request.url.path} → {response.status_code} ({duration}ms)"

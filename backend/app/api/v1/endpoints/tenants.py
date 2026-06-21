@@ -163,11 +163,14 @@ async def delete_all_data(user: User = Depends(require_owner), db: AsyncSession 
 @router.get("/stores")
 async def list_my_stores(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from sqlalchemy import text
-    result = await db.execute(
-        text("SELECT t.id, t.name, t.slug, t.is_active, us.is_default FROM tenants t JOIN user_stores us ON t.id = us.tenant_id WHERE us.user_id = :user_id"),
-        {"user_id": user.id}
-    )
-    stores = [{"id": row[0], "name": row[1], "slug": row[2], "is_active": row[3], "is_default": row[4]} for row in result.all()]
+    try:
+        result = await db.execute(
+            text("SELECT t.id, t.name, t.slug, t.is_active, us.is_default FROM tenants t JOIN user_stores us ON t.id = us.tenant_id WHERE us.user_id = :user_id"),
+            {"user_id": user.id}
+        )
+        stores = [{"id": row[0], "name": row[1], "slug": row[2], "is_active": row[3], "is_default": row[4]} for row in result.all()]
+    except Exception:
+        stores = []
 
     if not stores:
         stores = [{"id": user.tenant_id, "name": "Ma Boutique", "slug": "", "is_active": True, "is_default": True}]
@@ -177,10 +180,6 @@ async def list_my_stores(user: User = Depends(get_current_user), db: AsyncSessio
 
 @router.post("/stores")
 async def create_new_store(data: dict, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
-    try:
-        await check_limit("stores", user)
-    except Exception:
-        pass
     from sqlalchemy import text
     import uuid
 
@@ -194,21 +193,27 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
 
     assigned_user_id = data.get("assigned_user_id")
 
-    await db.execute(
-        text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
-        {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
-    )
+    try:
+        await db.execute(
+            text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
+            {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
+        )
+    except Exception:
+        pass
 
     if assigned_user_id:
-        existing = await db.execute(
-            text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
-            {"uid": assigned_user_id, "tid": store.id}
-        )
-        if not existing.first():
-            await db.execute(
-                text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
-                {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
+        try:
+            existing = await db.execute(
+                text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+                {"uid": assigned_user_id, "tid": store.id}
             )
+            if not existing.first():
+                await db.execute(
+                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
+                    {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
+                )
+        except Exception:
+            pass
 
     await db.flush()
 
