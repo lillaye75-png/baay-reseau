@@ -75,7 +75,9 @@
 - **Employee full delete → admin can permanently delete employees (not just deactivate)**
 - **Order tracking partial ID → search by first 8 characters of order UUID**
 - **POS 500 fix → simplified SaleRead schema, removed lazy-load crash**
-- **Tenant.sales ambiguous FK fix → explicit foreign_keys=[Sale.tenant_id]****
+- **Tenant.sales ambiguous FK fix → explicit foreign_keys=[Sale.tenant_id]**
+- **CORS 500 fix → check_limit wrapped in try/except, CORS middleware catches all errors**
+- **Reports store filter → dropdown to view all stores or specific store reports****
 
 ### Landing Page & Order Tracking (2026-06-21)
 - **Landing page → modern premium page at / with hero, features, pricing, testimonials, developer info**
