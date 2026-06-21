@@ -77,7 +77,9 @@
 - **POS 500 fix → simplified SaleRead schema, removed lazy-load crash**
 - **Tenant.sales ambiguous FK fix → explicit foreign_keys=[Sale.tenant_id]**
 - **CORS 500 fix → check_limit wrapped in try/except, CORS middleware catches all errors**
-- **Reports store filter → dropdown to view all stores or specific store reports****
+- **Global exception handler → catches unhandled exceptions, returns CORS headers**
+- **Reports store filter → dropdown to view all stores or specific store reports**
+- **Store manager UI → edit button, pre-fill form, suspend/delete/switch actions****
 
 ### Landing Page & Order Tracking (2026-06-21)
 - **Landing page → modern premium page at / with hero, features, pricing, testimonials, developer info**
