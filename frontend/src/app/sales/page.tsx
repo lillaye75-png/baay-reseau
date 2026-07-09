@@ -21,7 +21,7 @@ export default function SalesPage() {
   useEffect(() => {
     api.get("/sales/")
       .then((res) => setSales(res.data))
-      .catch(() => {})
+      .catch(() => showToast("Erreur de chargement des ventes", "error"))
       .finally(() => setLoading(false));
   }, []);
 

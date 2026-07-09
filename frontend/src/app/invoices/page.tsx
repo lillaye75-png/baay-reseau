@@ -18,7 +18,7 @@ export default function InvoicesPage() {
   useEffect(() => {
     api.get("/sales/")
       .then((res) => setSales(res.data))
-      .catch(() => {})
+      .catch(() => showToast("Erreur de chargement", "error"))
       .finally(() => setLoading(false));
   }, []);
 

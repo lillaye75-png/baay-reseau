@@ -85,12 +85,12 @@ async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "dail
     margin_result = await db.execute(
         select(
             func.coalesce(
-                func.sum((SaleItem.unit_price_cfa - Product.cost_price_cfa) * SaleItem.quantity),
+                func.sum((SaleItem.unit_price_cfa - func.coalesce(Product.cost_price_cfa, 0)) * SaleItem.quantity),
                 0,
             )
         )
         .join(Sale, SaleItem.sale_id == Sale.id)
-        .join(Product, SaleItem.product_id == Product.id)
+        .outerjoin(Product, SaleItem.product_id == Product.id)
         .where(Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end)
     )
     total_margin = int(margin_result.scalar())
@@ -135,10 +135,15 @@ async def get_top_products(db: AsyncSession, tenant_id: str, limit: int = 10, st
     )
     rows = result.all()
 
+    product_ids = [row[0] for row in rows if row[0]]
+    products_map = {}
+    if product_ids:
+        prod_result = await db.execute(select(Product).where(Product.id.in_(product_ids)))
+        products_map = {p.id: p for p in prod_result.scalars().all()}
+
     products = []
     for row in rows:
-        prod_result = await db.execute(select(Product).where(Product.id == row[0]))
-        prod = prod_result.scalar_one_or_none()
+        prod = products_map.get(row[0])
         products.append({
             "product_id": row[0],
             "product_name": prod.name if prod else "Unknown",
@@ -220,12 +225,12 @@ async def get_period_comparison(
         margin_result = await db.execute(
             select(
                 func.coalesce(
-                    func.sum((SaleItem.unit_price_cfa - Product.cost_price_cfa) * SaleItem.quantity),
+                    func.sum((SaleItem.unit_price_cfa - func.coalesce(Product.cost_price_cfa, 0)) * SaleItem.quantity),
                     0,
                 )
             )
             .join(Sale, SaleItem.sale_id == Sale.id)
-            .join(Product, SaleItem.product_id == Product.id)
+            .outerjoin(Product, SaleItem.product_id == Product.id)
             .where(Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end)
         )
         margin = int(margin_result.scalar())

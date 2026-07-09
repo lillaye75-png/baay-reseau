@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { AuthProvider } from "@/lib/auth-context";
-import { ThemeProvider } from "@/lib/theme-context";
-import { I18nProvider } from "@/lib/i18n";
-import ToastContainer from "@/components/ui/Toast";
+import ClientProviders from "@/components/layout/ClientProviders";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -20,8 +17,6 @@ export const viewport: Viewport = {
   themeColor: "#ea580c",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({
@@ -38,14 +33,9 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-        <ThemeProvider>
-          <I18nProvider>
-            <AuthProvider>
-              {children}
-              <ToastContainer />
-            </AuthProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
         <script dangerouslySetInnerHTML={{
           __html: `
             if('serviceWorker' in navigator) {

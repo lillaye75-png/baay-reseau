@@ -68,7 +68,7 @@ async def create_checkout(
             await db.flush()
 
     if not tenant.stripe_customer_id:
-        return {"error": "Stripe not configured", "demo_mode": True, "plan": plan}
+        return {"error": "Stripe not configured", "demo_mode": False, "message": "Le paiement Stripe n'est pas configuré. Contactez l'administrateur."}
 
     url = await create_checkout_session(
         customer_id=tenant.stripe_customer_id,
@@ -78,10 +78,7 @@ async def create_checkout(
     )
 
     if not url:
-        tenant.subscription_plan = plan
-        tenant.subscription_status = "active"
-        await db.flush()
-        return {"demo_mode": True, "plan": plan, "message": "Plan activé (mode démo)"}
+        return {"error": "Impossible de créer la session de paiement", "demo_mode": False}
 
     return {"url": url}
 

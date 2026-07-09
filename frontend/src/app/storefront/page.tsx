@@ -65,7 +65,7 @@ export default function StorefrontPage() {
         accepts_orange_money: s.data.accepts_orange_money,
         accepts_cash_on_delivery: s.data.accepts_cash_on_delivery,
       });
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => showToast("Erreur de chargement", "error")).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {

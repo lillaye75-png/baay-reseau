@@ -16,7 +16,9 @@ async def get_low_stock_products(db: AsyncSession, tenant_id: str) -> list[Produ
 
 
 async def update_stock(db: AsyncSession, product_id: str, quantity_change: int) -> Product:
-    result = await db.execute(select(Product).where(Product.id == product_id))
+    result = await db.execute(
+        select(Product).where(Product.id == product_id).with_for_update()
+    )
     product = result.scalar_one()
     product.stock_quantity += quantity_change
     if product.stock_quantity < 0:

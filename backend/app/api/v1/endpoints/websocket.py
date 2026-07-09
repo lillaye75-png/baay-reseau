@@ -1,6 +1,7 @@
 import json
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from app.core.security import decode_access_token
 
 router = APIRouter()
 
@@ -8,7 +9,21 @@ connected_clients: dict[str, list[WebSocket]] = {}
 
 
 @router.websocket("/ws/{tenant_id}")
-async def websocket_endpoint(websocket: WebSocket, tenant_id: str):
+async def websocket_endpoint(websocket: WebSocket, tenant_id: str, token: str = Query(default="")):
+    if not token:
+        await websocket.close(code=4001, reason="Token required")
+        return
+
+    payload = decode_access_token(token)
+    if not payload:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
+    ws_tenant = payload.get("tenant_id", "")
+    if ws_tenant != tenant_id:
+        await websocket.close(code=4003, reason="Tenant mismatch")
+        return
+
     await websocket.accept()
 
     if tenant_id not in connected_clients:
@@ -25,8 +40,11 @@ async def websocket_endpoint(websocket: WebSocket, tenant_id: str):
             except json.JSONDecodeError:
                 pass
     except WebSocketDisconnect:
-        connected_clients[tenant_id].remove(websocket)
-        if not connected_clients[tenant_id]:
+        try:
+            connected_clients[tenant_id].remove(websocket)
+        except ValueError:
+            pass
+        if tenant_id in connected_clients and not connected_clients[tenant_id]:
             del connected_clients[tenant_id]
 
 

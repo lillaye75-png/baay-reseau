@@ -11,24 +11,56 @@ from app.core.security import create_access_token, create_refresh_token, hash_pa
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.schemas.user import UserRead, Token
+from app.api.deps import SUPER_ADMIN_PHONES
 
 router = APIRouter()
 
 
+def _token_response(user: User, access_token: str, refresh: str) -> Token:
+    user_data = UserRead.model_validate(user)
+    user_data.is_super_admin = user.phone in SUPER_ADMIN_PHONES
+    return Token(access_token=access_token, refresh_token=refresh, user=user_data)
+
+
 @router.post("/google", response_model=Token)
 async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
-    token = data.get("token", "")
-    if not token:
-        raise HTTPException(status_code=400, detail="Token Google requis")
+    code = data.get("code", "")
+    if not code:
+        raise HTTPException(status_code=400, detail="Code d'autorisation Google requis")
 
-    if not settings.GOOGLE_CLIENT_ID:
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(status_code=501, detail="Google OAuth non configuré")
+
+    redirect_uri = data.get("redirect_uri", "")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            token_resp = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+                timeout=15,
+            )
+    except Exception:
+        raise HTTPException(status_code=502, detail="Impossible de contacter Google. Réessayez.")
+
+    if token_resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Code Google invalide ou expiré")
+
+    access_token = token_resp.json().get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Pas de token d'accès Google")
 
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 "https://www.googleapis.com/oauth2/v3/userinfo",
-                headers={"Authorization": f"Bearer {token}"},
+                headers={"Authorization": f"Bearer {access_token}"},
                 timeout=15,
             )
     except Exception:
@@ -60,7 +92,7 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
         await db.flush()
         access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
-        return Token(access_token=access_token, refresh_token=refresh, user=UserRead.model_validate(user))
+        return _token_response(user, access_token, refresh)
 
     try:
         tenant = Tenant(
@@ -108,10 +140,6 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=500, detail="Erreur création compte Google")
         access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
-        return Token(access_token=access_token, refresh_token=refresh, user=UserRead.model_validate(user))
+        return _token_response(user, access_token, refresh)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erreur création compte Google")
-
-    access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
-    refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
-    return Token(access_token=access_token, refresh_token=refresh, user=UserRead.model_validate(user))

@@ -257,7 +257,7 @@ export default function SettingsPage() {
                 placeholder="ma-boutique"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Votre lien : <span className="font-medium text-primary-600">baay-reseau.vercel.app/shop/{shopSlug || "..."}</span>
+                Votre lien : <span className="font-medium text-primary-600">{typeof window !== "undefined" ? window.location.origin : ""}/shop/{shopSlug || "..."}</span>
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -901,7 +901,7 @@ function StoreManager() {
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="secondary" size="sm" onClick={cancelForm}>Annuler</Button>
-            <Button size="sm" onClick={handleCreate} disabled={saving}>{saving ? "Création..." : "Créer"}</Button>
+            <Button size="sm" onClick={handleCreate} disabled={saving}>{saving ? "Enregistrement..." : editingStore ? "Enregistrer" : "Créer"}</Button>
           </div>
         </div>
       ) : (

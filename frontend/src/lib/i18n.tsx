@@ -91,6 +91,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (saved && ["fr", "wo", "en"].includes(saved)) setLangState(saved);
   }, []);
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = lang === "wo" ? "wo" : lang === "en" ? "en" : "fr";
+    }
+  }, [lang]);
+
   const setLang = (l: Lang) => {
     setLangState(l);
     localStorage.setItem("lang", l);

@@ -162,7 +162,9 @@ function LoginForm() {
               }
               const redirectUri = `${window.location.origin}/auth/callback`;
               const scope = "email profile";
-              const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
+              const state = crypto.randomUUID();
+              sessionStorage.setItem("oauth_state", state);
+              const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&prompt=select_account&state=${state}&access_type=offline`;
               window.location.href = url;
             }}
             className="mt-4 w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"

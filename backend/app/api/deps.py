@@ -38,25 +38,29 @@ async def check_limit(resource: str, user: User):
         return
 
     async with async_session() as db:
-        from sqlalchemy import text
-        table_map = {
-            "products": "products",
-            "customers": "customers",
-            "employees": "users",
-            "stores": "user_stores",
-        }
-        table = table_map.get(resource)
-        if not table:
-            return
+        from sqlalchemy import func
 
         if resource == "employees":
-            r = await db.execute(text("SELECT COUNT(*) FROM users WHERE tenant_id = :tid AND role != 'owner'"), {"tid": user.tenant_id})
+            count = (await db.execute(
+                select(func.count()).select_from(User).where(User.tenant_id == user.tenant_id, User.role != "owner")
+            )).scalar()
         elif resource == "stores":
+            from sqlalchemy import text
             r = await db.execute(text("SELECT COUNT(*) FROM user_stores WHERE user_id = :uid"), {"uid": user.id})
+            count = r.scalar()
+        elif resource == "products":
+            from app.models.product import Product
+            count = (await db.execute(
+                select(func.count()).select_from(Product).where(Product.tenant_id == user.tenant_id)
+            )).scalar()
+        elif resource == "customers":
+            from app.models.customer import Customer
+            count = (await db.execute(
+                select(func.count()).select_from(Customer).where(Customer.tenant_id == user.tenant_id)
+            )).scalar()
         else:
-            r = await db.execute(text(f"SELECT COUNT(*) FROM {table} WHERE tenant_id = :tid"), {"tid": user.tenant_id})
+            return
 
-        count = r.scalar()
         if count >= max_val:
             raise HTTPException(
                 status_code=403,

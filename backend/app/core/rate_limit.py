@@ -23,6 +23,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         self.requests = defaultdict(list)
+        self._last_cleanup = time.time()
 
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host if request.client else "unknown"
@@ -30,6 +31,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if request.method == "OPTIONS":
             return await call_next(request)
+
+        now = time.time()
+        if now - self._last_cleanup > 300:
+            self._last_cleanup = now
+            stale_keys = [k for k, times in self.requests.items() if not times or now - times[-1] > 600]
+            for k in stale_keys:
+                del self.requests[k]
 
         limit_key = None
         for pattern, limits in RATE_LIMITS.items():

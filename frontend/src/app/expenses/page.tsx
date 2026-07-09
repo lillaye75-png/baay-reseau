@@ -52,7 +52,7 @@ export default function ExpensesPage() {
       setExpenses(e.data);
       setCategories(c.data);
       setSummary(s.data);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => showToast("Erreur de chargement", "error")).finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

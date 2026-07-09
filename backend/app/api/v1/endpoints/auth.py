@@ -52,7 +52,9 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
         pass
 
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
-    return Token(access_token=token, user=UserRead.model_validate(user))
+    user_data = UserRead.model_validate(user)
+    user_data.is_super_admin = user.phone in SUPER_ADMIN_PHONES
+    return Token(access_token=token, user=user_data)
 
 
 @router.post("/login", response_model=Token)
@@ -73,7 +75,9 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
 
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
     refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
-    return Token(access_token=token, refresh_token=refresh, user=UserRead.model_validate(user))
+    user_data = UserRead.model_validate(user)
+    user_data.is_super_admin = user.phone in SUPER_ADMIN_PHONES
+    return Token(access_token=token, refresh_token=refresh, user=user_data)
 
 
 @router.post("/refresh", response_model=Token)
@@ -91,15 +95,14 @@ async def refresh_token(data: dict, db: AsyncSession = Depends(get_db)):
 
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
     new_refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
-    return Token(access_token=token, refresh_token=new_refresh, user=UserRead.model_validate(user))
+    user_data = UserRead.model_validate(user)
+    user_data.is_super_admin = user.phone in SUPER_ADMIN_PHONES
+    return Token(access_token=token, refresh_token=new_refresh, user=user_data)
 
 
 @router.post("/invite-employee", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def invite_employee(data: UserCreate, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
-    try:
-        await check_limit("employees", user)
-    except Exception:
-        pass
+    await check_limit("employees", user)
     existing = await db.execute(select(User).where(User.phone == data.phone))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Phone number already registered")

@@ -12,7 +12,6 @@ import OnboardingGuide from "./OnboardingGuide";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { useI18n } from "@/lib/i18n";
-import api from "@/lib/api";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,30 +21,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, toggle } = useTheme();
   const { lang, setLang, t } = useI18n();
   const pathname = usePathname();
-
-  useEffect(() => {
-    const checkSession = () => {
-      api.get("/tenants/me").catch((err) => {
-        if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
-        } else if (err.response?.status === 403) {
-          const detail = err.response?.data?.detail;
-          if (detail === "licence_expired" || detail?.includes("désactivé")) {
-            window.location.href = "/activate";
-          }
-        }
-      });
-    };
-    checkSession();
-    const interval = setInterval(checkSession, 60000);
-    window.addEventListener("focus", checkSession);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("focus", checkSession);
-    };
-  }, [pathname]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -85,6 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 lg:hidden"
+                aria-label="Ouvrir le menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -101,6 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={toggle}
                 className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
                 title={theme === "light" ? "Mode sombre" : theme === "dark" ? "Mode Solarized" : "Mode clair"}
+                aria-label={theme === "light" ? "Passer en mode sombre" : theme === "dark" ? "Passer en mode Solarized" : "Passer en mode clair"}
               >
                 {theme === "light" && <Moon className="h-4 w-4" />}
                 {theme === "dark" && <Leaf className="h-4 w-4" />}
@@ -126,6 +103,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  aria-label="Menu du profil"
+                  aria-expanded={profileOpen}
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900 dark:text-primary-300">
                     {user?.name?.charAt(0) || "U"}

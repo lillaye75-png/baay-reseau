@@ -24,7 +24,7 @@ export default function CreditPage() {
   const loadDebtors = () => {
     api.get("/customers/credit-debtors/")
       .then((res) => setCustomers(res.data))
-      .catch(() => {})
+      .catch(() => showToast("Erreur de chargement", "error"))
       .finally(() => setLoading(false));
   };
 

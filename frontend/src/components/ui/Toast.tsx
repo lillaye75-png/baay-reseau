@@ -58,6 +58,7 @@ export default function ToastContainer() {
           <button
             onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
             className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            aria-label="Fermer"
           >
             <X className="h-4 w-4" />
           </button>

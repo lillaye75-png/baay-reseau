@@ -29,6 +29,7 @@ class UserRead(BaseModel):
     email: str | None = None
     role: str
     is_active: bool
+    is_super_admin: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

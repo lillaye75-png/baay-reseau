@@ -53,6 +53,8 @@ async def update_integrations(tenant_id: str, data: TenantIntegrations, user: Us
 
 @router.get("/{tenant_id}/print-settings")
 async def get_print_settings(tenant_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if user.tenant_id != tenant_id and user.role != "owner":
+        raise HTTPException(status_code=403, detail="Not authorized")
     result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
     tenant = result.scalar_one_or_none()
     if not tenant:

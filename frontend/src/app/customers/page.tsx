@@ -15,6 +15,7 @@ import { exportCustomers } from "@/lib/export";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [search, setSearch] = useState("");
@@ -31,7 +32,8 @@ export default function CustomersPage() {
   }, []);
 
   const loadCustomers = () => {
-    api.get("/customers/").then((res) => setCustomers(res.data));
+    setLoading(true);
+    api.get("/customers/").then((res) => setCustomers(res.data)).catch(() => {}).finally(() => setLoading(false));
   };
 
   const resetForm = () => {
@@ -195,6 +197,11 @@ export default function CustomersPage() {
           />
         </div>
 
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
+          </div>
+        ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((customer) => (
             <Card key={customer.id} className="hover:shadow-md transition-shadow">
@@ -252,8 +259,9 @@ export default function CustomersPage() {
             </Card>
           ))}
         </div>
+        )}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !loading && (
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-gray-500">Aucun client trouvé</p>

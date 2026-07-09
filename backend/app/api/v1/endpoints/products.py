@@ -24,10 +24,7 @@ async def list_products(user: User = Depends(get_current_user), db: AsyncSession
 
 @router.post("/", response_model=ProductRead, status_code=201)
 async def create_product(data: ProductCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    try:
-        await check_limit("products", user)
-    except Exception:
-        pass
+    await check_limit("products", user)
     product_data = data.model_dump()
     if product_data.get("category_id") == "":
         product_data["category_id"] = None
@@ -152,6 +149,9 @@ async def delete_product(product_id: str, user: User = Depends(require_owner), d
     return {"status": "deleted"}
 
 
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
+
+
 @router.post("/{product_id}/image")
 async def upload_product_image(product_id: str, file: UploadFile = File(...), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -162,6 +162,8 @@ async def upload_product_image(product_id: str, file: UploadFile = File(...), us
         raise HTTPException(status_code=404, detail="Product not found")
 
     content = await file.read()
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="Fichier trop volumineux (max 10MB)")
     
     from app.services.cloud_storage import upload_image
     upload_result = await upload_image(

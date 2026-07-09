@@ -7,16 +7,31 @@ export default function AuthCallbackPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
-    const accessToken = params.get("access_token");
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    const state = urlParams.get("state");
+    const returnedError = urlParams.get("error");
 
-    if (!accessToken) {
-      setError("Pas de token Google reçu");
+    if (returnedError) {
+      setError("Connexion Google annulée");
       return;
     }
 
-    api.post("/auth/google", { token: accessToken })
+    if (!code) {
+      setError("Pas de code d'autorisation reçu");
+      return;
+    }
+
+    const savedState = sessionStorage.getItem("oauth_state");
+    if (savedState && state !== savedState) {
+      setError("État OAuth invalide — potential attaque CSRF");
+      return;
+    }
+    sessionStorage.removeItem("oauth_state");
+
+    const redirectUri = `${window.location.origin}/auth/callback`;
+
+    api.post("/auth/google", { code, redirect_uri: redirectUri })
       .then((res) => {
         const { access_token, refresh_token, user: userData } = res.data;
         localStorage.setItem("token", access_token);

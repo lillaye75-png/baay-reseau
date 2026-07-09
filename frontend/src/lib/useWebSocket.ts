@@ -11,12 +11,15 @@ export function useWebSocket(onEvent?: (event: { type: string; data: any }) => v
   const ws = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const reconnectTimeout = useRef<NodeJS.Timeout>();
+  const pingIntervalRef = useRef<NodeJS.Timeout>();
 
   const connect = useCallback(() => {
     if (!user?.tenant_id) return;
 
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
+
     try {
-      const socket = new WebSocket(`${WS_URL}/ws/${user.tenant_id}`);
+      const socket = new WebSocket(`${WS_URL}/ws/${user.tenant_id}?token=${token || ""}`);
 
       socket.onopen = () => {
         setConnected(true);
@@ -47,16 +50,14 @@ export function useWebSocket(onEvent?: (event: { type: string; data: any }) => v
           socket.send(JSON.stringify({ type: "ping" }));
         }
       }, 30000);
-
-      return () => {
-        clearInterval(pingInterval);
-      };
+      pingIntervalRef.current = pingInterval;
     } catch {}
   }, [user?.tenant_id, onEvent]);
 
   useEffect(() => {
     connect();
     return () => {
+      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
       if (ws.current) ws.current.close();
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
     };

@@ -27,24 +27,32 @@ except Exception:
     pass
 
 
+ALLOWED_ORIGINS = settings.CORS_ORIGINS
+
+
 class CorsAlwaysMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get("origin", "*")
+        origin = request.headers.get("origin")
+        allowed = origin and origin in ALLOWED_ORIGINS
         if request.method == "OPTIONS":
             from fastapi.responses import Response
-            return Response(status_code=204, headers={
-                "Access-Control-Allow-Origin": origin,
-                "Access-Control-Allow-Methods": "*",
+            headers = {
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
                 "Access-Control-Allow-Headers": "*",
                 "Access-Control-Max-Age": "600",
-            })
+            }
+            if allowed:
+                headers["Access-Control-Allow-Origin"] = origin
+                headers["Access-Control-Allow-Credentials"] = "true"
+            return Response(status_code=204, headers=headers)
         try:
             response = await call_next(request)
         except Exception:
             from fastapi.responses import JSONResponse
             response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
+        if allowed:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
 
 
@@ -63,13 +71,15 @@ from fastapi.responses import JSONResponse
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}")
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin and origin in ALLOWED_ORIGINS:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},
-        headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
-            "Access-Control-Allow-Credentials": "true",
-        },
+        headers=headers,
     )
 
 if os.path.exists(UPLOAD_DIR):

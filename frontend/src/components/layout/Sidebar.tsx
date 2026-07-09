@@ -66,7 +66,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
   const [showStoreSwitcher, setShowStoreSwitcher] = useState(false);
 
   useEffect(() => {
-    if (user?.phone && ["776621410", "708372127"].includes(user.phone)) {
+    if (user?.is_super_admin) {
       setIsSuperAdmin(true);
     }
   }, [user]);

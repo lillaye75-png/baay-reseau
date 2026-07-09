@@ -11,6 +11,10 @@ import api from "@/lib/api";
 import { Package, Clock, CheckCircle, Truck, X, Eye, Printer, Bell, MapPin, User, Phone } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 interface OrderItem {
   product_name: string;
   quantity: number;
@@ -61,7 +65,7 @@ export default function OrdersPage() {
   useEffect(() => {
     api.get("/storefront/orders")
       .then((res) => setOrders(res.data))
-      .catch(() => {})
+      .catch(() => showToast("Erreur de chargement des commandes", "error"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -69,8 +73,9 @@ export default function OrdersPage() {
     if (typeof window !== "undefined" && "WebSocket" in window) {
       const wsUrl = process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") || "ws://localhost:8000";
       const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const token = localStorage.getItem("token") || "";
       if (!user.tenant_id) return;
-      const ws = new WebSocket(`${wsUrl}/ws/${user.tenant_id}`);
+      const ws = new WebSocket(`${wsUrl}/ws/${user.tenant_id}?token=${token}`);
       ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if (msg.type === "new_order" || msg.type === "order_update") {
@@ -111,7 +116,7 @@ export default function OrdersPage() {
 
   const printOrder = (order: Order) => {
     const html = `
-      <html><head><title>Bon de livraison ${order.id.slice(0,8).toUpperCase()}</title>
+      <html><head><title>Bon de livraison ${esc(order.id.slice(0,8).toUpperCase())}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
         h1 { font-size: 20px; margin-bottom: 5px; }
@@ -128,22 +133,22 @@ export default function OrdersPage() {
       </style></head><body>
       <div class="header">
         <h1>Bon de livraison</h1>
-        <p style="color:#666;font-size:13px;">Commande N° ${order.id.slice(0,8).toUpperCase()}</p>
+        <p style="color:#666;font-size:13px;">Commande N° ${esc(order.id.slice(0,8).toUpperCase())}</p>
       </div>
       <div class="meta">
-        <div><strong>Client:</strong> ${order.customer_name}<br>Tél: ${order.customer_phone}</div>
-        <div><strong>Adresse:</strong><br>${order.customer_address}</div>
-        <div><strong>Date:</strong> ${formatDateTime(order.created_at)}<br><strong>Paiement:</strong> ${order.payment_method}</div>
+        <div><strong>Client:</strong> ${esc(order.customer_name)}<br>Tél: ${esc(order.customer_phone)}</div>
+        <div><strong>Adresse:</strong><br>${esc(order.customer_address)}</div>
+        <div><strong>Date:</strong> ${esc(formatDateTime(order.created_at))}<br><strong>Paiement:</strong> ${esc(order.payment_method)}</div>
       </div>
       <table>
         <thead><tr><th>Article</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix</th><th style="text-align:right">Total</th></tr></thead>
         <tbody>
-          ${order.items.map(item => `<tr><td>${item.product_name}</td><td style="text-align:center">${item.quantity}</td><td style="text-align:right">${formatCFA(item.unit_price_cfa)}</td><td style="text-align:right;font-weight:bold">${formatCFA(item.total_cfa)}</td></tr>`).join('')}
+          ${order.items.map(item => `<tr><td>${esc(item.product_name)}</td><td style="text-align:center">${esc(String(item.quantity))}</td><td style="text-align:right">${esc(formatCFA(item.unit_price_cfa))}</td><td style="text-align:right;font-weight:bold">${esc(formatCFA(item.total_cfa))}</td></tr>`).join('')}
         </tbody>
       </table>
-      <div class="total">TOTAL: ${formatCFA(order.total_cfa)}</div>
-      ${order.customer_notes ? `<div class="note"><strong>Notes:</strong> ${order.customer_notes}</div>` : ''}
-      ${order.driver_name ? `<div style="margin-top:15px;padding:10px;background:#e0f2fe;border-radius:6px;font-size:12px"><strong>Livreur:</strong> ${order.driver_name} ${order.driver_phone ? `- ${order.driver_phone}` : ''}</div>` : ''}
+      <div class="total">TOTAL: ${esc(formatCFA(order.total_cfa))}</div>
+      ${order.customer_notes ? `<div class="note"><strong>Notes:</strong> ${esc(order.customer_notes)}</div>` : ''}
+      ${order.driver_name ? `<div style="margin-top:15px;padding:10px;background:#e0f2fe;border-radius:6px;font-size:12px"><strong>Livreur:</strong> ${esc(order.driver_name)} ${order.driver_phone ? `- ${esc(order.driver_phone)}` : ''}</div>` : ''}
       <div class="footer">Naatal ERP Cloud — ERP Boutique | Bon de livraison pour le livreur</div>
       </body></html>`;
     const w = window.open('', '_blank');

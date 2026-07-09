@@ -34,6 +34,10 @@ import {
 } from "recharts";
 import { showToast } from "@/components/ui/Toast";
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 interface ReportData {
   period: string;
   label: string;
@@ -191,7 +195,7 @@ export default function ReportsPage() {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
     printWindow.document.write(`
-      <html><head><title>Rapport ${report.label}</title>
+      <html><head><title>Rapport ${esc(report.label)}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
         h1 { font-size: 22px; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -202,19 +206,19 @@ export default function ReportsPage() {
         .footer { margin-top: 30px; font-size: 11px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
         @media print { body { padding: 10px; } }
       </style></head><body>
-      <h1>Rapport - ${report.label}</h1>
-      <p style="color:#666">Généré le ${new Date().toLocaleDateString("fr-SN")}</p>
+      <h1>Rapport - ${esc(report.label)}</h1>
+      <p style="color:#666">Généré le ${esc(new Date().toLocaleDateString("fr-SN"))}</p>
       <div class="grid">
-        <div class="card"><h3>Ventes</h3><p>${report.sales_count}</p></div>
-        <div class="card"><h3>Revenu</h3><p>${formatCFA(report.total_revenue_cfa)}</p></div>
-        <div class="card"><h3>Dépenses</h3><p>${formatCFA(report.total_expenses_cfa)}</p></div>
-        <div class="card"><h3>Bénéfice net</h3><p>${formatCFA(report.profit_cfa)}</p></div>
+        <div class="card"><h3>Ventes</h3><p>${esc(String(report.sales_count))}</p></div>
+        <div class="card"><h3>Revenu</h3><p>${esc(formatCFA(report.total_revenue_cfa))}</p></div>
+        <div class="card"><h3>Dépenses</h3><p>${esc(formatCFA(report.total_expenses_cfa))}</p></div>
+        <div class="card"><h3>Bénéfice net</h3><p>${esc(formatCFA(report.profit_cfa))}</p></div>
       </div>
       ${topProducts.length > 0 ? `
         <h2 style="font-size:16px;margin-top:20px">Top Produits</h2>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f3f4f6"><th style="padding:8px;text-align:left">Produit</th><th style="padding:8px;text-align:right">Qté</th><th style="padding:8px;text-align:right">Revenu</th></tr></thead>
-          <tbody>${topProducts.map(p => `<tr><td style="padding:8px;border-bottom:1px solid #eee">${p.product_name}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #eee">${p.total_qty}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #eee;font-weight:bold">${formatCFA(p.total_revenue)}</td></tr>`).join("")}</tbody>
+          <tbody>${topProducts.map(p => `<tr><td style="padding:8px;border-bottom:1px solid #eee">${esc(p.product_name)}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #eee">${esc(String(p.total_qty))}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #eee;font-weight:bold">${esc(formatCFA(p.total_revenue))}</td></tr>`).join("")}</tbody>
         </table>
       ` : ""}
       <div class="footer">Naatal ERP — Rapport automatique</div>

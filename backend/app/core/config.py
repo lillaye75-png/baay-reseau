@@ -1,12 +1,14 @@
 from typing import List
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
+
     APP_NAME: str = "Naatal ERP Cloud"
     DATABASE_URL: str = "postgresql+asyncpg://baay:baay_secret@localhost:5432/baay_reseau"
     REDIS_URL: str = "redis://localhost:6379"
-    SECRET_KEY: str = "change-me-in-production"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
@@ -24,14 +26,22 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
 
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "https://baay-reseau.vercel.app"]
 
     GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
     FCM_SERVER_KEY: str = ""
     FCM_PROJECT_ID: str = ""
 
-    class Config:
-        env_file = "../.env"
-
 
 settings = Settings()
+
+if not settings.SECRET_KEY:
+    import os
+    if os.environ.get("ENVIRONMENT") == "production":
+        raise RuntimeError("SECRET_KEY must be set in production environment")
+    settings.SECRET_KEY = os.urandom(32).hex()
+    import logging
+    logging.getLogger("naatal").warning(
+        "SECRET_KEY not set — generated ephemeral key. Tokens will not survive restarts."
+    )

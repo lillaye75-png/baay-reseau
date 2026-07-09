@@ -56,9 +56,9 @@ body {
 .solarized .bg-gray-800\/50 { background-color: rgba(7, 54, 66, 0.5); }
 .solarized .text-gray-900 { color: #586e75; }
 .solarized .text-gray-700 { color: #586e75; }
-.solarized .text-gray-600 { color: #657b83; }
-.solarized .text-gray-500 { color: #839496; }
-.solarized .text-gray-400 { color: #93a1a1; }
+.solarized .text-gray-600 { color: #586e75; }
+.solarized .text-gray-500 { color: #657b83; }
+.solarized .text-gray-400 { color: #839496; }
 .solarized .text-white { color: #fdf6e3; }
 .solarized .border-gray-200 { border-color: #d3cb9b; }
 .solarized .border-gray-300 { border-color: #d3cb9b; }

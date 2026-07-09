@@ -11,6 +11,7 @@ import { showToast } from "@/components/ui/Toast";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ProductCategory | null>(null);
   const [form, setForm] = useState({ name: "", name_wo: "" });
@@ -20,7 +21,8 @@ export default function CategoriesPage() {
   }, []);
 
   const loadCategories = () => {
-    api.get("/products/categories/").then((res) => setCategories(res.data));
+    setLoading(true);
+    api.get("/products/categories/").then((res) => setCategories(res.data)).catch(() => {}).finally(() => setLoading(false));
   };
 
   const resetForm = () => {
@@ -110,6 +112,11 @@ export default function CategoriesPage() {
           </Card>
         )}
 
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
+          </div>
+        ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((cat) => (
             <Card key={cat.id} className="hover:shadow-md transition-shadow">
@@ -145,8 +152,9 @@ export default function CategoriesPage() {
             </Card>
           ))}
         </div>
+        )}
 
-        {categories.length === 0 && (
+        {categories.length === 0 && !loading && (
           <Card>
             <CardContent className="py-12 text-center">
               <Folder className="h-12 w-12 text-gray-300 mx-auto mb-3" />

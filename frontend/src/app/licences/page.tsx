@@ -16,8 +16,6 @@ import {
 } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 
-const SUPER_ADMIN_PHONES = ["776621410", "708372127"];
-
 interface Licence {
   id: string;
   licence_key: string;
@@ -83,7 +81,7 @@ export default function LicencesPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
 
-  const isSuperAdmin = SUPER_ADMIN_PHONES.includes(user?.phone || "");
+  const isSuperAdmin = user?.is_super_admin === true;
 
   useEffect(() => {
     if (isSuperAdmin) loadAll();
@@ -416,14 +414,14 @@ export default function LicencesPage() {
                       <td className="px-4 py-3"><div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-700">{u.name.charAt(0).toUpperCase()}</div>
                         <span className="font-medium text-sm">{u.name}</span>
-                        {SUPER_ADMIN_PHONES.includes(u.phone) && <Badge variant="warning" className="text-[10px]">SUPER</Badge>}
+                        {user?.is_super_admin && u.phone === user?.phone && <Badge variant="warning" className="text-[10px]">SUPER</Badge>}
                       </div></td>
                       <td className="px-4 py-3 text-sm font-mono text-gray-600">{u.phone}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{u.tenant_name || "—"}</td>
                       <td className="px-4 py-3"><Badge variant={u.is_active ? "success" : "danger"}>{u.is_active ? "Actif" : "Inactif"}</Badge></td>
                       <td className="px-4 py-3"><Badge variant={u.tenant_active ? "success" : "danger"}>{u.tenant_active ? "Active" : "Inactive"}</Badge></td>
                       <td className="px-4 py-3 text-right"><div className="flex items-center justify-end gap-1">
-                        {!SUPER_ADMIN_PHONES.includes(u.phone) && (<>
+                        {!(user?.is_super_admin && u.id === user?.id) && (<>
                           <button onClick={() => handleToggleUser(u.id)} className="p-1.5 rounded-lg hover:bg-gray-100" title={u.is_active ? "Désactiver" : "Activer"}>
                             {u.is_active ? <PowerOff className="h-4 w-4 text-orange-500" /> : <Power className="h-4 w-4 text-green-500" />}
                           </button>

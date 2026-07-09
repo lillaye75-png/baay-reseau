@@ -1,5 +1,8 @@
 import httpx
+import os
 from app.core.config import settings
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 
 async def create_wave_checkout(amount_cfa: int, phone: str, order_id: str) -> dict:
@@ -17,8 +20,8 @@ async def create_wave_checkout(amount_cfa: int, phone: str, order_id: str) -> di
             json={
                 "amount": amount_cfa,
                 "currency": "XOF",
-                "return_url": f"http://localhost:3000/pos?paid={order_id}",
-                "error_url": f"http://localhost:3000/pos?error={order_id}",
+                "return_url": f"{FRONTEND_URL}/pos?paid={order_id}",
+                "error_url": f"{FRONTEND_URL}/pos?error={order_id}",
                 "order_id": order_id,
             },
         )
@@ -44,8 +47,8 @@ async def create_orange_money_link(amount_cfa: int, phone: str, order_id: str) -
                 "currency": "OUV",
                 "order_id": order_id,
                 "amount": amount_cfa,
-                "return_url": f"http://localhost:3000/pos?paid={order_id}",
-                "cancel_url": f"http://localhost:3000/pos?cancel={order_id}",
+                "return_url": f"{FRONTEND_URL}/pos?paid={order_id}",
+                "cancel_url": f"{FRONTEND_URL}/pos?cancel={order_id}",
                 "notif_url": f"http://localhost:8000/api/v1/whatsapp/webhook",
             },
         )

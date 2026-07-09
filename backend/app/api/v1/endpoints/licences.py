@@ -150,36 +150,6 @@ async def get_my_features(user: User = Depends(get_current_user), db: AsyncSessi
         "expires_at": expires_at,
         "is_expired": len(limits_reached) > 0 and tier == "free" and not is_trial,
     }
-    result = await db.execute(
-        select(Licence).where(Licence.assigned_to == user.tenant_id, Licence.is_active == True)
-        .order_by(Licence.created_at.desc()).limit(1)
-    )
-    licence = result.scalar_one_or_none()
-
-    tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
-    tenant = tenant_result.scalar_one_or_none()
-
-    if licence and licence.expires_at:
-        exp = licence.expires_at
-        if exp.tzinfo is None:
-            exp = exp.replace(tzinfo=timezone.utc)
-        if exp < datetime.now(timezone.utc):
-            return {"licence": None, "expired": True, "expires_at": licence.expires_at.isoformat(), "tier": licence.tier}
-
-    features = TIER_FEATURES.get(licence.tier if licence else "free", TIER_FEATURES["free"])
-
-    return {
-        "licence": {
-            "id": licence.id if licence else None,
-            "key": licence.licence_key if licence else None,
-            "tier": licence.tier if licence else "free",
-            "features": features,
-            "expires_at": licence.expires_at.isoformat() if licence and licence.expires_at else None,
-            "activated_at": licence.activated_at.isoformat() if licence and licence.activated_at else None,
-        } if licence else None,
-        "expired": False,
-        "trial": not bool(licence) and tenant and not tenant.license_expires_at,
-    }
 
 
 @router.post("/activate")
@@ -275,8 +245,8 @@ async def wipe_all_data(user: User = Depends(get_current_user), db: AsyncSession
         except Exception:
             pass
 
-    await db.execute(text("DELETE FROM users WHERE phone NOT IN ('776621410','708372127')"))
-    await db.execute(text("DELETE FROM tenants WHERE id NOT IN (SELECT tenant_id FROM users WHERE phone IN ('776621410','708372127'))"))
+    await db.execute(text("DELETE FROM users WHERE phone NOT IN (:p1, :p2)"), {"p1": "776621410", "p2": "708372127"})
+    await db.execute(text("DELETE FROM tenants WHERE id NOT IN (SELECT tenant_id FROM users WHERE phone IN (:p1, :p2))"), {"p1": "776621410", "p2": "708372127"})
 
     await db.flush()
     return {"status": "wiped", "message": "Toutes les données ont été supprimées"}
@@ -317,10 +287,12 @@ async def create_user_admin(data: dict, user: User = Depends(get_current_user), 
 
     phone = data.get("phone", "").strip()
     name = data.get("name", "").strip()
-    password = data.get("password", "admin123")
+    password = data.get("password", "")
 
     if not phone or not name:
         raise HTTPException(status_code=400, detail="phone et name requis")
+    if not password or len(password) < 8:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
 
     existing = await db.execute(select(User).where(User.phone == phone))
     if existing.scalar_one_or_none():
@@ -424,19 +396,19 @@ async def delete_tenant_admin(tenant_id: str, user: User = Depends(get_current_u
         if u.phone not in SUPER_ADMIN_PHONES:
             await db.delete(u)
 
-    await db.execute(text(f"DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE tenant_id = '{tenant_id}')"))
-    await db.execute(text(f"DELETE FROM sales WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE tenant_id = '{tenant_id}')"))
-    await db.execute(text(f"DELETE FROM orders WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM product_images WHERE product_id IN (SELECT id FROM products WHERE tenant_id = '{tenant_id}')"))
-    await db.execute(text(f"DELETE FROM product_variants WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM product_variant_options WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM products WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM product_categories WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM customers WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM expenses WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM suppliers WHERE tenant_id = '{tenant_id}'"))
-    await db.execute(text(f"DELETE FROM licences WHERE assigned_to = '{tenant_id}'"))
+    await db.execute(text("DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE tenant_id = :tid)"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM sales WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE tenant_id = :tid)"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM orders WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM product_images WHERE product_id IN (SELECT id FROM products WHERE tenant_id = :tid)"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM product_variants WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM product_variant_options WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM products WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM product_categories WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM customers WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM expenses WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM suppliers WHERE tenant_id = :tid"), {"tid": tenant_id})
+    await db.execute(text("DELETE FROM licences WHERE assigned_to = :tid"), {"tid": tenant_id})
 
     await db.delete(tenant)
     await db.flush()
@@ -453,10 +425,12 @@ async def reset_user_password(user_id: str, data: dict, user: User = Depends(get
     if not target:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 
-    new_password = data.get("password", "admin123")
+    new_password = data.get("password")
+    if not new_password or len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
     target.password_hash = hash_password(new_password)
     await db.flush()
-    return {"status": "reset", "name": target.name, "new_password": new_password}
+    return {"status": "reset", "name": target.name}
 
 
 @router.get("/stats")

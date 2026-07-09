@@ -37,7 +37,7 @@ interface Product {
 function StoreContent() {
   const params = useParams();
   const slug = (params?.slug || "") as string;
-  const { items, addItem, itemCount } = useCart();
+  const { items, addItem, updateQuantity, itemCount } = useCart();
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
@@ -194,7 +194,7 @@ function StoreContent() {
                           <Plus className="h-3 w-3 text-primary-700" />
                         </button>
                         <span className="text-sm font-bold text-primary-700">{inCart.quantity}</span>
-                        <button onClick={() => { if (inCart.quantity <= 1) return; }} className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center hover:bg-primary-200">
+                        <button onClick={() => updateQuantity(product.id, inCart.quantity - 1)} className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center hover:bg-primary-200">
                           <Minus className="h-3 w-3 text-primary-700" />
                         </button>
                       </div>
