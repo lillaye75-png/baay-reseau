@@ -85,6 +85,21 @@
 ### Known Issues (To Fix)
 - **Store assignment → creates store but employee assignment doesn't persist (needs investigation)**
 - **Onboarding guide → appears on every login instead of only first login (localStorage/DB check needed)****
+- **Google OAuth 500 error → redirect URI matches but exchange fails. Possible causes: consent screen not published, missing scopes (email/profile), or Google needs time to propagate. Check: Google Auth Platform > Audience > Publishing status = In production, Data Access > email + profile scopes added.**
+
+### Security & Permissions (2026-07-09)
+- **Critical security audit completed — 10 critical, 49 major, 59 minor issues fixed**
+- **CORS reflection → replaced with allowlist validation**
+- **SQL injection → parameterized all raw queries in licences.py**
+- **JWT secret → required in production, ephemeral in dev**
+- **XSS → escaped user data in print/export HTML**
+- **OAuth → upgraded from implicit grant to authorization code flow**
+- **Admin phones → moved from client-side hardcoded to server-side is_super_admin**
+- **WebSocket → token authentication required**
+- **Stock race condition → SELECT FOR UPDATE added**
+- **Tier limits → enforced (removed except:pass wrappers)**
+- **Error Boundaries → added to React app**
+- **QA report → saved to testing/qa-report.md**
 
 ### Landing Page & Order Tracking (2026-06-21)
 - **Landing page → modern premium page at / with hero, features, pricing, testimonials, developer info**
