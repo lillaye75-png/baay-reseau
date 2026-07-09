@@ -22,12 +22,13 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    const savedState = sessionStorage.getItem("oauth_state");
-    if (savedState && state !== savedState) {
+    const savedState = localStorage.getItem("oauth_state");
+    localStorage.removeItem("oauth_state");
+
+    if (savedState && state && savedState !== state) {
       setError("État OAuth invalide — potential attaque CSRF");
       return;
     }
-    sessionStorage.removeItem("oauth_state");
 
     const redirectUri = `${window.location.origin}/auth/callback`;
 
