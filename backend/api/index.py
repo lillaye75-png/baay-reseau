@@ -1,20 +1,8 @@
-from mangum import Mangum
-import traceback
+from http.server import BaseHTTPRequestHandler
 
-err_msg = ""
-
-try:
-    from app.main import app
-except Exception:
-    err_msg = traceback.format_exc()
-
-if err_msg:
-    from fastapi import FastAPI
-    from fastapi.responses import HTMLResponse
-    app = FastAPI()
-    @app.get("/")
-    @app.get("/health")
-    async def show_error():
-        return HTMLResponse(f"<pre>{err_msg}</pre>")
-
-handler = Mangum(app, lifespan="off")
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Hello from Vercel Python!")
