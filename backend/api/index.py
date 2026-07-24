@@ -1,5 +1,4 @@
 import asyncio
-import time as _time
 from mangum import Mangum
 from app.main import app
 from app.core.config import settings
