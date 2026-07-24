@@ -1,11 +1,42 @@
 import json
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+import time
+from collections import defaultdict
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from app.core.security import decode_access_token
 
 router = APIRouter()
 
 connected_clients: dict[str, list[WebSocket]] = {}
+
+MAX_EVENTS_PER_TENANT = 50
+event_queues: dict[str, list[dict]] = defaultdict(list)
+
+from app.api.deps import get_current_user
+from app.models.user import User
+
+
+def _push_event(tenant_id: str, event_type: str, data: dict):
+    event_queues[tenant_id].append({
+        "type": event_type,
+        "data": data,
+        "ts": time.time(),
+    })
+    if len(event_queues[tenant_id]) > MAX_EVENTS_PER_TENANT:
+        event_queues[tenant_id] = event_queues[tenant_id][-MAX_EVENTS_PER_TENANT:]
+
+
+@router.get("/events/{tenant_id}")
+async def get_events(
+    tenant_id: str,
+    since: float = Query(default=0, description="Unix timestamp to filter events since"),
+    user: User = Depends(get_current_user),
+):
+    if user.tenant_id != tenant_id:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"detail": "Not your tenant"})
+    events = [e for e in event_queues.get(tenant_id, []) if e["ts"] > since]
+    return {"events": events, "server_time": time.time()}
 
 
 @router.websocket("/ws/{tenant_id}")
@@ -49,6 +80,7 @@ async def websocket_endpoint(websocket: WebSocket, tenant_id: str, token: str = 
 
 
 async def broadcast_to_tenant(tenant_id: str, event_type: str, data: dict):
+    _push_event(tenant_id, event_type, data)
     if tenant_id in connected_clients:
         message = json.dumps({"type": event_type, "data": data})
         disconnected = []

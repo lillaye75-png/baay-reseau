@@ -82,7 +82,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers=headers,
     )
 
-if os.path.exists(UPLOAD_DIR):
+if not settings.IS_VERCEL and os.path.exists(UPLOAD_DIR):
     app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
@@ -242,12 +242,13 @@ async def on_startup():
     except Exception as e:
         logger.error(f"Column migration error: {e}")
 
-    try:
-        from app.services.scheduled_tasks import start_scheduler
-        start_scheduler()
-        logger.info("Scheduler started")
-    except Exception as e:
-        logger.error(f"Scheduler error: {e}")
+    if not settings.IS_VERCEL:
+        try:
+            from app.services.scheduled_tasks import start_scheduler
+            start_scheduler()
+            logger.info("Scheduler started")
+        except Exception as e:
+            logger.error(f"Scheduler error: {e}")
 
 
 @app.get("/health")

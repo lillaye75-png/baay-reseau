@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import api from "./api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const WS_URL = API_URL.replace("https://", "wss://").replace("http://", "ws://");
+const POLL_INTERVAL_MS = 8000;
+const IS_VERCEL = process.env.NEXT_PUBLIC_VERCEL_URL || process.env.VERCEL;
 
 export function useWebSocket(onEvent?: (event: { type: string; data: any }) => void) {
   const { user } = useAuth();
@@ -12,11 +15,36 @@ export function useWebSocket(onEvent?: (event: { type: string; data: any }) => v
   const [connected, setConnected] = useState(false);
   const reconnectTimeout = useRef<NodeJS.Timeout>();
   const pingIntervalRef = useRef<NodeJS.Timeout>();
+  const pollInterval = useRef<NodeJS.Timeout>();
+  const lastEventTs = useRef<number>(0);
+
+  const pollEvents = useCallback(async () => {
+    if (!user?.tenant_id) return;
+    try {
+      const res = await api.get(`/events/${user.tenant_id}`, {
+        params: { since: lastEventTs.current },
+      });
+      const { events, server_time } = res.data;
+      if (events && events.length > 0 && onEvent) {
+        events.forEach((e: any) => onEvent(e));
+      }
+      if (server_time) lastEventTs.current = server_time;
+    } catch {
+      // silent
+    }
+  }, [user?.tenant_id, onEvent]);
 
   const connect = useCallback(() => {
     if (!user?.tenant_id) return;
 
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
+
+    if (IS_VERCEL || typeof WebSocket === "undefined") {
+      setConnected(false);
+      pollEvents();
+      pollInterval.current = setInterval(pollEvents, POLL_INTERVAL_MS);
+      return;
+    }
 
     try {
       const socket = new WebSocket(`${WS_URL}/ws/${user.tenant_id}?token=${token || ""}`);
@@ -51,8 +79,16 @@ export function useWebSocket(onEvent?: (event: { type: string; data: any }) => v
         }
       }, 30000);
       pingIntervalRef.current = pingInterval;
-    } catch {}
-  }, [user?.tenant_id, onEvent]);
+
+      return () => {
+        clearInterval(pingInterval);
+      };
+    } catch {
+      setConnected(false);
+      pollEvents();
+      pollInterval.current = setInterval(pollEvents, POLL_INTERVAL_MS);
+    }
+  }, [user?.tenant_id, onEvent, pollEvents]);
 
   useEffect(() => {
     connect();
@@ -60,6 +96,7 @@ export function useWebSocket(onEvent?: (event: { type: string; data: any }) => v
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
       if (ws.current) ws.current.close();
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
+      if (pollInterval.current) clearInterval(pollInterval.current);
     };
   }, [connect]);
 

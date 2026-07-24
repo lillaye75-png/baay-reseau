@@ -28,6 +28,10 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "https://baay-reseau.vercel.app"]
 
+    IS_VERCEL: bool = False
+
+    CRON_SECRET: str = ""
+
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     FCM_SERVER_KEY: str = ""

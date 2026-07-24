@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -70,20 +70,59 @@ export default function OrdersPage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "WebSocket" in window) {
-      const wsUrl = process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") || "ws://localhost:8000";
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = localStorage.getItem("token") || "";
-      if (!user.tenant_id) return;
-      const ws = new WebSocket(`${wsUrl}/ws/${user.tenant_id}?token=${token}`);
-      ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "new_order" || msg.type === "order_update") {
-          api.get("/storefront/orders").then((res) => setOrders(res.data));
-        }
+    let ws: WebSocket | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let lastEventTs = 0;
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const token = localStorage.getItem("token") || "";
+    if (!user.tenant_id) return;
+
+    const refreshOrders = () => {
+      api.get("/storefront/orders").then((res) => setOrders(res.data)).catch(() => {});
+    };
+
+    const tryWebSocket = () => {
+      if (typeof window !== "undefined" && "WebSocket" in window &&
+          !process.env.NEXT_PUBLIC_VERCEL_URL && !process.env.VERCEL) {
+        const wsUrl = process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") || "ws://localhost:8000";
+        ws = new WebSocket(`${wsUrl}/ws/${user.tenant_id}?token=${token}`);
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "new_order" || msg.type === "order_update") {
+              refreshOrders();
+            }
+          } catch {}
+        };
+        ws.onerror = () => { ws?.close(); };
+        ws.onclose = () => {
+          startPolling();
+        };
+      } else {
+        startPolling();
+      }
+    };
+
+    const startPolling = () => {
+      const pollEvents = async () => {
+        try {
+          const res = await api.get(`/events/${user.tenant_id}`, { params: { since: lastEventTs } });
+          const { events, server_time } = res.data;
+          if (events && events.some((e: any) => e.type === "new_order" || e.type === "order_update")) {
+            refreshOrders();
+          }
+          if (server_time) lastEventTs = server_time;
+        } catch { }
       };
-      return () => ws.close();
-    }
+      pollTimer = setInterval(pollEvents, 10000);
+    };
+
+    tryWebSocket();
+
+    return () => {
+      if (ws) ws.close();
+      if (pollTimer) clearInterval(pollTimer);
+    };
   }, []);
 
   const updateStatus = async (orderId: string, status: string) => {
