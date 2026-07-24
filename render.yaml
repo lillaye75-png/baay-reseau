@@ -37,7 +37,9 @@ services:
       - key: CORS_ORIGINS
         value: '["*"]'
       - key: GOOGLE_CLIENT_ID
-        value: 251752897480-282rr72tgk359cnddnlle66ok4i750m9.apps.googleusercontent.com
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       - key: FCM_SERVER_KEY
         value: 0Rm5F7m7_pSVdJZGNEx64Z8icuOZuezVthcmGAGQi44
       - key: FCM_PROJECT_ID
@@ -55,7 +57,7 @@ services:
           name: baay-backend
           property: host
       - key: NEXT_PUBLIC_GOOGLE_CLIENT_ID
-        value: 251752897480-282rr72tgk359cnddnlle66ok4i750m9.apps.googleusercontent.com
+        sync: false
       - key: NEXT_PUBLIC_VAPID_PUBLIC_KEY
         value: BL7T0E8wzw9pvoHbWyC8qCjVrdTA-I05DGkDks0byARy3CP7Sv8rIPyDT9Q5QcLmHUFQ6lBzVrYFyufd2ERbrlw
 
