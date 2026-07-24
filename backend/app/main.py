@@ -102,10 +102,7 @@ async def log_requests(request: Request, call_next):
     return response
 
 
-@app.on_event("startup")
-async def on_startup():
-    logger.info("Naatal ERP Cloud API starting up...")
-
+async def init_db():
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -249,6 +246,12 @@ async def on_startup():
             logger.info("Scheduler started")
         except Exception as e:
             logger.error(f"Scheduler error: {e}")
+
+
+@app.on_event("startup")
+async def on_startup():
+    logger.info("Naatal ERP Cloud API starting up...")
+    await init_db()
 
 
 @app.get("/health")
