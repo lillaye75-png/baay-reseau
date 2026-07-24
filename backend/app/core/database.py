@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -14,14 +15,11 @@ if "sslmode=" in db_url:
     ssl_mode = db_url.split("sslmode=")[1].split("&")[0]
     db_url = db_url.replace(f"sslmode={ssl_mode}", f"ssl={ssl_mode}")
 
-engine = create_async_engine(
-    db_url,
-    echo=False,
-    pool_size=20,
-    max_overflow=10,
-    pool_recycle=300,
-    pool_pre_ping=True,
-)
+pool_args = {"pool_recycle": 300, "pool_pre_ping": True}
+if settings.IS_VERCEL:
+    pool_args = {"poolclass": NullPool}
+
+engine = create_async_engine(db_url, echo=False, **pool_args)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
