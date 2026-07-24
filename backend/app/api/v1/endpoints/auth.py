@@ -45,7 +45,7 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
         from sqlalchemy import text
         import uuid as _uuid
         await db.execute(text(
-            "INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 1)"
+            "INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, TRUE)"
         ), {"id": str(_uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id})
         await db.flush()
     except Exception:

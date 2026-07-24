@@ -120,7 +120,7 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
         await db.flush()
 
         await db.execute(
-            text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 1)"),
+            text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, TRUE)"),
             {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id},
         )
 
@@ -150,7 +150,7 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
                 await db.flush()
 
                 await db.execute(
-                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 1)"),
+                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, TRUE)"),
                     {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id},
                 )
         if not user:
