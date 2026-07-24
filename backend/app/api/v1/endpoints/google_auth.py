@@ -1,7 +1,9 @@
 import httpx
+import uuid
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, timedelta
 
@@ -116,6 +118,16 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
         )
         db.add(user)
         await db.flush()
+
+        await db.execute(
+            text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 1)"),
+            {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id},
+        )
+
+        access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
+        refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
+        return _token_response(user, access_token, refresh)
+
     except IntegrityError as e:
         await db.rollback()
         result = await db.execute(
@@ -136,10 +148,15 @@ async def google_login(data: dict, db: AsyncSession = Depends(get_db)):
                 )
                 db.add(user)
                 await db.flush()
+
+                await db.execute(
+                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 1)"),
+                    {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id},
+                )
         if not user:
-            raise HTTPException(status_code=500, detail="Erreur création compte Google")
+            raise HTTPException(status_code=500, detail=f"Erreur création compte Google (IntegrityError): {str(e)}")
         access_token = create_access_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         refresh = create_refresh_token(data={"sub": str(user.id), "tenant_id": str(user.tenant_id)})
         return _token_response(user, access_token, refresh)
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Erreur création compte Google")
+        raise HTTPException(status_code=500, detail=f"Erreur création compte Google: {str(e)}")
