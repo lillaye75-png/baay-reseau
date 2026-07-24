@@ -1,18 +1,20 @@
 from mangum import Mangum
+import traceback
+
+err_msg = ""
 
 try:
     from app.main import app
-except Exception as e:
-    import traceback
-    err = traceback.format_exc()
+except Exception:
+    err_msg = traceback.format_exc()
+
+if err_msg:
     from fastapi import FastAPI
-    from fastapi.responses import JSONResponse
+    from fastapi.responses import HTMLResponse
     app = FastAPI()
-    @app.get("/health")
-    async def health():
-        return JSONResponse({"error": str(e), "trace": err}, status_code=500)
     @app.get("/")
-    async def root():
-        return JSONResponse({"error": str(e), "trace": err}, status_code=500)
+    @app.get("/health")
+    async def show_error():
+        return HTMLResponse(f"<pre>{err_msg}</pre>")
 
 handler = Mangum(app, lifespan="off")
