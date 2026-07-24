@@ -1,15 +1,16 @@
 # Naatal ERP Cloud — Project Status
 
-> Dernière mise à jour : 2026-06-21
-> Projet : E:\movie laye sow\project\SaaS ERP for Boutique\baay-reseau
-> Compte test : 📱 776621410 / 🔑 admin123 (owner, licence 60j)
-> Super Admin : 📱 776621410, 708372127
+> Dernière mise à jour : 2026-07-24
+> Projet : C:\Users\HP\Documents\project\baay-reseau
+> Compte test : 771234567 / admin123 (owner)
+> Super Admin : 776621410, 708372127
 >
-> ## 🚀 Deployments
-> - Backend: https://baay-reseau-api.onrender.com (Render)
+> ## Deployments
+> - Backend: https://baay-reseau-api.vercel.app (Vercel)
 > - Frontend: https://baay-reseau.vercel.app (Vercel)
 > - Landing page: https://baay-reseau.vercel.app/
 > - Dashboard: https://baay-reseau.vercel.app/dashboard
+> - Database: Neon PostgreSQL (project: sweet-river-17323452)
 
 ---
 
@@ -57,6 +58,13 @@
 - **2026-06-21 : A4 print missing logo → load print_settings + show logo/description**
 - **2026-06-21 : License not activating → added /extend-trial endpoint**
 - **2026-06-21 : Employee could modify invoices → backend PUT/DELETE requires owner**
+- **2026-07-24 : Render backend suspended (billing) → migrated backend from Render to Vercel**
+- **2026-07-24 : Dashboard summary 500 → tables not created on Vercel cold start (lifespan=off)**
+- **2026-07-24 : Events endpoint 404 → moved to correct /api/v1/events/ path**
+- **2026-07-24 : Google OAuth 500 → PostgreSQL boolean strict (TRUE instead of 1)**
+- **2026-07-24 : Google OAuth non configuré → set GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET on Vercel**
+- **2026-07-24 : WebSocket unavailable on Vercel → added polling fallback via GET /events/{id}**
+- **2026-07-24 : Background scheduler → converted to Vercel Cron Jobs at 8 AM daily**
 
 ### New Features (2026-06-21)
 - **Multi-store employee assignment → owner creates store, assigns to employee, sales tracked per store**
@@ -84,8 +92,8 @@
 
 ### Known Issues (To Fix)
 - **Store assignment → creates store but employee assignment doesn't persist (needs investigation)**
-- **Onboarding guide → appears on every login instead of only first login (localStorage/DB check needed)****
-- **Google OAuth 500 error → redirect URI matches but exchange fails. Possible causes: consent screen not published, missing scopes (email/profile), or Google needs time to propagate. Check: Google Auth Platform > Audience > Publishing status = In production, Data Access > email + profile scopes added.**
+- **Onboarding guide → appears on every login instead of only first login (localStorage/DB check needed)**
+- **WebSocket → unavailable on Vercel serverless, polling fallback active every 8-10s**
 
 ### Security & Permissions (2026-07-09)
 - **Critical security audit completed — 10 critical, 49 major, 59 minor issues fixed**
@@ -133,6 +141,9 @@
 - POST /auth/google → userinfo endpoint, email sur User, phone `goog:{id[:12]}`
 - Bouton "Se connecter avec Google" sur /login, callback /auth/callback
 - Wizard : les users Google voient le wizard au premier login
+- Authorization code flow (pas implicit) — GOOGLE_CLIENT_SECRET requis
+- Client ID: `251752897480-99frcitp4cdi696v3omo10pjpr0ihc5r.apps.googleusercontent.com`
+- Redirect URI autorisée: `https://baay-reseau.vercel.app/auth/callback`
 
 ### Push Notifications FCM
 - FCM v1 API via service account OAuth2
@@ -154,13 +165,15 @@
 
 ### Infrastructure
 - Docker Compose
-- SQLite (dev) / PostgreSQL (prod)
-- Render deploy : backend + PostgreSQL
-- Vercel deploy : frontend
-- Keep-alive ping toutes les 10min (anti-sleep Render free tier)
+- SQLite (dev) / PostgreSQL (prod via Neon)
+- Vercel deploy : backend + frontend
+- Keep-alive : not needed on Vercel (always-on)
 - ALTER TABLE auto-add columns au démarrage (address, description, etc.)
-- Neon : base de données PostgreSQL gérée via Neon
-- Hot-reload : `--reload` flag + volume mount pour dev
+- Neon : base de données PostgreSQL gérée via Neon (sweet-river-17323452)
+- Hot-reload : `--reload` flag + volume mount pour dev (backend)
+- Vercel Cron Job : daily tasks at 8 AM UTC
+- Mangum : FastAPI ASGI → Vercel serverless adapter
+- Static files /uploads : disabled on Vercel (Cloudinary handles images)
 
 ---
 
@@ -275,6 +288,10 @@ GET  /api/v1/reports/trends?store_id=...
 - firebase-service-account.json dans .gitignore — doit être ajouté manuellement sur Render
 - SQLite dev DB: `backend/naatal_erp.db` — persists across restarts
 - Tenant model now has `address` and `description` columns (auto-added on startup)
+
+## QA Reports
+- `qa-reports/vercel-migration-qa.md` — Vercel migration QA (2026-07-24)
+- `qa-reports/google-oauth-qa.md` — Google OAuth fix QA (2026-07-24)
 
 ## 📞 Support
 - 📱 +221 77 662 14 10
