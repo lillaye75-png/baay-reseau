@@ -287,9 +287,7 @@ async def delete_sale(db: AsyncSession, tenant_id: str, sale_id: str) -> dict:
     return {"status": "deleted", "stock_restored": True}
 
 
-async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
-    from app.models.user import User
-
+async def create_quick_sale(db: AsyncSession, tenant_id: str, data, user_id: str = None) -> Sale:
     total = data.quantity * data.unit_price_cfa
     paid = min(data.paid_amount or 0, total)
     remaining = total - paid
@@ -303,6 +301,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
 
     sale = Sale(
         tenant_id=tenant_id,
+        user_id=user_id,
         customer_id=data.customer_id,
         total_cfa=total,
         payment_method=data.payment_method,

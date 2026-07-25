@@ -75,7 +75,7 @@ async def create_new_sale(data: SaleCreate, user: User = Depends(get_current_use
 
 @router.post("/quick", response_model=SaleRead, status_code=201)
 async def create_quick_sale_endpoint(data: QuickSaleCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    sale = await create_quick_sale(db, user.tenant_id, data)
+    sale = await create_quick_sale(db, user.tenant_id, data, user_id=user.id)
     try:
         await log_action(db, user.tenant_id, user.id, user.name, "create", "quick_sale", sale.id, f"Vente rapide {data.product_name} {data.unit_price_cfa} CFA")
     except Exception:
