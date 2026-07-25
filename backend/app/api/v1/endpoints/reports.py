@@ -27,13 +27,14 @@ async def sales_report(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     store_id: Optional[str] = Query(None),
+    seller_id: Optional[str] = Query(None),
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
     if store_id:
         await _validate_store_id(store_id, user, db)
     tenant_id = store_id or user.tenant_id
-    return await get_sales_report(db, tenant_id, period, start_date, end_date)
+    return await get_sales_report(db, tenant_id, period, start_date, end_date, seller_id=seller_id)
 
 
 @router.get("/top-products")
@@ -106,6 +107,19 @@ async def reports_by_store(
         store_reports.append(report)
 
     return store_reports
+
+
+@router.get("/sellers")
+async def list_sellers(
+    user: User = Depends(require_owner),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import text
+    result = await db.execute(
+        text("SELECT id, name FROM users WHERE tenant_id = :tid ORDER BY name"),
+        {"tid": user.tenant_id}
+    )
+    return [{"id": row[0], "name": row[1]} for row in result.all()]
 
 
 @router.get("/stock-predictions")

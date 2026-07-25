@@ -12,7 +12,12 @@ from app.services.inventory import update_stock
 
 
 async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate, user_id: str = None) -> Sale:
+    from app.models.user import User
+
     total = sum(item.quantity * item.unit_price_cfa for item in data.items)
+    paid = min(data.paid_amount or 0, total)
+    remaining = total - paid
+    is_credit = data.is_credit or (remaining > 0)
 
     sale = Sale(
         tenant_id=tenant_id,
@@ -22,7 +27,7 @@ async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate, user_i
         total_cfa=total,
         payment_method=data.payment_method,
         payment_reference=data.payment_reference,
-        is_credit=data.is_credit,
+        is_credit=is_credit,
     )
     db.add(sale)
     await db.flush()
@@ -46,7 +51,7 @@ async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate, user_i
         db.add(sale_item)
         await update_stock(db, item_data.product_id, -item_data.quantity)
 
-    if data.is_credit and data.customer_id:
+    if is_credit and data.customer_id and remaining > 0:
         result = await db.execute(
             select(CreditTab).where(
                 CreditTab.customer_id == data.customer_id,
@@ -59,20 +64,27 @@ async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate, user_i
             db.add(tab)
             await db.flush()
 
-        tab.balance_cfa += total
+        tab.balance_cfa += remaining
         entry = CreditTabEntry(
             tab_id=tab.id,
-            amount_cfa=total,
-            description=f"Vente à crédit",
+            amount_cfa=remaining,
+            description=f"Vente à crédit — payé {paid} CFA",
             sale_id=sale.id,
         )
         db.add(entry)
 
         customer_result = await db.execute(select(Customer).where(Customer.id == data.customer_id))
         customer = customer_result.scalar_one()
-        customer.total_credit_cfa += total
+        customer.total_credit_cfa += remaining
 
     await db.flush()
+
+    seller_name = None
+    if user_id:
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        seller = user_result.scalar_one_or_none()
+        if seller:
+            seller_name = seller.name
 
     result = await db.execute(
         select(Sale).where(Sale.id == sale.id).options(
@@ -80,7 +92,11 @@ async def create_sale(db: AsyncSession, tenant_id: str, data: SaleCreate, user_i
             selectinload(Sale.customer),
         )
     )
-    return result.scalar_one()
+    sale_obj = result.scalar_one()
+    setattr(sale_obj, "seller_name", seller_name)
+    setattr(sale_obj, "paid_amount", paid)
+    setattr(sale_obj, "remaining_cfa", remaining)
+    return sale_obj
 
 
 async def get_sales(db: AsyncSession, tenant_id: str, limit: int = 50) -> list[Sale]:
@@ -272,7 +288,12 @@ async def delete_sale(db: AsyncSession, tenant_id: str, sale_id: str) -> dict:
 
 
 async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
+    from app.models.user import User
+
     total = data.quantity * data.unit_price_cfa
+    paid = min(data.paid_amount or 0, total)
+    remaining = total - paid
+    is_credit = data.is_credit or (remaining > 0)
 
     products_result = await db.execute(
         select(Product).where(Product.tenant_id == tenant_id, Product.is_active == True).limit(1)
@@ -286,7 +307,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
         total_cfa=total,
         payment_method=data.payment_method,
         payment_reference=data.payment_reference,
-        is_credit=data.is_credit,
+        is_credit=is_credit,
     )
     db.add(sale)
     await db.flush()
@@ -301,7 +322,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
     )
     db.add(sale_item)
 
-    if data.is_credit and data.customer_id:
+    if is_credit and data.customer_id and remaining > 0:
         result = await db.execute(
             select(CreditTab).where(
                 CreditTab.customer_id == data.customer_id,
@@ -314,14 +335,19 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
             db.add(tab)
             await db.flush()
 
-        tab.balance_cfa += total
-        entry = CreditTabEntry(tab_id=tab.id, amount_cfa=total, description="Vente rapide", sale_id=sale.id)
+        tab.balance_cfa += remaining
+        entry = CreditTabEntry(
+            tab_id=tab.id,
+            amount_cfa=remaining,
+            description=f"Vente rapide — payé {paid} CFA",
+            sale_id=sale.id,
+        )
         db.add(entry)
 
         customer_result = await db.execute(select(Customer).where(Customer.id == data.customer_id))
         customer = customer_result.scalar_one_or_none()
         if customer:
-            customer.total_credit_cfa += total
+            customer.total_credit_cfa += remaining
 
     await db.flush()
 
@@ -330,4 +356,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data) -> Sale:
             selectinload(Sale.items).selectinload(SaleItem.product),
         )
     )
-    return result.scalar_one()
+    sale_obj = result.scalar_one()
+    setattr(sale_obj, "paid_amount", paid)
+    setattr(sale_obj, "remaining_cfa", remaining)
+    return sale_obj

@@ -90,10 +90,13 @@
 - **Store manager UI → edit button, pre-fill form, suspend/delete/switch actions**
 - **Slug uniqueness → auto-suffix with UUID to prevent duplicate key errors**
 
-### Known Issues (To Fix)
-- **Store assignment → creates store but employee assignment doesn't persist (needs investigation)** ✅ Fixed 2026-07-25
-- **Onboarding guide → appears on every login instead of only first login (localStorage/DB check needed)** ✅ Fixed 2026-07-25
-- **WebSocket → unavailable on Vercel serverless, polling fallback active every 8-10s** ✅ Fixed 2026-07-25
+### Known Issues (All Resolved 2026-07-25)
+- **Store assignment** ✅ Fixed + deployed
+- **Onboarding guide** ✅ Fixed + deployed
+- **WebSocket polling** ✅ Fixed + deployed
+- **Boolean strict PostgreSQL (`0` vs `FALSE`)** ✅ Fixed + deployed
+- **Commit après réponse (race condition 3 endpoints)** ✅ Fixed + deployed
+- **QA multi-store (4 bugs)** ✅ Fixed + deployed
 
 ### Bug Fixes (2026-07-25)
 - **Store assignment** : `invite-employee` creates `user_stores` row, silent `try/except` removed on all user_stores INSERTS, `switch_store` updates `User.tenant_id` in DB
@@ -105,10 +108,16 @@
 - **WhatsApp Share button** : Bouton "Partager sur WhatsApp" sur les pages produit de la boutique publique. Message pré-rempli (nom + prix + lien), anti-double-clic, utilise le numéro WhatsApp de la boutique si configuré
 
 ### Known Issues
-- **Playwright MCP disconnect** : Les outils Playwright intégrés se déconnectent en milieu de session (#35207). Fix temporaire : ajouter `"timeout": 10000` dans `opencode.jsonc`. En attendant, utiliser `NODE_PATH=C:\Users\HP\AppData\Roaming\npm\node_modules node script.js` pour lancer Playwright via CLI.
-- **Store creation with employee → `0` vs `FALSE`** : `tenants.py:226` utilise `0` au lieu de `FALSE` pour le BOOLEAN `is_default`, PostgreSQL rejette → rollback silencieux après 200. ✅ Fixed 2026-07-25 (local, pas déployé)
-- **Commit après réponse** : `POST /stores` (tenants.py), `PUT /stores/{id}/switch` (tenants.py), `POST /invite-employee` (auth.py) n'ont pas de `await db.commit()` explicite. `get_db` commit après la réponse → race condition si une requête suivante arrive avant le commit. ✅ Fixed 2026-07-25 (local, pas déployé)
-- **QA multi-store** : `qa-reports/multi-store-qa.md` — 4 bugs trouvés, 4 corrigés localement. À déployer et re-tester.
+- **Playwright MCP disconnect** : Les outils Playwright intégrés se déconnectent en milieu de session (#35207). Fix temporaire : ajouter `"timeout": 10000` dans `opencode.jsonc`.
+
+### New Features (2026-07-25 — Sage 100 Edition)
+- **Facture Sage 100 A4** : 2 copies par page (Original + Copie), en-tête/pied de page en petits caractères, ID vendeur
+- **Panier éditable** : Prix et quantité modifiables dans le panier POS, paiement partiel pour dettes
+- **Actions rapides POS** : Barre d'actions (suivi dette, nouveau client, historique, etc.)
+- **Pré-remplissage** : Placeholders au lieu de 0, auto-fill client à la sélection
+- **Dark mode / Solarized** : Corrections des couleurs sur tous les composants
+- **Import Sage 100 JSON** : Format d'import JSON pour données Sage 100
+- **Produits** : Bouton Import visible, correction doublons à l'import
 
 ### Security & Permissions (2026-07-09)
 - **Critical security audit completed — 10 critical, 49 major, 59 minor issues fixed**

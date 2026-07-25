@@ -15,9 +15,10 @@ export default function QuickSalePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [productName, setProductName] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<string>("1");
   const [unitPrice, setUnitPrice] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paidAmount, setPaidAmount] = useState<string>("");
   const [processing, setProcessing] = useState(false);
   const [lastSale, setLastSale] = useState<Record<string, unknown> | null>(null);
 
@@ -25,7 +26,11 @@ export default function QuickSalePage() {
     api.get("/customers/").then((res) => setCustomers(res.data)).catch(() => {});
   }, []);
 
-  const total = quantity * (parseInt(unitPrice) || 0);
+  const qty = parseInt(quantity) || 1;
+  const price = parseInt(unitPrice) || 0;
+  const total = qty * price;
+  const paid = parseInt(paidAmount) || 0;
+  const remaining = Math.max(0, total - paid);
 
   const handleCheckout = async () => {
     if (!productName.trim() || !unitPrice) {
@@ -33,28 +38,33 @@ export default function QuickSalePage() {
       return;
     }
     setProcessing(true);
+    const isCredit = paymentMethod === "credit" || remaining > 0;
     try {
       const res = await api.post("/sales/quick", {
         customer_id: selectedCustomer?.id || null,
         product_name: productName.trim(),
-        quantity,
-        unit_price_cfa: parseInt(unitPrice),
+        quantity: qty,
+        unit_price_cfa: price,
         payment_method: paymentMethod,
-        is_credit: paymentMethod === "credit",
+        is_credit: isCredit,
+        paid_amount: paid,
       });
       showToast(`Vente rapide de ${formatCFA(total)} enregistrée !`);
       setLastSale({
         id: res.data.id,
-        items: [{ name: productName, quantity, unit_price_cfa: parseInt(unitPrice), total_cfa: total }],
+        items: [{ name: productName, quantity: qty, unit_price_cfa: price, total_cfa: total }],
         total,
         paymentMethod,
         customerName: selectedCustomer?.name,
         createdAt: res.data.created_at,
+        paidAmount: paid,
+        sellerName: res.data.seller_name || null,
       });
       setProductName("");
-      setQuantity(1);
+      setQuantity("1");
       setUnitPrice("");
       setPaymentMethod("cash");
+      setPaidAmount("");
       setSelectedCustomer(null);
     } catch (err) {
       showToast("Erreur lors de la vente", "error");
@@ -98,7 +108,8 @@ export default function QuickSalePage() {
                 type="number"
                 min={1}
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="Ex: 1"
               />
               <Input
                 label="Prix unitaire (CFA)"
@@ -106,7 +117,7 @@ export default function QuickSalePage() {
                 min={0}
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
-                placeholder="0"
+                placeholder="Ex: 5000"
               />
             </div>
 
@@ -123,10 +134,20 @@ export default function QuickSalePage() {
                 <option value="">Client de passage</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} {c.nickname ? `(${c.nickname})` : ""}
+                    {c.name} {c.nickname ? `(${c.nickname})` : ""} {c.phone ? `— ${c.phone}` : ""}
                   </option>
                 ))}
               </select>
+              {selectedCustomer && (
+                <div className="mt-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-700">
+                  {selectedCustomer.phone && <span>Tél: {selectedCustomer.phone}</span>}
+                  {selectedCustomer.total_credit_cfa > 0 && (
+                    <span className="ml-3 text-orange-600 font-medium">
+                      Dette: {formatCFA(selectedCustomer.total_credit_cfa)}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -148,11 +169,29 @@ export default function QuickSalePage() {
               </div>
             </div>
 
+            {(paymentMethod === "credit" || selectedCustomer) && (
+              <Input
+                label="Montant versé (CFA)"
+                type="number"
+                min={0}
+                max={total}
+                value={paidAmount}
+                onChange={(e) => setPaidAmount(e.target.value)}
+                placeholder={total > 0 ? `Max: ${formatCFA(total)}` : "0"}
+              />
+            )}
+
             <div className="rounded-xl bg-gray-50 p-4">
               <div className="flex items-center justify-between text-lg font-bold">
                 <span>Total</span>
                 <span className="text-primary-600">{formatCFA(total)}</span>
               </div>
+              {paid > 0 && remaining > 0 && (
+                <div className="flex items-center justify-between text-sm mt-1 text-orange-600">
+                  <span>Reste à payer</span>
+                  <span className="font-medium">{formatCFA(remaining)}</span>
+                </div>
+              )}
             </div>
 
             <Button

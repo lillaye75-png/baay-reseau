@@ -215,7 +215,10 @@ export default function ProductsPage() {
       "Images du produit": "image_url",
       "Description": "description",
     };
+    const existingNames = new Set(products.map(p => p.name.toLowerCase()));
+    const existingSKUs = new Set(products.filter(p => p.sku).map(p => p.sku!.toLowerCase()));
     let imported = 0;
+    let skipped = 0;
     let errors = 0;
     for (const row of rows) {
       const mapped: Record<string, any> = {};
@@ -225,10 +228,13 @@ export default function ProductsPage() {
       }
       const name = String(mapped.name || "").trim();
       if (!name) continue;
+      const sku = String(mapped.sku || "").trim();
+      if (existingNames.has(name.toLowerCase())) { skipped++; continue; }
+      if (sku && existingSKUs.has(sku.toLowerCase())) { skipped++; continue; }
       try {
         await api.post("/products/", {
           name,
-          sku: String(mapped.sku || "").trim() || null,
+          sku: sku || null,
           barcode: String(mapped.barcode || "").trim() || null,
           price_cfa: parseInt(mapped.price_cfa) || 0,
           cost_price_cfa: parseInt(mapped.cost_price_cfa) || 0,
@@ -238,11 +244,56 @@ export default function ProductsPage() {
           image_url: String(mapped.image_url || "").trim() || null,
           description: String(mapped.description || "").trim() || null,
         });
+        existingNames.add(name.toLowerCase());
+        if (sku) existingSKUs.add(sku.toLowerCase());
         imported++;
       } catch { errors++; }
     }
-    showToast(`${imported} produit(s) importé(s), ${errors} erreur(s)`);
+    showToast(`${imported} importé(s), ${skipped} doublon(s) ignoré(s), ${errors} erreur(s)`);
     loadProducts();
+    e.target.value = "";
+  };
+
+  const importJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const products_list = Array.isArray(data) ? data : (data.products || data.data || []);
+      const existingNames = new Set(products.map(p => p.name.toLowerCase()));
+      const existingSKUs = new Set(products.filter(p => p.sku).map(p => p.sku!.toLowerCase()));
+      let imported = 0;
+      let skipped = 0;
+      let errors = 0;
+      for (const item of products_list) {
+        const name = (item.name || item.nom || item.designation || item.libelle || "").trim();
+        if (!name) continue;
+        if (existingNames.has(name.toLowerCase())) { skipped++; continue; }
+        const sku = (item.sku || item.code || item.reference || "").trim();
+        if (sku && existingSKUs.has(sku.toLowerCase())) { skipped++; continue; }
+        try {
+          await api.post("/products/", {
+            name,
+            sku: sku || null,
+            barcode: (item.barcode || item.code_barres || item.codeBarre || "").trim() || null,
+            price_cfa: parseInt(item.price_cfa || item.prix_vente || item.prix || item.pu || 0),
+            cost_price_cfa: parseInt(item.cost_price_cfa || item.prix_achat || item.cout || item.pa || 0),
+            stock_quantity: parseInt(item.stock_quantity || item.stock || item.quantite || item.qte || 0),
+            low_stock_threshold: parseInt(item.low_stock_threshold || item.seuil || 5),
+            unit: (item.unit || item.unite || "piece").trim(),
+            description: (item.description || "").trim() || null,
+          });
+          existingNames.add(name.toLowerCase());
+          if (sku) existingSKUs.add(sku.toLowerCase());
+          imported++;
+        } catch { errors++; }
+      }
+      showToast(`${imported} importé(s), ${skipped} doublon(s) ignoré(s), ${errors} erreur(s)`);
+      loadProducts();
+    } catch {
+      showToast("Fichier JSON invalide", "error");
+    }
     e.target.value = "";
   };
 
@@ -264,6 +315,30 @@ export default function ProductsPage() {
             <p className="text-sm text-gray-500">{products.length} produits enregistrés</p>
           </div>
           <div className="flex gap-2">
+            <label className="flex items-center gap-2 rounded-lg bg-primary-50 border border-primary-200 px-4 py-2 text-sm font-medium text-primary-700 hover:bg-primary-100 cursor-pointer transition-colors">
+              <FileSpreadsheet className="h-4 w-4" />
+              Importer Excel
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={importProducts}
+                className="hidden"
+              />
+            </label>
+            <Button variant="secondary" onClick={downloadExcelTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              Template
+            </Button>
+            <label className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100 cursor-pointer transition-colors">
+              <FileSpreadsheet className="h-4 w-4" />
+              Importer JSON
+              <input
+                type="file"
+                accept=".json"
+                onChange={importJSON}
+                className="hidden"
+              />
+            </label>
             <Button variant="secondary" onClick={loadPredictions}>
               <Brain className="h-4 w-4 mr-2" />
               Prédictions
@@ -408,27 +483,31 @@ export default function ProductsPage() {
                 <Input
                   label="Prix de vente (CFA)"
                   type="number"
-                  value={form.price_cfa}
+                  value={form.price_cfa || ""}
                   onChange={(e) => setForm({ ...form, price_cfa: parseInt(e.target.value) || 0 })}
+                  placeholder="Ex: 5000"
                   required
                 />
                 <Input
                   label="Prix d'achat (CFA)"
                   type="number"
-                  value={form.cost_price_cfa}
+                  value={form.cost_price_cfa || ""}
                   onChange={(e) => setForm({ ...form, cost_price_cfa: parseInt(e.target.value) || 0 })}
+                  placeholder="Ex: 3000"
                 />
                 <Input
                   label="Stock"
                   type="number"
-                  value={form.stock_quantity}
+                  value={form.stock_quantity || ""}
                   onChange={(e) => setForm({ ...form, stock_quantity: parseInt(e.target.value) || 0 })}
+                  placeholder="Ex: 50"
                 />
                 <Input
                   label="Seuil stock bas"
                   type="number"
-                  value={form.low_stock_threshold}
+                  value={form.low_stock_threshold || ""}
                   onChange={(e) => setForm({ ...form, low_stock_threshold: parseInt(e.target.value) || 5 })}
+                  placeholder="Ex: 5"
                 />
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Images du produit</label>

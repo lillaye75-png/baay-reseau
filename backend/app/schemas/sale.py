@@ -15,6 +15,7 @@ class SaleCreate(BaseModel):
     payment_reference: str | None = None
     is_credit: bool = False
     store_id: str | None = None
+    paid_amount: int = 0
 
 
 class QuickSaleCreate(BaseModel):
@@ -25,6 +26,7 @@ class QuickSaleCreate(BaseModel):
     payment_method: str = "cash"
     payment_reference: str | None = None
     is_credit: bool = False
+    paid_amount: int = 0
 
 
 class SaleItemRead(BaseModel):
@@ -70,12 +72,15 @@ class SaleRead(BaseModel):
     tenant_id: str
     store_id: str | None = None
     user_id: str | None = None
+    seller_name: str | None = None
     customer_id: str | None
     customer: CustomerRead | None = None
     total_cfa: int
     payment_method: str
     payment_reference: str | None
     is_credit: bool
+    paid_amount: int = 0
+    remaining_cfa: int = 0
     created_at: datetime
     items: list[SaleItemRead]
 

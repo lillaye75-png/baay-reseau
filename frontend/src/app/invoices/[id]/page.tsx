@@ -18,6 +18,7 @@ interface SaleData {
   is_credit: boolean;
   created_at: string;
   customer_id: string | null;
+  seller_name: string | null;
   customer: { id: string; name: string; phone: string | null } | null;
   items: { product_id: string; product_name: string; quantity: number; unit_price_cfa: number; total_cfa: number }[];
 }
@@ -170,6 +171,7 @@ export default function InvoicePage() {
           customerPhone={sale.customer?.phone || undefined}
           createdAt={sale.created_at}
           onDelete={handleDelete}
+          sellerName={sale.seller_name || undefined}
         />
       </div>
     </DashboardLayout>

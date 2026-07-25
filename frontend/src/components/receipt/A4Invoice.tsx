@@ -23,9 +23,125 @@ interface InvoiceProps {
   createdAt: string;
   showActions?: boolean;
   onDelete?: () => void;
+  sellerName?: string;
 }
 
-export default function A4Invoice({ saleId, items, total, paymentMethod, customerName, customerPhone, createdAt, showActions = true, onDelete }: InvoiceProps) {
+function InvoiceCopy({
+  saleId,
+  items,
+  total,
+  paymentMethod,
+  customerName,
+  customerPhone,
+  createdAt,
+  tenant,
+  printSettings,
+  copyLabel,
+  sellerName,
+}: {
+  saleId: string;
+  items: InvoiceItem[];
+  total: number;
+  paymentMethod: string;
+  customerName?: string;
+  customerPhone?: string;
+  createdAt: string;
+  tenant: Tenant | null;
+  printSettings: any;
+  copyLabel: string;
+  sellerName?: string;
+}) {
+  const paymentLabels: Record<string, string> = {
+    cash: "Espèces",
+    wave: "Wave",
+    orange_money: "Orange Money",
+    credit: "Crédit",
+  };
+
+  const subtotal = items.reduce((s, i) => s + i.total_cfa, 0);
+
+  return (
+    <div className="invoice-copy" style={{ fontSize: "10px", lineHeight: "1.3" }}>
+      <div className="text-center mb-1" style={{ fontSize: "8px", color: "#999" }}>
+        {copyLabel}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #000", paddingBottom: "4px", marginBottom: "4px" }}>
+        <div>
+          {printSettings?.print_logo_url && (
+            <img src={printSettings.print_logo_url} alt="Logo" style={{ height: "28px", marginBottom: "2px" }} onError={(e) => (e.currentTarget.style.display = "none")} />
+          )}
+          <div style={{ fontSize: "9px", fontWeight: "bold" }}>
+            {printSettings?.print_header_text || tenant?.name || "Naatal ERP Cloud"}
+          </div>
+          {tenant?.description && <div style={{ fontSize: "7px", color: "#666" }}>{tenant.description}</div>}
+          <div style={{ fontSize: "7px", color: "#666" }}>
+            {[tenant?.phone, tenant?.email, tenant?.address].filter(Boolean).join(" | ")}
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "11px", fontWeight: "bold", color: "#ea580c" }}>FACTURE</div>
+          <div style={{ fontSize: "8px" }}>N° {saleId.slice(0, 8).toUpperCase()}</div>
+          <div style={{ fontSize: "7px", color: "#666" }}>{formatDateTime(createdAt)}</div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "8px", marginBottom: "4px" }}>
+        <div style={{ flex: 1, background: "#f9fafb", padding: "3px 6px", borderRadius: "4px" }}>
+          <div style={{ fontSize: "7px", color: "#666" }}>FACTURÉ À</div>
+          <div style={{ fontSize: "9px", fontWeight: "bold" }}>{customerName || "Client de passage"}</div>
+          {customerPhone && <div style={{ fontSize: "7px", color: "#666" }}>{customerPhone}</div>}
+        </div>
+        <div style={{ flex: 1, background: "#f9fafb", padding: "3px 6px", borderRadius: "4px" }}>
+          <div style={{ fontSize: "7px", color: "#666" }}>PAIEMENT</div>
+          <div style={{ fontSize: "9px" }}>{paymentLabels[paymentMethod] || paymentMethod}</div>
+          {sellerName && <div style={{ fontSize: "7px", color: "#666" }}>Vendeur: {sellerName}</div>}
+        </div>
+      </div>
+
+      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "4px", fontSize: "9px" }}>
+        <thead>
+          <tr style={{ background: "#f3f4f6" }}>
+            <th style={{ padding: "3px 4px", textAlign: "left", fontSize: "7px", borderBottom: "1px solid #ccc" }}>Article</th>
+            <th style={{ padding: "3px 4px", textAlign: "center", fontSize: "7px", borderBottom: "1px solid #ccc" }}>Qté</th>
+            <th style={{ padding: "3px 4px", textAlign: "right", fontSize: "7px", borderBottom: "1px solid #ccc" }}>P.U.</th>
+            <th style={{ padding: "3px 4px", textAlign: "right", fontSize: "7px", borderBottom: "1px solid #ccc" }}>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, i) => (
+            <tr key={i} style={{ borderBottom: "1px solid #eee" }}>
+              <td style={{ padding: "2px 4px", fontSize: "9px" }}>{item.product_name}</td>
+              <td style={{ padding: "2px 4px", textAlign: "center", fontSize: "9px" }}>{item.quantity}</td>
+              <td style={{ padding: "2px 4px", textAlign: "right", fontSize: "9px" }}>{formatCFA(item.unit_price_cfa)}</td>
+              <td style={{ padding: "2px 4px", textAlign: "right", fontSize: "9px" }}>{formatCFA(item.total_cfa)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ width: "120px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "8px" }}>
+            <span>Sous-total</span>
+            <span>{formatCFA(subtotal)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "10px", borderTop: "1px solid #000", paddingTop: "2px", marginTop: "2px" }}>
+            <span>TOTAL</span>
+            <span style={{ color: "#ea580c" }}>{formatCFA(total)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ borderTop: "1px solid #ccc", paddingTop: "3px", marginTop: "4px", textAlign: "center", fontSize: "7px", color: "#999" }}>
+        {printSettings?.print_footer_text || "Merci, dëgg na tànggi!"} — {tenant?.name || "Naatal ERP Cloud"}
+        <br />Naatal ERP Cloud — ERP Boutique Sénégal
+      </div>
+    </div>
+  );
+}
+
+export default function A4Invoice({ saleId, items, total, paymentMethod, customerName, customerPhone, createdAt, showActions = true, onDelete, sellerName }: InvoiceProps) {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -38,13 +154,6 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
     }).catch(() => {});
   }, []);
 
-  const paymentLabels: Record<string, string> = {
-    cash: "Espèces",
-    wave: "Wave",
-    orange_money: "Orange Money",
-    credit: "Crédit",
-  };
-
   const handlePrint = () => {
     window.print();
   };
@@ -54,118 +163,60 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
     if (!el) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    const logoHtml = printSettings?.print_logo_url ? `<img src="${printSettings.print_logo_url}" alt="Logo" style="height:60px;margin-bottom:8px;" />` : "";
-    const headerText = printSettings?.print_header_text || tenant?.name || "Naatal ERP Cloud";
-    const footerText = printSettings?.print_footer_text || "Merci, dëgg na tànggi!";
-    const activityText = tenant?.description || "";
     printWindow.document.write(`
       <html><head><title>Facture ${saleId.slice(0, 8)}</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
-        .header-left h1 { margin: 0; font-size: 24px; }
-        .header-left p { margin: 2px 0; color: #666; font-size: 13px; }
-        .header-right { text-align: right; }
-        .header-right h2 { margin: 0; color: #ea580c; font-size: 20px; }
-        .meta { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .meta-box { background: #f9fafb; padding: 12px; border-radius: 8px; flex: 1; margin: 0 5px; }
-        .meta-box:first-child { margin-left: 0; }
-        .meta-box:last-child { margin-right: 0; }
-        .meta-box h4 { margin: 0 0 5px; font-size: 12px; color: #666; text-transform: uppercase; }
-        .meta-box p { margin: 0; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th { background: #f3f4f6; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; color: #666; border-bottom: 2px solid #e5e7eb; }
-        td { padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
-        .text-right { text-align: right; }
-        .totals { display: flex; justify-content: flex-end; }
-        .totals-box { width: 250px; }
-        .totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
-        .totals-total { border-top: 2px solid #333; padding-top: 8px; font-size: 18px; font-weight: bold; }
-        .footer { border-top: 1px solid #e5e7eb; padding-top: 15px; text-align: center; color: #999; font-size: 12px; margin-top: 30px; }
-        @media print { body { padding: 0; } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; }
+        .page { width: 210mm; min-height: 297mm; padding: 8mm 10mm; page-break-after: always; }
+        .copy-separator { border-top: 1px dashed #ccc; margin: 8mm 0; }
+        .watermark { text-align: center; font-size: 7px; color: #999; margin: 6mm 0; }
+        @media print { body { padding: 0; } .page { box-shadow: none; } }
       </style></head><body>${el.innerHTML}</body></html>
     `);
     printWindow.document.close();
     printWindow.print();
   };
 
-  const subtotal = items.reduce((s, i) => s + i.total_cfa, 0);
-
   return (
     <>
-      <div id="a4-invoice" className="bg-white max-w-[210mm] mx-auto" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
-        <div className="flex justify-between border-b-2 border-gray-900 pb-4 mb-6">
-          <div>
-            {printSettings?.print_logo_url && (
-              <img src={printSettings.print_logo_url} alt="Logo" className="h-16 mb-2" onError={(e) => (e.currentTarget.style.display = "none")} />
-            )}
-            <h1 className="text-2xl font-bold text-gray-900">{printSettings?.print_header_text || tenant?.name || "Naatal ERP Cloud"}</h1>
-            {tenant?.description && <p className="text-sm text-gray-600 mt-1">{tenant.description}</p>}
-            <p className="text-sm text-gray-500">{tenant?.phone || ""}</p>
-            {tenant?.email && <p className="text-sm text-gray-500">{tenant.email}</p>}
-            {tenant?.address && <p className="text-sm text-gray-500">{tenant.address}</p>}
-          </div>
-          <div className="text-right">
-            <h2 className="text-xl font-bold text-primary-600">FACTURE</h2>
-            <p className="text-sm text-gray-500">N° {saleId.slice(0, 8).toUpperCase()}</p>
-            <p className="text-sm text-gray-500">{formatDateTime(createdAt)}</p>
+      <div id="a4-invoice" className="bg-white max-w-[210mm] mx-auto p-[8mm]" style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}>
+        <InvoiceCopy
+          saleId={saleId}
+          items={items}
+          total={total}
+          paymentMethod={paymentMethod}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          createdAt={createdAt}
+          tenant={tenant}
+          printSettings={printSettings}
+          copyLabel="ORIGINAL"
+          sellerName={sellerName}
+        />
+
+        <div className="copy-separator" style={{ borderTop: "1px dashed #ccc", margin: "6mm 0" }}>
+          <div style={{ textAlign: "center", fontSize: "7px", color: "#999", margin: "3mm 0" }}>
+            - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Facturé à</h4>
-            <p className="font-medium">{customerName || "Client de passage"}</p>
-            {customerPhone && <p className="text-sm text-gray-500">{customerPhone}</p>}
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Paiement</h4>
-            <p className="font-medium">{paymentLabels[paymentMethod] || paymentMethod}</p>
-            <p className="text-sm text-gray-500">Date: {formatDateTime(createdAt)}</p>
-          </div>
-        </div>
-
-        <table className="w-full mb-6">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Article</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Qté</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Prix unitaire</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, i) => (
-              <tr key={i} className="border-b border-gray-100">
-                <td className="px-4 py-3 text-sm font-medium">{item.product_name}</td>
-                <td className="px-4 py-3 text-sm text-center">{item.quantity}</td>
-                <td className="px-4 py-3 text-sm text-right">{formatCFA(item.unit_price_cfa)}</td>
-                <td className="px-4 py-3 text-sm text-right font-medium">{formatCFA(item.total_cfa)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="flex justify-end">
-          <div className="w-64">
-            <div className="flex justify-between text-sm py-1">
-              <span className="text-gray-500">Sous-total</span>
-              <span>{formatCFA(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold py-2 border-t-2 border-gray-900 mt-2">
-              <span>TOTAL</span>
-              <span className="text-primary-600">{formatCFA(total)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-200 pt-4 mt-8 text-center text-xs text-gray-400">
-          <p>{printSettings?.print_footer_text || "Merci, dëgg na tànggi!"} — {tenant?.name || "Naatal ERP Cloud"}</p>
-          <p className="mt-1">Naatal ERP Cloud — ERP Boutique Sénégal</p>
-        </div>
+        <InvoiceCopy
+          saleId={saleId}
+          items={items}
+          total={total}
+          paymentMethod={paymentMethod}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          createdAt={createdAt}
+          tenant={tenant}
+          printSettings={printSettings}
+          copyLabel="COPIE"
+          sellerName={sellerName}
+        />
       </div>
 
-      {showActions && isOwner && onDelete && (
+      {showActions && (
         <div className="print:hidden flex justify-center gap-3 mt-4">
           <button
             onClick={handlePrint}
@@ -181,30 +232,14 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
             <Download className="h-4 w-4" />
             PDF
           </button>
-          <button
-            onClick={onDelete}
-            className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
-          >
-            Annuler la facture
-          </button>
-        </div>
-      )}
-      {showActions && !isOwner && (
-        <div className="print:hidden flex justify-center gap-3 mt-4">
-          <button
-            onClick={handlePrint}
-            className="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors flex items-center gap-2"
-          >
-            <Printer className="h-4 w-4" />
-            Imprimer A4
-          </button>
-          <button
-            onClick={handleDownload}
-            className="rounded-lg bg-gray-100 border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            PDF
-          </button>
+          {isOwner && onDelete && (
+            <button
+              onClick={onDelete}
+              className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+            >
+              Annuler la facture
+            </button>
+          )}
         </div>
       )}
 
@@ -212,7 +247,7 @@ export default function A4Invoice({ saleId, items, total, paymentMethod, custome
         @media print {
           body * { visibility: hidden; }
           #a4-invoice, #a4-invoice * { visibility: visible; }
-          #a4-invoice { position: absolute; left: 0; top: 0; width: 210mm; padding: 20mm; }
+          #a4-invoice { position: absolute; left: 0; top: 0; width: 210mm; padding: 8mm 10mm; }
         }
       `}</style>
     </>

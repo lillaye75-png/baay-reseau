@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { formatCFA, getImageUrl } from "@/lib/format";
 import api, { Product, Customer } from "@/lib/api";
-import { ShoppingCart, Trash2, Plus, Minus, Search, Package, Receipt, X, ScanBarcode, Camera } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, Search, Package, Receipt, X, ScanBarcode, Camera, CreditCard, UserPlus, History, RefreshCw, FileText } from "lucide-react";
 import { showToast } from "@/components/ui/Toast";
 import SaleReceipt from "@/components/receipt/SaleReceipt";
 import PaymentLinkModal from "@/components/pos/PaymentLinkModal";
@@ -17,7 +17,17 @@ import { queueSaleOffline, isOnline, syncPendingSales } from "@/lib/offline-sync
 interface CartItem {
   product: Product;
   quantity: number;
+  unitPrice: number;
 }
+
+const QUICK_ACTIONS = [
+  { id: "debt", label: "Suivi Dette", icon: CreditCard, action: "navigate", href: "/credit" },
+  { id: "new-customer", label: "Nouveau Client", icon: UserPlus, action: "customer" },
+  { id: "history", label: "Historique", icon: History, action: "navigate", href: "/sales" },
+  { id: "products", label: "Produits", icon: Package, action: "navigate", href: "/products" },
+  { id: "quick-sale", label: "Vente Rapide", icon: FileText, action: "navigate", href: "/quick-sale" },
+  { id: "sync", label: "Sync Offline", icon: RefreshCw, action: "sync" },
+];
 
 export default function POSPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,6 +35,7 @@ export default function POSPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paidAmount, setPaidAmount] = useState<string>("");
   const [search, setSearch] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showPaymentLink, setShowPaymentLink] = useState(false);
@@ -32,6 +43,9 @@ export default function POSPage() {
   const [showScanner, setShowScanner] = useState(false);
   const [lastSale, setLastSale] = useState<Record<string, unknown> | null>(null);
   const [mobileView, setMobileView] = useState<"products" | "cart">("products");
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
 
   useEffect(() => {
     api.get("/products/").then((res) => setProducts(res.data));
@@ -76,7 +90,7 @@ export default function POSPage() {
           i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity: 1, unitPrice: product.price_cfa }];
     });
   };
 
@@ -84,9 +98,29 @@ export default function POSPage() {
     setCart((prev) =>
       prev
         .map((i) =>
-          i.product.id === productId ? { ...i, quantity: i.quantity + delta } : i
+          i.product.id === productId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i
         )
         .filter((i) => i.quantity > 0)
+    );
+  };
+
+  const setQuantity = (productId: string, qty: number) => {
+    if (qty <= 0) {
+      setCart((prev) => prev.filter((i) => i.product.id !== productId));
+      return;
+    }
+    setCart((prev) =>
+      prev.map((i) =>
+        i.product.id === productId ? { ...i, quantity: Math.min(qty, i.product.stock_quantity) } : i
+      )
+    );
+  };
+
+  const setItemPrice = (productId: string, price: number) => {
+    setCart((prev) =>
+      prev.map((i) =>
+        i.product.id === productId ? { ...i, unitPrice: Math.max(0, price) } : i
+      )
     );
   };
 
@@ -94,22 +128,27 @@ export default function POSPage() {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   };
 
-  const total = cart.reduce((sum, i) => sum + i.product.price_cfa * i.quantity, 0);
+  const total = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setProcessing(true);
 
+    const paid = parseInt(paidAmount) || 0;
+    const remaining = Math.max(0, total - paid);
+    const isCredit = paymentMethod === "credit" || remaining > 0;
+
     const saleData = {
       customer_id: selectedCustomer?.id || null,
       items: cart.map((i) => ({
         product_id: i.product.id,
         quantity: i.quantity,
-        unit_price_cfa: i.product.price_cfa,
+        unit_price_cfa: i.unitPrice,
       })),
       payment_method: paymentMethod,
-      is_credit: paymentMethod === "credit",
+      is_credit: isCredit,
+      paid_amount: paid,
     };
 
     if (!isOnline()) {
@@ -120,18 +159,21 @@ export default function POSPage() {
         items: cart.map((i) => ({
           name: i.product.name,
           quantity: i.quantity,
-          unit_price_cfa: i.product.price_cfa,
-          total_cfa: i.product.price_cfa * i.quantity,
+          unit_price_cfa: i.unitPrice,
+          total_cfa: i.unitPrice * i.quantity,
         })),
         total,
         paymentMethod,
         customerName: selectedCustomer?.name,
         createdAt: new Date().toISOString(),
         offline: true,
+        paidAmount: paid,
+        sellerName: null,
       });
       setCart([]);
       setSelectedCustomer(null);
       setPaymentMethod("cash");
+      setPaidAmount("");
       setProcessing(false);
       return;
     }
@@ -144,17 +186,20 @@ export default function POSPage() {
         items: cart.map((i) => ({
           name: i.product.name,
           quantity: i.quantity,
-          unit_price_cfa: i.product.price_cfa,
-          total_cfa: i.product.price_cfa * i.quantity,
+          unit_price_cfa: i.unitPrice,
+          total_cfa: i.unitPrice * i.quantity,
         })),
         total,
         paymentMethod,
         customerName: selectedCustomer?.name,
         createdAt: res.data.created_at,
+        paidAmount: paid,
+        sellerName: res.data.seller_name || null,
       });
       setCart([]);
       setSelectedCustomer(null);
       setPaymentMethod("cash");
+      setPaidAmount("");
       api.get("/products/").then((res) => setProducts(res.data));
 
       const pending = await syncPendingSales();
@@ -169,20 +214,60 @@ export default function POSPage() {
         items: cart.map((i) => ({
           name: i.product.name,
           quantity: i.quantity,
-          unit_price_cfa: i.product.price_cfa,
-          total_cfa: i.product.price_cfa * i.quantity,
+          unit_price_cfa: i.unitPrice,
+          total_cfa: i.unitPrice * i.quantity,
         })),
         total,
         paymentMethod,
         customerName: selectedCustomer?.name,
         createdAt: new Date().toISOString(),
         offline: true,
+        paidAmount: paid,
+        sellerName: null,
       });
       setCart([]);
       setSelectedCustomer(null);
       setPaymentMethod("cash");
+      setPaidAmount("");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
+    if (action.action === "navigate" && action.href) {
+      window.open(action.href, "_blank");
+    } else if (action.action === "customer") {
+      setNewCustomerName("");
+      setNewCustomerPhone("");
+      setShowCustomerForm(true);
+    } else if (action.action === "sync") {
+      syncPendingSales().then((result) => {
+        if (result.synced > 0) {
+          showToast(`${result.synced} vente(s) synchronisée(s) !`);
+        } else {
+          showToast("Aucune vente en attente");
+        }
+      });
+    }
+  };
+
+  const createCustomer = async () => {
+    if (!newCustomerName.trim()) {
+      showToast("Nom requis", "error");
+      return;
+    }
+    try {
+      const res = await api.post("/customers/", {
+        name: newCustomerName.trim(),
+        phone: newCustomerPhone.trim() || null,
+      });
+      setCustomers([...customers, res.data]);
+      setSelectedCustomer(res.data);
+      setShowCustomerForm(false);
+      showToast("Client créé !");
+    } catch {
+      showToast("Erreur création client", "error");
     }
   };
 
@@ -342,35 +427,51 @@ export default function POSPage() {
                 <p className="text-xs text-gray-400 mt-1">Cliquez sur un produit pour l&apos;ajouter</p>
               </div>
             ) : (
-              cart.map((item) => (
-                <div key={item.product.id} className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.product.name}</p>
-                    <p className="text-xs text-gray-500">{formatCFA(item.product.price_cfa)} x {item.quantity}</p>
-                  </div>
-                  <div className="flex items-center gap-2 ml-3">
-                    <button
-                      onClick={() => updateQuantity(item.product.id, -1)}
-                      className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="w-6 text-center text-sm font-bold">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.product.id, 1)}
-                      className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center hover:bg-primary-200 transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={() => removeFromCart(item.product.id)}
-                      className="h-7 w-7 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 transition-colors ml-1"
-                    >
-                      <Trash2 className="h-3 w-3 text-red-600" />
-                    </button>
-                  </div>
+              <>
+                <div className="text-xs text-gray-400 grid grid-cols-12 gap-1 px-1 mb-1">
+                  <span className="col-span-4">Article</span>
+                  <span className="col-span-2 text-center">Qté</span>
+                  <span className="col-span-3 text-right">P.U.</span>
+                  <span className="col-span-3 text-right">Total</span>
                 </div>
-              ))
+                {cart.map((item) => (
+                  <div key={item.product.id} className="grid grid-cols-12 gap-1 items-center rounded-xl bg-gray-50 p-2">
+                    <div className="col-span-4 min-w-0">
+                      <p className="text-xs font-medium truncate">{item.product.name}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={item.product.stock_quantity}
+                        value={item.quantity}
+                        onChange={(e) => setQuantity(item.product.id, parseInt(e.target.value) || 0)}
+                        className="w-full text-center text-xs rounded border border-gray-200 py-1 px-0 bg-white"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.unitPrice}
+                        onChange={(e) => setItemPrice(item.product.id, parseInt(e.target.value) || 0)}
+                        className="w-full text-right text-xs rounded border border-gray-200 py-1 px-1 bg-white"
+                      />
+                    </div>
+                    <div className="col-span-2 text-right text-xs font-medium">
+                      {formatCFA(item.unitPrice * item.quantity)}
+                    </div>
+                    <div className="col-span-1 text-right">
+                      <button
+                        onClick={() => removeFromCart(item.product.id)}
+                        className="text-red-400 hover:text-red-600"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
           </div>
 
@@ -388,7 +489,7 @@ export default function POSPage() {
                 <option value="">Client de passage</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} {c.nickname ? `(${c.nickname})` : ""}
+                    {c.name} {c.nickname ? `(${c.nickname})` : ""} {c.phone ? `— ${c.phone}` : ""}
                   </option>
                 ))}
               </select>
@@ -411,21 +512,45 @@ export default function POSPage() {
                   </button>
                 ))}
               </div>
-              {(paymentMethod === "wave" || paymentMethod === "orange_money") && cart.length > 0 && (
-                <button
-                  onClick={() => setShowPaymentLink(true)}
-                  className="mt-2 w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors"
-                >
-                  Générer un lien de paiement {paymentMethod === "wave" ? "Wave" : "Orange Money"}
-                </button>
-              )}
             </div>
+
+            {(paymentMethod === "credit" || (selectedCustomer && paymentMethod !== "credit")) && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Montant versé (CFA)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={total}
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
+                  placeholder={total > 0 ? `Max: ${formatCFA(total)}` : "0"}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm bg-gray-50 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+            )}
+
+            {(paymentMethod === "wave" || paymentMethod === "orange_money") && cart.length > 0 && (
+              <button
+                onClick={() => setShowPaymentLink(true)}
+                className="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+              >
+                Générer un lien de paiement {paymentMethod === "wave" ? "Wave" : "Orange Money"}
+              </button>
+            )}
 
             <div className="rounded-xl bg-gray-50 p-3">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Sous-total ({totalItems} articles)</span>
                 <span className="font-medium">{formatCFA(total)}</span>
               </div>
+              {parseInt(paidAmount) > 0 && parseInt(paidAmount) < total && (
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span className="text-orange-600">Reste à payer</span>
+                  <span className="font-medium text-orange-600">{formatCFA(total - (parseInt(paidAmount) || 0))}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-lg font-bold mt-1 pt-2 border-t border-gray-200">
                 <span>Total</span>
                 <span className="text-primary-600">{formatCFA(total)}</span>
@@ -451,8 +576,65 @@ export default function POSPage() {
               )}
             </Button>
           </div>
+
+          <div className="border-t border-gray-100 px-4 py-3">
+            <div className="grid grid-cols-3 gap-1.5">
+              {QUICK_ACTIONS.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={action.id}
+                    onClick={() => handleQuickAction(action)}
+                    className="flex flex-col items-center gap-1 rounded-lg border border-gray-200 py-2 px-1 text-xs text-gray-600 hover:bg-gray-50 hover:border-primary-300 transition-colors"
+                    title={action.label}
+                  >
+                    <Icon className="h-4 w-4 text-primary-500" />
+                    <span className="truncate w-full text-center">{action.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
+
+      {showCustomerForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-primary-600" />
+                Nouveau Client
+              </h2>
+              <button onClick={() => setShowCustomerForm(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <Input
+                label="Nom"
+                value={newCustomerName}
+                onChange={(e) => setNewCustomerName(e.target.value)}
+                placeholder="Nom du client"
+              />
+              <Input
+                label="Téléphone"
+                value={newCustomerPhone}
+                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                placeholder="77 123 45 67"
+              />
+              <div className="flex gap-2 pt-2">
+                <Button variant="secondary" onClick={() => setShowCustomerForm(false)} className="flex-1">
+                  Annuler
+                </Button>
+                <Button onClick={createCustomer} className="flex-1">
+                  Créer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {lastSale && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">

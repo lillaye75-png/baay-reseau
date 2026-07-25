@@ -7,7 +7,7 @@ from app.models.product import Product
 from app.models.supplier import Expense
 
 
-async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "daily", start_date: str = None, end_date: str = None) -> dict:
+async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "daily", start_date: str = None, end_date: str = None, seller_id: str = None) -> dict:
     now = datetime.now(timezone.utc)
 
     if start_date and end_date:
@@ -33,6 +33,8 @@ async def get_sales_report(db: AsyncSession, tenant_id: str, period: str = "dail
         label = "Cette année"
 
     date_filter = [Sale.tenant_id == tenant_id, Sale.created_at >= start, Sale.created_at <= end]
+    if seller_id:
+        date_filter.append(Sale.user_id == seller_id)
 
     result = await db.execute(
         select(
