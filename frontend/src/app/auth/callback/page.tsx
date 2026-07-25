@@ -41,6 +41,9 @@ export default function AuthCallbackPage() {
 
         api.get("/tenants/me").then((tenantRes) => {
           const needsWizard = !tenantRes.data.wizard_completed;
+          if (tenantRes.data.guide_completed) {
+            localStorage.setItem("naatal-guide-completed", "true");
+          }
           window.location.href = needsWizard ? "/wizard" : "/dashboard";
         }).catch(() => {
           window.location.href = "/dashboard";

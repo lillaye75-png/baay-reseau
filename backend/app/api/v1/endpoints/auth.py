@@ -41,15 +41,12 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.flush()
 
-    try:
-        from sqlalchemy import text
-        import uuid as _uuid
-        await db.execute(text(
-            "INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, TRUE)"
-        ), {"id": str(_uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id})
-        await db.flush()
-    except Exception:
-        pass
+    from sqlalchemy import text
+    import uuid as _uuid
+    await db.execute(text(
+        "INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, TRUE)"
+    ), {"id": str(_uuid.uuid4()), "user_id": user.id, "tenant_id": tenant.id})
+    await db.flush()
 
     token = create_access_token(data={"sub": str(user.id), "tenant_id": str(tenant.id)})
     user_data = UserRead.model_validate(user)
@@ -116,6 +113,14 @@ async def invite_employee(data: UserCreate, user: User = Depends(require_owner),
     )
     db.add(employee)
     await db.flush()
+
+    from sqlalchemy import text
+    import uuid as _uuid
+    await db.execute(text(
+        "INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, FALSE)"
+    ), {"id": str(_uuid.uuid4()), "user_id": employee.id, "tenant_id": user.tenant_id})
+    await db.flush()
+
     return employee
 
 

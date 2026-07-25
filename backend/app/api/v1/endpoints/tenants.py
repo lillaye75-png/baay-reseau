@@ -165,14 +165,11 @@ async def delete_all_data(user: User = Depends(require_owner), db: AsyncSession 
 @router.get("/stores")
 async def list_my_stores(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from sqlalchemy import text
-    try:
-        result = await db.execute(
-            text("SELECT t.id, t.name, t.slug, t.is_active, us.is_default FROM tenants t JOIN user_stores us ON t.id = us.tenant_id WHERE us.user_id = :user_id"),
-            {"user_id": user.id}
-        )
-        stores = [{"id": row[0], "name": row[1], "slug": row[2], "is_active": row[3], "is_default": row[4]} for row in result.all()]
-    except Exception:
-        stores = []
+    result = await db.execute(
+        text("SELECT t.id, t.name, t.slug, t.is_active, us.is_default FROM tenants t JOIN user_stores us ON t.id = us.tenant_id WHERE us.user_id = :user_id"),
+        {"user_id": user.id}
+    )
+    stores = [{"id": row[0], "name": row[1], "slug": row[2], "is_active": row[3], "is_default": row[4]} for row in result.all()]
 
     if not stores:
         stores = [{"id": user.tenant_id, "name": "Ma Boutique", "slug": "", "is_active": True, "is_default": True}]
@@ -213,31 +210,25 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
         else:
             assigned_user_id = None
 
-        try:
-            await db.execute(
-                text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
-                {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
-            )
-            logger.info("Owner added to user_stores")
-        except Exception as e:
-            logger.warning(f"user_stores owner insert failed: {e}")
+        await db.execute(
+            text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, :is_default)"),
+            {"id": str(uuid.uuid4()), "user_id": user.id, "tenant_id": store.id, "is_default": False}
+        )
+        logger.info("Owner added to user_stores")
 
         if assigned_user_id:
-            try:
-                existing = await db.execute(
-                    text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
-                    {"uid": assigned_user_id, "tid": store.id}
+            existing = await db.execute(
+                text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+                {"uid": assigned_user_id, "tid": store.id}
+            )
+            if not existing.first():
+                await db.execute(
+                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
+                    {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
                 )
-                if not existing.first():
-                    await db.execute(
-                        text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
-                        {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
-                    )
-                    logger.info(f"Employee {assigned_user_id} assigned to store")
-                else:
-                    logger.info("Employee already in user_stores")
-            except Exception as e:
-                logger.warning(f"user_stores assign failed: {e}")
+                logger.info(f"Employee {assigned_user_id} assigned to store")
+            else:
+                logger.info("Employee already in user_stores")
 
         await db.flush()
         logger.info(f"Store creation OK: {store.id}")
@@ -251,7 +242,7 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
 
 
 @router.put("/stores/{store_id}/switch")
-async def switch_store(store_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def switch_store(store_id: str, user: User = Depends(require_owner), db: AsyncSession = Depends(get_db)):
     from sqlalchemy import text
 
     result = await db.execute(
@@ -267,6 +258,10 @@ async def switch_store(store_id: str, user: User = Depends(get_current_user), db
     )
     await db.execute(
         text("UPDATE user_stores SET is_default = TRUE WHERE user_id = :user_id AND tenant_id = :store_id"),
+        {"user_id": user.id, "store_id": store_id}
+    )
+    await db.execute(
+        text("UPDATE users SET tenant_id = :store_id WHERE id = :user_id"),
         {"user_id": user.id, "store_id": store_id}
     )
     await db.flush()

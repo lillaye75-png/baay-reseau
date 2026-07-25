@@ -1,6 +1,6 @@
 # Naatal ERP Cloud — Project Status
 
-> Dernière mise à jour : 2026-07-24
+> Dernière mise à jour : 2026-07-25
 > Projet : C:\Users\HP\Documents\project\baay-reseau
 > Compte test : 771234567 / admin123 (owner)
 > Super Admin : 776621410, 708372127
@@ -91,9 +91,14 @@
 - **Slug uniqueness → auto-suffix with UUID to prevent duplicate key errors**
 
 ### Known Issues (To Fix)
-- **Store assignment → creates store but employee assignment doesn't persist (needs investigation)**
-- **Onboarding guide → appears on every login instead of only first login (localStorage/DB check needed)**
-- **WebSocket → unavailable on Vercel serverless, polling fallback active every 8-10s**
+- **Store assignment → creates store but employee assignment doesn't persist (needs investigation)** ✅ Fixed 2026-07-25
+- **Onboarding guide → appears on every login instead of only first login (localStorage/DB check needed)** ✅ Fixed 2026-07-25
+- **WebSocket → unavailable on Vercel serverless, polling fallback active every 8-10s** ✅ Fixed 2026-07-25
+
+### Bug Fixes (2026-07-25)
+- **Store assignment** : `invite-employee` creates `user_stores` row, silent `try/except` removed on all user_stores INSERTS, `switch_store` updates `User.tenant_id` in DB
+- **Onboarding guide** : DB column `tenants.guide_completed`, API persist on completion, login syncs localStorage from API
+- **WebSocket polling** : In-memory event queue replaced with `event_queue` DB table, polling interval 10s→30s, `notify_new_order` called from `shop.py` order creation, duplicate `events.py` endpoint fixed
 
 ### Security & Permissions (2026-07-09)
 - **Critical security audit completed — 10 critical, 49 major, 59 minor issues fixed**

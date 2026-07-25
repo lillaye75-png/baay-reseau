@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { X, ChevronRight, ChevronLeft, CheckCircle } from "lucide-react";
+import api from "@/lib/api";
 
 interface GuideStep {
   target: string;
@@ -92,6 +93,10 @@ export default function OnboardingGuide() {
     localStorage.setItem(GUIDE_STORAGE_KEY, "true");
     setIsVisible(false);
     setCurrentStep(0);
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (user.tenant_id) {
+      api.put(`/tenants/${user.tenant_id}`, { guide_completed: true }).catch(() => {});
+    }
   };
 
   if (!isVisible) return null;

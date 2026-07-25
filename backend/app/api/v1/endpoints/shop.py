@@ -219,6 +219,20 @@ async def create_store_order(slug: str, data: dict, db: AsyncSession = Depends(g
     await db.flush()
 
     try:
+        from app.api.v1.endpoints.websocket import notify_new_order
+        from app.core.logging import logger
+        await notify_new_order(tenant.id, {
+            "order_id": order.id,
+            "customer_name": data.get("customer_name", ""),
+            "total_cfa": total,
+            "status": "pending",
+        }, db=db)
+        logger.info(f"notify_new_order sent for {order.id[:8]}")
+    except Exception as e:
+        from app.core.logging import logger
+        logger.warning(f"notify_new_order failed: {e}")
+
+    try:
         from app.integrations.whatsapp import send_whatsapp_message
         from app.core.logging import logger
         notif_msg = (

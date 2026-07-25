@@ -102,6 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const tenantRes = await api.get("/tenants/me");
       const needsWizard = !tenantRes.data.wizard_completed;
+      if (tenantRes.data.guide_completed) {
+        localStorage.setItem("naatal-guide-completed", "true");
+      }
       if (needsWizard) {
         router.push("/wizard");
       } else {

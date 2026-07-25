@@ -114,7 +114,7 @@ export default function OrdersPage() {
           if (server_time) lastEventTs = server_time;
         } catch { }
       };
-      pollTimer = setInterval(pollEvents, 10000);
+      pollTimer = setInterval(pollEvents, 30000);
     };
 
     tryWebSocket();

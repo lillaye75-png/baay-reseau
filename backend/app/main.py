@@ -139,6 +139,10 @@ async def init_db():
             except Exception:
                 pass
             try:
+                await conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS guide_completed BOOLEAN DEFAULT FALSE"))
+            except Exception:
+                pass
+            try:
                 await conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points INTEGER DEFAULT 0"))
             except Exception:
                 pass
@@ -233,6 +237,19 @@ async def init_db():
             try:
                 await conn.execute(text("ALTER TABLE sales ADD COLUMN IF NOT EXISTS store_id VARCHAR(36)"))
                 await conn.execute(text("ALTER TABLE sales ADD COLUMN IF NOT EXISTS user_id VARCHAR(36)"))
+            except Exception:
+                pass
+            try:
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS event_queue (
+                        id VARCHAR(36) PRIMARY KEY,
+                        tenant_id VARCHAR(36) NOT NULL,
+                        event_type VARCHAR(50) NOT NULL,
+                        event_data JSONB DEFAULT '{}',
+                        created_at BIGINT NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_event_queue_tenant_ts ON event_queue(tenant_id, created_at)"))
             except Exception:
                 pass
         logger.info("Tenant columns ensured")

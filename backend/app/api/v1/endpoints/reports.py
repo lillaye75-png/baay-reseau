@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -11,6 +11,16 @@ from app.services.reports import get_sales_report, get_top_products, get_trends,
 router = APIRouter()
 
 
+async def _validate_store_id(store_id: str, user: User, db: AsyncSession):
+    from sqlalchemy import text
+    result = await db.execute(
+        text("SELECT id FROM user_stores WHERE user_id = :uid AND tenant_id = :tid"),
+        {"uid": user.id, "tid": store_id}
+    )
+    if not result.first():
+        raise HTTPException(status_code=403, detail="Cette boutique ne vous appartient pas")
+
+
 @router.get("/sales")
 async def sales_report(
     period: str = "daily",
@@ -20,6 +30,8 @@ async def sales_report(
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
+    if store_id:
+        await _validate_store_id(store_id, user, db)
     tenant_id = store_id or user.tenant_id
     return await get_sales_report(db, tenant_id, period, start_date, end_date)
 
@@ -32,6 +44,8 @@ async def top_products(
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
+    if store_id:
+        await _validate_store_id(store_id, user, db)
     tenant_id = store_id or user.tenant_id
     return await get_top_products(db, tenant_id, start_date=start_date, end_date=end_date)
 
@@ -43,6 +57,8 @@ async def sales_trends(
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
+    if store_id:
+        await _validate_store_id(store_id, user, db)
     tenant_id = store_id or user.tenant_id
     return await get_trends(db, tenant_id, days)
 
@@ -57,6 +73,8 @@ async def compare_periods(
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
+    if store_id:
+        await _validate_store_id(store_id, user, db)
     tenant_id = store_id or user.tenant_id
     return await get_period_comparison(
         db, tenant_id,
@@ -92,6 +110,7 @@ async def reports_by_store(
 
 @router.get("/stock-predictions")
 async def stock_predictions(
+    store_id: Optional[str] = Query(None),
     user: User = Depends(require_owner),
     db: AsyncSession = Depends(get_db),
 ):
@@ -100,11 +119,15 @@ async def stock_predictions(
     from app.models.sale import Sale, SaleItem
     from app.models.order import Order, OrderItem
 
+    if store_id:
+        await _validate_store_id(store_id, user, db)
+    tenant_id = store_id or user.tenant_id
+
     now = datetime.now(timezone.utc)
     thirty_days_ago = now - timedelta(days=30)
 
     products_result = await db.execute(
-        select(Product).where(Product.tenant_id == user.tenant_id, Product.is_active == True)
+        select(Product).where(Product.tenant_id == tenant_id, Product.is_active == True)
     )
     products = list(products_result.scalars().all())
 
@@ -118,7 +141,7 @@ async def stock_predictions(
             .join(Sale, SaleItem.sale_id == Sale.id)
             .where(
                 SaleItem.product_id == product.id,
-                Sale.tenant_id == user.tenant_id,
+                Sale.tenant_id == tenant_id,
                 Sale.created_at >= thirty_days_ago,
             )
         )
@@ -133,7 +156,7 @@ async def stock_predictions(
             .join(Order, OrderItem.order_id == Order.id)
             .where(
                 OrderItem.product_id == product.id,
-                Order.tenant_id == user.tenant_id,
+                Order.tenant_id == tenant_id,
                 Order.created_at >= thirty_days_ago,
                 Order.status != "cancelled",
             )

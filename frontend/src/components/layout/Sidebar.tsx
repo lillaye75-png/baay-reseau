@@ -116,7 +116,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
         </div>
       )}
 
-      {stores.length > 1 && (
+      {stores.length > 1 && user?.role === "owner" && (
         <div className="mx-3 mb-2">
           <button
             onClick={() => setShowStoreSwitcher(!showStoreSwitcher)}
