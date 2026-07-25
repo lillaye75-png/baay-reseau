@@ -106,6 +106,9 @@
 
 ### Known Issues
 - **Playwright MCP disconnect** : Les outils Playwright intégrés se déconnectent en milieu de session (#35207). Fix temporaire : ajouter `"timeout": 10000` dans `opencode.jsonc`. En attendant, utiliser `NODE_PATH=C:\Users\HP\AppData\Roaming\npm\node_modules node script.js` pour lancer Playwright via CLI.
+- **Store creation with employee → `0` vs `FALSE`** : `tenants.py:226` utilise `0` au lieu de `FALSE` pour le BOOLEAN `is_default`, PostgreSQL rejette → rollback silencieux après 200. ✅ Fixed 2026-07-25 (local, pas déployé)
+- **Commit après réponse** : `POST /stores` (tenants.py), `PUT /stores/{id}/switch` (tenants.py), `POST /invite-employee` (auth.py) n'ont pas de `await db.commit()` explicite. `get_db` commit après la réponse → race condition si une requête suivante arrive avant le commit. ✅ Fixed 2026-07-25 (local, pas déployé)
+- **QA multi-store** : `qa-reports/multi-store-qa.md` — 4 bugs trouvés, 4 corrigés localement. À déployer et re-tester.
 
 ### Security & Permissions (2026-07-09)
 - **Critical security audit completed — 10 critical, 49 major, 59 minor issues fixed**

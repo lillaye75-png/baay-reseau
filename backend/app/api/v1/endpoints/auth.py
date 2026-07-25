@@ -120,6 +120,7 @@ async def invite_employee(data: UserCreate, user: User = Depends(require_owner),
         "INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, FALSE)"
     ), {"id": str(_uuid.uuid4()), "user_id": employee.id, "tenant_id": user.tenant_id})
     await db.flush()
+    await db.commit()
 
     return employee
 

@@ -223,7 +223,7 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
             )
             if not existing.first():
                 await db.execute(
-                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, 0)"),
+                    text("INSERT INTO user_stores (id, user_id, tenant_id, is_default) VALUES (:id, :user_id, :tenant_id, FALSE)"),
                     {"id": str(uuid.uuid4()), "user_id": assigned_user_id, "tenant_id": store.id}
                 )
                 logger.info(f"Employee {assigned_user_id} assigned to store")
@@ -231,6 +231,7 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
                 logger.info("Employee already in user_stores")
 
         await db.flush()
+        await db.commit()
         logger.info(f"Store creation OK: {store.id}")
 
         return {"id": store.id, "name": store.name, "slug": store.slug, "assigned_user_id": assigned_user_id}
@@ -265,6 +266,7 @@ async def switch_store(store_id: str, user: User = Depends(require_owner), db: A
         {"user_id": user.id, "store_id": store_id}
     )
     await db.flush()
+    await db.commit()
 
     return {"status": "switched", "tenant_id": store_id}
 
