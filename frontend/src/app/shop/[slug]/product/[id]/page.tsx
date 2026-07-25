@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatCFA, getImageUrl } from "@/lib/format";
 import { ArrowLeft, ShoppingCart, Plus, Minus, Package } from "lucide-react";
+import { WhatsAppShareButton } from "@/components/shop/whatsapp-share-button";
 
 interface ProductImage {
   id: string;
@@ -38,11 +39,19 @@ function ProductContent() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [storeWhatsapp, setStoreWhatsapp] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState("");
 
   useEffect(() => {
-    fetch(`${API}/api/v1/shop/store/${slug}/product/${productId}`)
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(setProduct)
+    Promise.all([
+      fetch(`${API}/api/v1/shop/store/${slug}/product/${productId}`).then((r) => r.ok ? r.json() : Promise.reject()),
+      fetch(`${API}/api/v1/shop/store/${slug}`).then((r) => r.ok ? r.json() : Promise.reject()),
+    ])
+      .then(([productData, storeData]) => {
+        setProduct(productData);
+        setStoreWhatsapp(storeData.whatsapp || null);
+        setStoreName(storeData.store_name || "");
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [slug, productId]);
@@ -132,6 +141,14 @@ function ProductContent() {
               <p className="text-sm text-gray-600 whitespace-pre-wrap">{product.description}</p>
             </div>
           )}
+
+          <WhatsAppShareButton
+            productName={product.name}
+            productPrice={product.price_cfa}
+            productId={product.id}
+            storeWhatsapp={storeWhatsapp}
+            storeName={storeName}
+          />
 
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <h3 className="font-medium text-gray-900 mb-3">Ajouter au panier</h3>
