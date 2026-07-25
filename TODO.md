@@ -1,6 +1,6 @@
 # Naatal ERP Cloud — Project Status
 
-> Dernière mise à jour : 2026-07-25
+> Dernière mise à jour : 2026-07-25 (17:00 GMT)
 > Projet : C:\Users\HP\Documents\project\baay-reseau
 > Compte test : 771234567 / admin123 (owner)
 > Super Admin : 776621410, 708372127
@@ -99,6 +99,13 @@
 - **Store assignment** : `invite-employee` creates `user_stores` row, silent `try/except` removed on all user_stores INSERTS, `switch_store` updates `User.tenant_id` in DB
 - **Onboarding guide** : DB column `tenants.guide_completed`, API persist on completion, login syncs localStorage from API
 - **WebSocket polling** : In-memory event queue replaced with `event_queue` DB table, polling interval 10s→30s, `notify_new_order` called from `shop.py` order creation, duplicate `events.py` endpoint fixed
+
+### New Features (2026-07-25)
+- **Admin-only hardening** : `switch_store` restricted to owner, reports validate `store_id` ownership via `user_stores`, stock predictions support `store_id` filter, sidebar store switcher hidden for non-owners
+- **WhatsApp Share button** : Bouton "Partager sur WhatsApp" sur les pages produit de la boutique publique. Message pré-rempli (nom + prix + lien), anti-double-clic, utilise le numéro WhatsApp de la boutique si configuré
+
+### Known Issues
+- **Playwright MCP disconnect** : Les outils Playwright intégrés se déconnectent en milieu de session (#35207). Fix temporaire : ajouter `"timeout": 10000` dans `opencode.jsonc`. En attendant, utiliser `NODE_PATH=C:\Users\HP\AppData\Roaming\npm\node_modules node script.js` pour lancer Playwright via CLI.
 
 ### Security & Permissions (2026-07-09)
 - **Critical security audit completed — 10 critical, 49 major, 59 minor issues fixed**
