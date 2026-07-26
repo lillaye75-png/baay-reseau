@@ -75,16 +75,27 @@ async def create_new_sale(data: SaleCreate, user: User = Depends(get_current_use
 
 @router.post("/quick", status_code=201)
 async def create_quick_sale_endpoint(data: QuickSaleCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    sale = await create_quick_sale(db, user.tenant_id, data, user_id=user.id)
     try:
-        sale = await create_quick_sale(db, user.tenant_id, data, user_id=user.id)
-        try:
-            await log_action(db, user.tenant_id, user.id, user.name, "create", "quick_sale", sale.id, f"Vente rapide {data.product_name} {data.unit_price_cfa} CFA")
-        except Exception:
-            pass
-        return {"id": sale.id, "total": sale.total_cfa, "ok": True}
-    except Exception as e:
-        import traceback
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
+        await log_action(db, user.tenant_id, user.id, user.name, "create", "quick_sale", sale.id, f"Vente rapide {data.product_name} {data.unit_price_cfa} CFA")
+    except Exception:
+        pass
+    return {
+        "id": sale.id,
+        "tenant_id": sale.tenant_id,
+        "store_id": sale.store_id,
+        "user_id": sale.user_id,
+        "customer_id": sale.customer_id,
+        "total_cfa": sale.total_cfa,
+        "payment_method": sale.payment_method,
+        "payment_reference": sale.payment_reference,
+        "is_credit": sale.is_credit,
+        "seller_name": getattr(sale, "seller_name", None),
+        "paid_amount": getattr(sale, "paid_amount", 0),
+        "remaining_cfa": getattr(sale, "remaining_cfa", 0),
+        "created_at": sale.created_at.isoformat(),
+        "items": [{"product_name": item.product_name, "quantity": item.quantity, "unit_price_cfa": item.unit_price_cfa, "total_cfa": item.total_cfa} for item in sale.items],
+    }
 
 
 @router.post("/{product_id}/adjust-stock")
