@@ -31,6 +31,8 @@ async def update_tenant(tenant_id: str, data: TenantUpdate, user: User = Depends
         raise HTTPException(status_code=404, detail="Tenant not found")
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
+        if field == "name" and isinstance(value, str):
+            value = value.strip()
         setattr(tenant, field, value)
     await db.flush()
     return tenant
@@ -186,7 +188,7 @@ async def create_new_store(data: dict, user: User = Depends(require_owner), db: 
     logger.info(f"POST /stores by user={user.id} data={data}")
 
     try:
-        name = str(data.get("name", "Nouvelle boutique"))[:255]
+        name = str(data.get("name", "Nouvelle boutique")).strip()[:255]
         raw_slug = str(data.get("slug", "")).strip().lower()
         if raw_slug:
             slug = f"{raw_slug}-{str(uuid.uuid4())[:8]}"

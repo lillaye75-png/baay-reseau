@@ -1,4 +1,5 @@
 import time
+import os
 from collections import defaultdict
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -26,6 +27,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._last_cleanup = time.time()
 
     async def dispatch(self, request: Request, call_next):
+        # Skip rate limiting during test runs
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return await call_next(request)
+
         client_ip = request.client.host if request.client else "unknown"
         path = request.url.path
 

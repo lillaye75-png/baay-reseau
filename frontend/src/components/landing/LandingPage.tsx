@@ -28,6 +28,7 @@ import {
   Headphones,
   ChevronUp,
 } from "lucide-react";
+import { CONTACT_PHONE, CONTACT_WHATSAPP, formatPhoneSN } from "@/lib/constants";
 
 const features = [
   {
@@ -599,18 +600,18 @@ export default function LandingPage() {
               </p>
 
               <div className="space-y-4">
-                <a href="tel:+221776621410" className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                <a href={`tel:+221${CONTACT_PHONE}`} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
                   <div className="h-12 w-12 rounded-xl bg-primary-100 flex items-center justify-center">
                     <Phone className="h-5 w-5 text-primary-600" />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">Téléphone</p>
-                    <p className="text-sm text-gray-500">+221 77 662 14 10</p>
+                    <p className="text-sm text-gray-500">{formatPhoneSN(CONTACT_PHONE)}</p>
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400 ml-auto" />
                 </a>
 
-                <a href="https://wa.me/221708372127" target="_blank" className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-md transition-all">
+                <a href={`https://wa.me/221${CONTACT_WHATSAPP}`} target="_blank" className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-md transition-all">
                   <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
                     <MessageCircle className="h-5 w-5 text-green-600" />
                   </div>

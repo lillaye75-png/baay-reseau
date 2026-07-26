@@ -10,7 +10,8 @@ from app.core.database import get_db
 from app.api.deps import get_current_user, require_owner
 from app.models.user import User
 from app.models.tenant import Tenant
-from app.models.licence import Licence, TIER_FEATURES, SUPER_ADMIN_PHONES
+from app.core.config import _super_admin_phones_list as SUPER_ADMIN_PHONES
+from app.models.licence import Licence, TIER_FEATURES
 from app.core.security import hash_password
 
 router = APIRouter()
@@ -245,8 +246,10 @@ async def wipe_all_data(user: User = Depends(get_current_user), db: AsyncSession
         except Exception:
             pass
 
-    await db.execute(text("DELETE FROM users WHERE phone NOT IN (:p1, :p2)"), {"p1": "776621410", "p2": "708372127"})
-    await db.execute(text("DELETE FROM tenants WHERE id NOT IN (SELECT tenant_id FROM users WHERE phone IN (:p1, :p2))"), {"p1": "776621410", "p2": "708372127"})
+    placeholders = ", ".join([f":p{i}" for i in range(len(SUPER_ADMIN_PHONES))])
+    params = {f"p{i}": p for i, p in enumerate(SUPER_ADMIN_PHONES)}
+    await db.execute(text(f"DELETE FROM users WHERE phone NOT IN ({placeholders})"), params)
+    await db.execute(text(f"DELETE FROM tenants WHERE id NOT IN (SELECT tenant_id FROM users WHERE phone IN ({placeholders}))"), params)
 
     await db.flush()
     return {"status": "wiped", "message": "Toutes les données ont été supprimées"}

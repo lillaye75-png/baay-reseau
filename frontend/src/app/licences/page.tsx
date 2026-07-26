@@ -14,6 +14,7 @@ import {
   Users, UserPlus, Trash, Power, PowerOff, Building2, BarChart3,
   RefreshCw, Eye, EyeOff, Database, Globe, Package, ShoppingCart,
 } from "lucide-react";
+import { DEFAULT_ADMIN_PASSWORD } from "@/lib/constants";
 import { showToast } from "@/components/ui/Toast";
 
 interface Licence {
@@ -76,7 +77,7 @@ export default function LicencesPage() {
   const [showLicenceForm, setShowLicenceForm] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
   const [licenceForm, setLicenceForm] = useState({ tier: "pro", duration_days: 30 });
-  const [userForm, setUserForm] = useState({ name: "", phone: "", password: "admin123", shop_name: "" });
+  const [userForm, setUserForm] = useState({ name: "", phone: "", password: DEFAULT_ADMIN_PASSWORD, shop_name: "" });
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
@@ -130,7 +131,7 @@ export default function LicencesPage() {
       await api.post("/licences/users", userForm);
       showToast("Compte créé");
       setShowUserForm(false);
-      setUserForm({ name: "", phone: "", password: "admin123", shop_name: "" });
+      setUserForm({ name: "", phone: "", password: DEFAULT_ADMIN_PASSWORD, shop_name: "" });
       loadAll();
     } catch (err: any) { showToast(err.response?.data?.detail || "Erreur", "error"); }
     finally { setLoading(false); }
@@ -154,7 +155,7 @@ export default function LicencesPage() {
   };
 
   const handleResetPassword = async (id: string, name: string) => {
-    const pw = prompt(`Nouveau mot de passe pour "${name}" :`, "admin123");
+    const pw = prompt(`Nouveau mot de passe pour "${name}" :`, DEFAULT_ADMIN_PASSWORD);
     if (!pw) return;
     try {
       await api.post(`/licences/users/${id}/reset-password`, { password: pw });

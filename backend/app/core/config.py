@@ -37,8 +37,18 @@ class Settings(BaseSettings):
     FCM_SERVER_KEY: str = ""
     FCM_PROJECT_ID: str = ""
 
+    SUPER_ADMIN_PHONES: str = "776621410,708372127"
+    DEFAULT_ADMIN_PASSWORD: str = "admin123"
+    CONTACT_PHONE: str = "776621410"
+    CONTACT_WHATSAPP: str = "708372127"
+    SEED_PHONE: str = "771234567"
+    DEFAULT_TENANT_NAME: str = "My Shop"
+
 
 settings = Settings()
+
+# Convenience: parse comma-separated SUPER_ADMIN_PHONES into a list
+_super_admin_phones_list = [p.strip() for p in settings.SUPER_ADMIN_PHONES.split(",") if p.strip()]
 
 if not settings.SECRET_KEY:
     import os

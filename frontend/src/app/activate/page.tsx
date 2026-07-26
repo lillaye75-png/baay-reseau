@@ -8,6 +8,7 @@ import { Key, Shield, ArrowRight, Clock, Check, Zap, Crown, Building2 } from "lu
 import api from "@/lib/api";
 import { showToast } from "@/components/ui/Toast";
 import Link from "next/link";
+import { CONTACT_PHONE, CONTACT_WHATSAPP, formatPhoneSN } from "@/lib/constants";
 
 const tierFeatures: Record<string, { icon: any; name: string; features: string[] }> = {
   free: {
@@ -141,8 +142,8 @@ export default function ActivatePage() {
                 <p className="font-medium mb-1">Besoin d&apos;une licence ?</p>
                 <p>Contactez-nous pour obtenir votre clé :</p>
                 <div className="mt-2 space-y-1">
-                  <p>+221 77 662 14 10</p>
-                  <p><a href="https://wa.me/221708372127" className="text-primary-600 hover:underline">+221 70 837 21 27 (WhatsApp)</a></p>
+                  <p>{formatPhoneSN(CONTACT_PHONE)}</p>
+                  <p><a href={`https://wa.me/221${CONTACT_WHATSAPP}`} className="text-primary-600 hover:underline">{formatPhoneSN(CONTACT_WHATSAPP)} (WhatsApp)</a></p>
                   <p><a href="mailto:layedevops@gmail.com" className="text-primary-600 hover:underline">layedevops@gmail.com</a></p>
                 </div>
               </div>

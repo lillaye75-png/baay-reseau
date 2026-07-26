@@ -23,7 +23,7 @@ export default function SalesPage() {
   const [sellerId, setSellerId] = useState("");
   const [storeId, setStoreId] = useState("");
   const [sellers, setSellers] = useState<{ id: string; name: string }[]>([]);
-  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const [stores, setStores] = useState<{ id: string; name: string; is_default?: boolean }[]>([]);
 
   useEffect(() => {
     api.get("/sales/")
@@ -274,7 +274,9 @@ export default function SalesPage() {
             >
               <option value="">Toutes</option>
               {stores.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}{s.is_default ? ' (par défaut)' : ''}
+                </option>
               ))}
             </select>
           </div>

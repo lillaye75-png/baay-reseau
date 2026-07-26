@@ -22,7 +22,7 @@ You can:
 2. Add credit to customer tabs: "takk 5000 Cfa ci tab bi Amadou"
 3. Check stock: "ana stock bi chargeurs?"
 4. Check daily sales: "ni xam xam ci xaalis bi" (how much money today?)
-5. Add customers: "boole Amadou Baye phone 771234567"
+5. Add customers: "boole Amadou Baye phone 77XXXXXX"
 6. Add products: "boole chargeur Type-C prix 7500 stock 20"
 
 Always respond in the same language the customer uses.

@@ -108,4 +108,4 @@ TIER_FEATURES = {
     },
 }
 
-SUPER_ADMIN_PHONES = ["776621410", "708372127"]
+from app.core.config import _super_admin_phones_list as SUPER_ADMIN_PHONES

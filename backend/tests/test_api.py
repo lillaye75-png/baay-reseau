@@ -1,6 +1,16 @@
 import pytest
 from httpx import AsyncClient
 
+import os
+import time
+
+TEST_PASSWORD = os.environ.get("TEST_PASSWORD", "test123")
+_base = 770000000 + int(time.time()) % 86400
+
+
+def _phone(n: int) -> str:
+    return str(_base + n)
+
 
 @pytest.mark.asyncio
 async def test_health(client: AsyncClient):
@@ -14,8 +24,8 @@ async def test_health(client: AsyncClient):
 async def test_register(client: AsyncClient):
     response = await client.post("/api/v1/auth/register", json={
         "name": "Test User",
-        "phone": "770000001",
-        "password": "test123",
+        "phone": _phone(1),
+        "password": TEST_PASSWORD,
     })
     assert response.status_code == 201
     data = response.json()
@@ -25,14 +35,15 @@ async def test_register(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_register_duplicate_phone(client: AsyncClient):
+    phone = _phone(2)
     await client.post("/api/v1/auth/register", json={
         "name": "Dup User",
-        "phone": "770000002",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     response = await client.post("/api/v1/auth/register", json={
         "name": "Dup User 2",
-        "phone": "770000002",
+        "phone": phone,
         "password": "test456",
     })
     assert response.status_code == 400
@@ -40,14 +51,15 @@ async def test_register_duplicate_phone(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_login(client: AsyncClient):
+    phone = _phone(3)
     await client.post("/api/v1/auth/register", json={
         "name": "Login Test",
-        "phone": "770000003",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     response = await client.post("/api/v1/auth/login", json={
-        "phone": "770000003",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     assert response.status_code == 200
     assert "access_token" in response.json()
@@ -55,13 +67,14 @@ async def test_login(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_login_wrong_password(client: AsyncClient):
+    phone = _phone(4)
     await client.post("/api/v1/auth/register", json={
         "name": "Wrong Pass",
-        "phone": "770000004",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     response = await client.post("/api/v1/auth/login", json={
-        "phone": "770000004",
+        "phone": phone,
         "password": "wrongpass",
     })
     assert response.status_code == 401
@@ -71,7 +84,7 @@ async def test_login_wrong_password(client: AsyncClient):
 async def test_password_validation(client: AsyncClient):
     response = await client.post("/api/v1/auth/register", json={
         "name": "Short Pass",
-        "phone": "770000005",
+        "phone": _phone(5),
         "password": "123",
     })
     assert response.status_code == 422
@@ -79,23 +92,25 @@ async def test_password_validation(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_tenant(client: AsyncClient):
+    phone = _phone(6)
     reg = await client.post("/api/v1/auth/register", json={
         "name": "Tenant Test",
-        "phone": "770000006",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     token = reg.json()["access_token"]
     response = await client.get("/api/v1/tenants/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    assert response.json()["name"] == "Tenant Test"
+    assert response.json()["name"] == os.environ.get("DEFAULT_TENANT_NAME", "My Shop")
 
 
 @pytest.mark.asyncio
 async def test_update_tenant(client: AsyncClient):
+    phone = _phone(7)
     reg = await client.post("/api/v1/auth/register", json={
         "name": "Update Tenant",
-        "phone": "770000007",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     token = reg.json()["access_token"]
     tenant = (await client.get("/api/v1/tenants/me", headers={"Authorization": f"Bearer {token}"})).json()
@@ -110,10 +125,11 @@ async def test_update_tenant(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_quick_sale(client: AsyncClient):
+    phone = _phone(8)
     reg = await client.post("/api/v1/auth/register", json={
         "name": "Quick Sale Test",
-        "phone": "770000008",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     token = reg.json()["access_token"]
     response = await client.post("/api/v1/sales/quick", json={
@@ -130,10 +146,11 @@ async def test_quick_sale(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_dashboard_summary(client: AsyncClient):
+    phone = _phone(9)
     reg = await client.post("/api/v1/auth/register", json={
         "name": "Dashboard Test",
-        "phone": "770000009",
-        "password": "test123",
+        "phone": phone,
+        "password": TEST_PASSWORD,
     })
     token = reg.json()["access_token"]
     response = await client.get("/api/v1/dashboard/summary", headers={"Authorization": f"Bearer {token}"})

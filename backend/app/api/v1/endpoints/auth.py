@@ -9,8 +9,8 @@ from app.models.user import User
 from app.models.tenant import Tenant
 from app.schemas.user import UserCreate, UserLogin, UserRead, Token, EmployeeUpdate
 from app.api.deps import require_owner, check_limit
-
-SUPER_ADMIN_PHONES = ["776621410", "708372127"]
+from app.core.config import _super_admin_phones_list as SUPER_ADMIN_PHONES
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Phone number already registered")
 
     tenant = Tenant(
-        name="My Shop",
+        name=settings.DEFAULT_TENANT_NAME,
         slug=f"shop-{data.phone}",
         phone=data.phone,
         subscription_plan="free",

@@ -11,6 +11,7 @@ import api, { Tenant } from "@/lib/api";
 import { Store, User, Shield, Smartphone, Users, UserPlus, Trash2, MessageSquare, CreditCard, Phone, Download, Upload, AlertTriangle, Save, Printer } from "lucide-react";
 import { useTheme, COLOR_PRESETS } from "@/lib/theme-context";
 import { showToast } from "@/components/ui/Toast";
+import { CONTACT_PHONE, CONTACT_WHATSAPP, formatPhoneSN } from "@/lib/constants";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -627,11 +628,11 @@ export default function SettingsPage() {
             <div className="rounded-lg bg-gray-50 p-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Téléphone</span>
-                <a href="tel:+221776621410" className="text-sm font-medium text-primary-600 hover:underline">+221 77 662 14 10</a>
+                <a href={`tel:+221${CONTACT_PHONE}`} className="text-sm font-medium text-primary-600 hover:underline">{formatPhoneSN(CONTACT_PHONE)}</a>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">WhatsApp</span>
-                <a href="https://wa.me/221708372127" target="_blank" className="text-sm font-medium text-green-600 hover:underline">+221 70 837 21 27</a>
+                <a href={`https://wa.me/221${CONTACT_WHATSAPP}`} target="_blank" className="text-sm font-medium text-green-600 hover:underline">{formatPhoneSN(CONTACT_WHATSAPP)}</a>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Email</span>

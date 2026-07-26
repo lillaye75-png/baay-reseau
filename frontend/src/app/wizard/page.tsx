@@ -8,6 +8,7 @@ import { Store, User, Key, Check, ArrowRight, ArrowLeft } from "lucide-react";
 import api from "@/lib/api";
 import { showToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/auth-context";
+import { DEFAULT_TENANT_NAME } from "@/lib/constants";
 
 export default function WizardPage() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function WizardPage() {
       if (res.data.wizard_completed) {
         window.location.href = "/dashboard";
       } else {
-        setShopName(res.data.name === "My Shop" ? "" : res.data.name);
+        setShopName(res.data.name === DEFAULT_TENANT_NAME ? "" : res.data.name);
         setShopPhone(res.data.phone || "");
         setShopEmail(res.data.email || "");
         setShopSlug(res.data.slug || "");
@@ -44,7 +45,7 @@ export default function WizardPage() {
     setSaving(true);
     try {
       await api.put(`/tenants/${user?.tenant_id}`, {
-        name: shopName || "My Shop",
+        name: shopName || DEFAULT_TENANT_NAME,
         phone: shopPhone || user?.phone,
         email: shopEmail || null,
         slug: shopSlug || undefined,

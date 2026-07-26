@@ -11,6 +11,7 @@ import api from "@/lib/api";
 import { showToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { CONTACT_PHONE, CONTACT_WHATSAPP, formatPhoneSN } from "@/lib/constants";
 
 interface Plan {
   id: string;
@@ -275,14 +276,14 @@ export default function BillingPage() {
             <div className="rounded-lg bg-gray-50 p-4 space-y-3">
               <p className="text-sm text-gray-700 font-medium">Pour payer votre licence, contactez-nous :</p>
               <div className="space-y-2">
-                <a href="tel:+221776621410" className="flex items-center gap-3 rounded-lg bg-white p-3 border border-gray-200 hover:border-primary-300 transition-colors">
+                <a href={`tel:+221${CONTACT_PHONE}`} className="flex items-center gap-3 rounded-lg bg-white p-3 border border-gray-200 hover:border-primary-300 transition-colors">
                   <Phone className="h-4 w-4 text-primary-600" />
                   <div>
-                    <p className="text-sm font-medium">+221 77 662 14 10</p>
+                    <p className="text-sm font-medium">{formatPhoneSN(CONTACT_PHONE)}</p>
                     <p className="text-xs text-gray-500">Appel ou SMS</p>
                   </div>
                 </a>
-                <a href="https://wa.me/221708372127" target="_blank" className="flex items-center gap-3 rounded-lg bg-white p-3 border border-gray-200 hover:border-green-300 transition-colors">
+                <a href={`https://wa.me/221${CONTACT_WHATSAPP}`} target="_blank" className="flex items-center gap-3 rounded-lg bg-white p-3 border border-gray-200 hover:border-green-300 transition-colors">
                   <MessageCircle className="h-4 w-4 text-green-600" />
                   <div>
                     <p className="text-sm font-medium">+221 70 837 21 27</p>

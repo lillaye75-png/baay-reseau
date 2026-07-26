@@ -7,10 +7,9 @@ from sqlalchemy import select
 from app.core.security import decode_access_token
 from app.core.database import async_session
 from app.models.user import User
+from app.core.config import _super_admin_phones_list as SUPER_ADMIN_PHONES
 
 security = HTTPBearer()
-
-SUPER_ADMIN_PHONES = ["776621410", "708372127"]
 
 
 def get_user_tier_features(user: User) -> dict:

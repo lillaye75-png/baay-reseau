@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 
 
@@ -8,6 +8,11 @@ class TenantCreate(BaseModel):
     phone: str
     email: str | None = None
 
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, v: str) -> str:
+        return v.strip()
+
 
 class TenantUpdate(BaseModel):
     name: str | None = None
@@ -16,6 +21,11 @@ class TenantUpdate(BaseModel):
     email: str | None = None
     wizard_completed: bool | None = None
     guide_completed: bool | None = None
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, v: str | None) -> str | None:
+        return v.strip() if v is not None else v
 
 
 class TenantIntegrations(BaseModel):
