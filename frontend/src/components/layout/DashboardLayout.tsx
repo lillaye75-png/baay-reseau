@@ -76,12 +76,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button
                 onClick={toggle}
                 className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                title={theme === "light" ? "Mode sombre" : theme === "dark" ? "Mode Solarized" : "Mode clair"}
-                aria-label={theme === "light" ? "Passer en mode sombre" : theme === "dark" ? "Passer en mode Solarized" : "Passer en mode clair"}
+                title={theme === "light" ? "Mode sombre" : "Mode clair"}
+                aria-label={theme === "light" ? "Passer en mode sombre" : "Passer en mode clair"}
               >
                 {theme === "light" && <Moon className="h-4 w-4" />}
-                {theme === "dark" && <Leaf className="h-4 w-4" />}
-                {theme === "solarized" && <Sun className="h-4 w-4" />}
+                {theme === "dark" && <Sun className="h-4 w-4" />}
               </button>
 
               <button
