@@ -18,17 +18,75 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sellerId, setSellerId] = useState("");
+  const [storeId, setStoreId] = useState("");
+  const [sellers, setSellers] = useState<{ id: string; name: string }[]>([]);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+
   useEffect(() => {
     api.get("/sales/")
       .then((res) => setSales(res.data))
       .catch(() => showToast("Erreur de chargement des ventes", "error"))
       .finally(() => setLoading(false));
+
+    api.get("/reports/sellers")
+      .then((res) => {
+        const data = Array.isArray(res.data) ? res.data : (res.data.sellers || []);
+        setSellers(data);
+      })
+      .catch(() => {});
+
+    api.get("/tenants/stores")
+      .then((res) => {
+        const data = Array.isArray(res.data) ? res.data : (res.data.stores || []);
+        setStores(data);
+      })
+      .catch(() => {});
   }, []);
 
-  const filtered = sales.filter((s) =>
-    s.payment_method.toLowerCase().includes(search.toLowerCase()) ||
-    (s.id && s.id.toLowerCase().includes(search.toLowerCase()))
-  );
+  const resetFilters = () => {
+    setDateFrom("");
+    setDateTo("");
+    setSellerId("");
+    setStoreId("");
+    setSearch("");
+  };
+
+  const filtered = sales.filter((s) => {
+    const matchesSearch =
+      s.payment_method.toLowerCase().includes(search.toLowerCase()) ||
+      (s.id && s.id.toLowerCase().includes(search.toLowerCase())) ||
+      (s.seller_name && s.seller_name.toLowerCase().includes(search.toLowerCase()));
+
+    if (!matchesSearch) return false;
+
+    if (dateFrom) {
+      const saleDate = new Date(s.created_at);
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      if (saleDate < fromDate) return false;
+    }
+
+    if (dateTo) {
+      const saleDate = new Date(s.created_at);
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      if (saleDate > toDate) return false;
+    }
+
+    if (sellerId && s.seller_name !== sellerId) return false;
+
+    if (storeId) {
+      const matchesStore =
+        s.payment_method.toLowerCase().includes(storeId.toLowerCase()) ||
+        (s.id && s.id.toLowerCase().includes(storeId.toLowerCase()));
+      if (!matchesStore) return false;
+    }
+
+    return true;
+  });
 
   const todayTotal = sales
     .filter((s) => {
@@ -168,11 +226,64 @@ export default function SalesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Rechercher par mode de paiement..."
+            placeholder="Rechercher par paiement ou vendeur..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-gray-300 pl-10 pr-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Du</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Au</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Vendeur</label>
+            <select
+              value={sellerId}
+              onChange={(e) => setSellerId(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+            >
+              <option value="">Tous</option>
+              {sellers.map((s) => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Boutique</label>
+            <select
+              value={storeId}
+              onChange={(e) => setStoreId(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+            >
+              <option value="">Toutes</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={resetFilters}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            Réinitialiser
+          </button>
         </div>
 
         <Card>

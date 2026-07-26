@@ -74,7 +74,7 @@ const planData: Plan[] = [
   {
     id: "enterprise",
     name: "Enterprise",
-    price_cfa: 15000,
+    price_cfa: 0,
     description: "Tout illimité — support dédié",
     features: [
       "Produits illimités",
@@ -197,8 +197,8 @@ export default function BillingPage() {
                     <div>
                       <h3 className="font-semibold">{plan.name}</h3>
                       <p className="text-2xl font-bold text-primary-600">
-                        {plan.price_cfa === 0 ? "Gratuit" : `${plan.price_cfa.toLocaleString()} F`}
-                        {plan.price_cfa > 0 && <span className="text-sm font-normal text-gray-500">/mois</span>}
+                        {plan.id === "enterprise" ? "Sur devis" : plan.price_cfa === 0 ? "Gratuit" : `${plan.price_cfa.toLocaleString()} F`}
+                        {plan.id !== "enterprise" && plan.price_cfa > 0 && <span className="text-sm font-normal text-gray-500">/mois</span>}
                       </p>
                     </div>
                   </div>
@@ -221,7 +221,7 @@ export default function BillingPage() {
                     disabled={isCurrent || loading}
                     onClick={() => handleUpgrade(plan.id)}
                   >
-                    {isCurrent ? "Plan actuel" : plan.price_cfa === 0 ? "Actuel" : "Choisir ce plan"}
+                    {isCurrent ? "Plan actuel" : plan.id === "enterprise" ? "Contacter" : plan.price_cfa === 0 ? "Actuel" : "Choisir ce plan"}
                   </Button>
                 </CardContent>
               </Card>

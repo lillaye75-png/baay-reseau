@@ -43,6 +43,7 @@ export default function POSPage() {
   const [showScanner, setShowScanner] = useState(false);
   const [lastSale, setLastSale] = useState<Record<string, unknown> | null>(null);
   const [mobileView, setMobileView] = useState<"products" | "cart">("products");
+  const [showProducts, setShowProducts] = useState(true);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
@@ -236,7 +237,7 @@ export default function POSPage() {
 
   const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
     if (action.action === "navigate" && action.href) {
-      window.open(action.href, "_blank");
+      window.open(action.href, "_self");
     } else if (action.action === "customer") {
       setNewCustomerName("");
       setNewCustomerPhone("");
@@ -345,7 +346,30 @@ export default function POSPage() {
             </div>
           </div>
 
-          {filteredProducts.length === 0 ? (
+          {cart.length > 0 && (
+            <div className="mb-3 flex justify-end">
+              <button
+                onClick={() => setShowProducts(!showProducts)}
+                className="text-xs font-medium text-primary-600 hover:text-primary-700"
+              >
+                {showProducts ? "Masquer les produits" : "Afficher les produits"}
+              </button>
+            </div>
+          )}
+
+          {cart.length > 0 && !showProducts ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <ShoppingCart className="h-16 w-16 text-primary-300 mb-4" />
+              <p className="text-lg font-medium text-gray-500">Panier actif</p>
+              <p className="text-sm text-gray-400 mt-1">{totalItems} article{totalItems > 1 ? "s" : ""} — {formatCFA(total)}</p>
+              <button
+                onClick={() => setShowProducts(true)}
+                className="mt-4 rounded-xl bg-primary-600 text-white px-6 py-2 text-sm font-medium hover:bg-primary-700 transition-colors"
+              >
+                Afficher les produits
+              </button>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Package className="h-16 w-16 text-gray-300 mb-4" />
               <p className="text-lg font-medium text-gray-500">
@@ -493,6 +517,14 @@ export default function POSPage() {
                   </option>
                 ))}
               </select>
+              {selectedCustomer && (
+                <div className="mt-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-700">
+                  <span>Tél: {selectedCustomer.phone || "—"}</span>
+                  <span className="ml-3 text-orange-600 font-medium">
+                    Dette: {formatCFA(selectedCustomer.total_credit_cfa)}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>

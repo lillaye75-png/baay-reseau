@@ -109,13 +109,6 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
         </div>
       </div>
 
-      {user && (
-        <div className="mx-3 mb-2 rounded-lg bg-gray-800/50 px-3 py-2">
-          <p className="text-[11px] text-gray-400">{t("connected")}</p>
-          <p className="text-xs font-medium text-white truncate">{user.name}</p>
-        </div>
-      )}
-
       {stores.length > 1 && user?.role === "owner" && (
         <div className="mx-3 mb-2">
           <button

@@ -137,6 +137,7 @@ export interface Sale {
   id: string;
   tenant_id: string;
   customer_id: string | null;
+  seller_name: string | null;
   total_cfa: number;
   payment_method: string;
   payment_reference: string | null;

@@ -139,8 +139,8 @@ const plans = [
   },
   {
     name: "Enterprise",
-    price: "15 000",
-    period: "F/mois",
+    price: "Sur devis",
+    period: "",
     description: "Tout illimité — support dédié",
     features: [
       "Produits illimités",
@@ -479,8 +479,14 @@ export default function LandingPage() {
                   <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
                 </div>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
-                  <span className="text-sm text-gray-500 ml-1">{plan.price !== "0" ? "F CFA" : ""} {plan.period}</span>
+                  {plan.name === "Enterprise" ? (
+                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+                  ) : (
+                    <>
+                      <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+                      <span className="text-sm text-gray-500 ml-1">{plan.price !== "0" ? "F CFA" : ""} {plan.period}</span>
+                    </>
+                  )}
                 </div>
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature) => (

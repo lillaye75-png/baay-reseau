@@ -33,8 +33,8 @@ export default function QuickSalePage() {
   const remaining = Math.max(0, total - paid);
 
   const handleCheckout = async () => {
-    if (!productName.trim() || !unitPrice) {
-      showToast("Nom du produit et prix requis", "error");
+    if (!unitPrice) {
+      showToast("Prix requis", "error");
       return;
     }
     setProcessing(true);
@@ -140,12 +140,10 @@ export default function QuickSalePage() {
               </select>
               {selectedCustomer && (
                 <div className="mt-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-700">
-                  {selectedCustomer.phone && <span>Tél: {selectedCustomer.phone}</span>}
-                  {selectedCustomer.total_credit_cfa > 0 && (
-                    <span className="ml-3 text-orange-600 font-medium">
-                      Dette: {formatCFA(selectedCustomer.total_credit_cfa)}
-                    </span>
-                  )}
+                  <span>Tél: {selectedCustomer.phone || "—"}</span>
+                  <span className="ml-3 text-orange-600 font-medium">
+                    Dette: {formatCFA(selectedCustomer.total_credit_cfa)}
+                  </span>
                 </div>
               )}
             </div>
@@ -198,7 +196,7 @@ export default function QuickSalePage() {
               className="w-full"
               size="lg"
               onClick={handleCheckout}
-              disabled={processing || !productName.trim() || !unitPrice}
+              disabled={processing || !unitPrice}
             >
               {processing ? (
                 <span className="flex items-center gap-2">

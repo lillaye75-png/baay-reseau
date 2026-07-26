@@ -179,3 +179,12 @@ nav a, nav button {
   #receipt-content, #receipt-content * { visibility: visible; }
   #receipt-content { position: absolute; left: 0; top: 0; width: 80mm; }
 }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#__next, main {
+  height: 100%;
+}

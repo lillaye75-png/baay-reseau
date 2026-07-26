@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-export type Theme = "light" | "dark" | "solarized";
+export type Theme = "light" | "dark";
 
 interface ThemeContextType {
   theme: Theme;
@@ -67,7 +67,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("theme") as Theme | null;
-    if (saved && ["light", "dark", "solarized"].includes(saved)) {
+    if (saved && ["light", "dark"].includes(saved)) {
       applyTheme(saved);
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       applyTheme("dark");
@@ -81,14 +81,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const applyTheme = (t: Theme) => {
     setThemeState(t);
-    document.documentElement.classList.remove("dark", "solarized");
+    document.documentElement.classList.remove("dark");
     if (t === "dark") document.documentElement.classList.add("dark");
-    if (t === "solarized") document.documentElement.classList.add("dark", "solarized");
     localStorage.setItem("theme", t);
   };
 
   const toggle = () => {
-    const order: Theme[] = ["light", "dark", "solarized"];
+    const order: Theme[] = ["light", "dark"];
     const idx = order.indexOf(theme);
     const next = order[(idx + 1) % order.length];
     applyTheme(next);
@@ -103,7 +102,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, dark: theme === "dark" || theme === "solarized", toggle, setTheme, primaryColor, setPrimaryColor }}>
+    <ThemeContext.Provider value={{ theme,     dark: theme === "dark", toggle, setTheme, primaryColor, setPrimaryColor }}>
       {children}
     </ThemeContext.Provider>
   );

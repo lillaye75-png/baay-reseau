@@ -2,6 +2,22 @@ const DB_NAME = "baay-offline-db";
 const DB_VERSION = 2;
 const STORE_NAME = "pending-sales";
 const PRODUCTS_STORE = "cached-products";
+const SYNCED_IDS_KEY = "naatal-synced-ids";
+
+function loadSyncedIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(SYNCED_IDS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      return new Set(Array.isArray(arr) ? arr : []);
+    }
+  } catch {}
+  return new Set();
+}
+
+function persistSyncedIds(ids: Set<string>): void {
+  localStorage.setItem(SYNCED_IDS_KEY, JSON.stringify([...ids]));
+}
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -58,18 +74,26 @@ export async function syncPendingSales(): Promise<{ synced: number; errors: numb
   const pending = await getPendingSales();
   if (pending.length === 0) return { synced: 0, errors: 0 };
 
+  const syncedIds = loadSyncedIds();
+  const toSync = pending.filter((s) => !syncedIds.has(s.local_id));
+
+  if (toSync.length === 0) return { synced: 0, errors: 0 };
+
   try {
     const api = (await import("@/lib/api")).default;
-    const res = await api.post("/sales/sync", { sales: pending });
+    const res = await api.post("/sales/sync", { sales: toSync });
     const { synced, errors } = res.data;
 
     for (const item of res.data.details || []) {
       await removePendingSale(item.local_id);
+      syncedIds.add(item.local_id);
     }
+
+    persistSyncedIds(syncedIds);
 
     return { synced, errors };
   } catch {
-    return { synced: 0, errors: pending.length };
+    return { synced: 0, errors: toSync.length };
   }
 }
 
