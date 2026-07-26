@@ -451,50 +451,53 @@ export default function POSPage() {
                 <p className="text-xs text-gray-400 mt-1">Cliquez sur un produit pour l&apos;ajouter</p>
               </div>
             ) : (
-              <>
-                <div className="text-xs text-gray-400 grid grid-cols-12 gap-1 px-1 mb-1">
-                  <span className="col-span-4">Article</span>
-                  <span className="col-span-2 text-center">Qté</span>
-                  <span className="col-span-3 text-right">P.U.</span>
-                  <span className="col-span-3 text-right">Total</span>
-                </div>
-                {cart.map((item) => (
-                  <div key={item.product.id} className="grid grid-cols-12 gap-1 items-center rounded-xl bg-gray-50 p-2">
-                    <div className="col-span-4 min-w-0">
-                      <p className="text-xs font-medium truncate">{item.product.name}</p>
-                    </div>
-                    <div className="col-span-2">
+              cart.map((item) => (
+                <div key={item.product.id} className="rounded-xl bg-gray-50 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium truncate flex-1 min-w-0">{item.product.name}</p>
+                    <button
+                      onClick={() => removeFromCart(item.product.id)}
+                      className="text-red-400 hover:text-red-600 ml-2 flex-shrink-0"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => updateQuantity(item.product.id, -1)}
+                        className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
                       <input
                         type="number"
                         min={1}
                         max={item.product.stock_quantity}
                         value={item.quantity}
                         onChange={(e) => setQuantity(item.product.id, parseInt(e.target.value) || 0)}
-                        className="w-full text-center text-xs rounded border border-gray-200 py-1 px-0 bg-white"
+                        className="w-12 text-center text-sm font-bold rounded border border-gray-200 py-0.5 px-0 bg-white"
                       />
+                      <button
+                        onClick={() => updateQuantity(item.product.id, 1)}
+                        className="h-6 w-6 rounded-full bg-primary-100 flex items-center justify-center hover:bg-primary-200 transition-colors"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
                     </div>
-                    <div className="col-span-3">
+                    <div className="flex-1 flex items-center justify-end gap-2">
                       <input
                         type="number"
                         min={0}
                         value={item.unitPrice}
                         onChange={(e) => setItemPrice(item.product.id, parseInt(e.target.value) || 0)}
-                        className="w-full text-right text-xs rounded border border-gray-200 py-1 px-1 bg-white"
+                        className="w-20 text-right text-sm rounded border border-gray-200 py-0.5 px-1 bg-white"
                       />
-                    </div>
-                    <div className="col-span-2 text-right text-xs font-medium">
-                      {formatCFA(item.unitPrice * item.quantity)}
-                    </div>
-                    <div className="col-span-1 text-right">
-                      <button
-                        onClick={() => removeFromCart(item.product.id)}
-                        className="text-red-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      <span className="text-sm font-medium w-16 text-right">{formatCFA(item.unitPrice * item.quantity)}</span>
                     </div>
                   </div>
-                ))}
+                </div>
+              ))
               </>
             )}
           </div>
