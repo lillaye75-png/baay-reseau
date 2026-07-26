@@ -293,14 +293,11 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data, user_id: str
     remaining = total - paid
     is_credit = data.is_credit or (paid > 0 and remaining > 0)
 
-    try:
-        products_result = await db.execute(
-            select(Product).where(Product.tenant_id == tenant_id, Product.is_active == True).limit(1)
-        )
-        ref_product = products_result.scalar_one_or_none()
-        ref_id = ref_product.id if ref_product else None
-    except Exception:
-        ref_id = None
+    products_result = await db.execute(
+        select(Product).where(Product.tenant_id == tenant_id, Product.is_active == True).limit(1)
+    )
+    ref_product = products_result.scalar_one_or_none()
+    ref_id = ref_product.id if ref_product else None
 
     sale = Sale(
         tenant_id=tenant_id,
@@ -355,8 +352,10 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data, user_id: str
 
     result = await db.execute(
         select(Sale).where(Sale.id == sale.id).options(
-            selectinload(Sale.items),
-            selectinload(Sale.customer),
+            selectinload(Sale.items).selectinload(SaleItem.product),
         )
     )
-    return result.scalar_one_or_none()
+    sale_obj = result.scalar_one()
+    setattr(sale_obj, "paid_amount", paid)
+    setattr(sale_obj, "remaining_cfa", remaining)
+    return sale_obj
