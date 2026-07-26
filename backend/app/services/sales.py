@@ -352,7 +352,7 @@ async def create_quick_sale(db: AsyncSession, tenant_id: str, data, user_id: str
 
     result = await db.execute(
         select(Sale).where(Sale.id == sale.id).options(
-            selectinload(Sale.items).selectinload(SaleItem.product),
+            selectinload(Sale.items),
         )
     )
     sale_obj = result.scalar_one()

@@ -42,15 +42,18 @@ class SaleItemRead(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def resolve_product_name(cls, data):
-        if hasattr(data, "product") and data.product is not None:
-            try:
-                data.product_name = data.product.name
-            except Exception:
-                pass
-        elif hasattr(data, "__dict__"):
-            product = getattr(data, "product", None)
-            if product and hasattr(product, "name"):
-                data.product_name = product.name
+        try:
+            if hasattr(data, "product") and data.product is not None:
+                try:
+                    data.product_name = data.product.name
+                except Exception:
+                    pass
+            elif hasattr(data, "__dict__"):
+                product = getattr(data, "product", None)
+                if product and hasattr(product, "name"):
+                    data.product_name = product.name
+        except Exception:
+            pass
         if isinstance(data, dict):
             product = data.get("product")
             if product and isinstance(product, dict) and "name" in product:
