@@ -16,7 +16,7 @@ function loadSyncedIds(): Set<string> {
 }
 
 function persistSyncedIds(ids: Set<string>): void {
-  localStorage.setItem(SYNCED_IDS_KEY, JSON.stringify([...ids]));
+  localStorage.setItem(SYNCED_IDS_KEY, JSON.stringify(Array.from(ids)));
 }
 
 function openDB(): Promise<IDBDatabase> {
